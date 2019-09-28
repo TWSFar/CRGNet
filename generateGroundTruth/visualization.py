@@ -10,7 +10,7 @@ fig = plt.figure(figsize=(16,12))
 ax = fig.gca(projection="3d")
 
 img = cv.imread("G:/CV/Reading/ClusterRegionGenerationNetwork/data/hkb/Mask/00010204_dense.png")		# 修改图片位置
-img = cv.cvtColor(img,cv.COLOR_BGR2GRAY)
+img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
 imgd = np.array(img)      # image类 转 numpy
 
 # 准备数据
