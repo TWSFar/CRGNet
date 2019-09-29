@@ -6,21 +6,20 @@ import scipy.spatial
 import argparse
 import numpy as np
 import os.path as osp
-from tqdm import tqdm
-from getGTBox import getGTBox
 import matplotlib.pyplot as plt
 from matplotlib import cm as CM
 from scipy.ndimage.filters import gaussian_filter 
-try:
-    from mypath import Path
-except:
-    import sys
-    sys.append('G:/CV/Reading/ClusterRegionGenerationNetwork')
-    from mypath import path
+from ResizeMask import BiLinear_interpolation, BiCubic_interpolation
+import sys
+sys.path.insert(0, osp.join(osp.dirname(osp.abspath(__file__)), '../'))
+from mypath import Path
+from dataloader.datasets import Datasets
 
 
-hyp = {'lbt': 100,  # Multiple of the density map numerical magnification
-       'output_scale': (30, 40)}
+hyp = {'visdrone': 0.1,  # Multiple of the density map numerical magnification
+       'hkb': 1,
+       'interpolation_scale': (30, 40),
+       'stand_scale': (90, 120)}
 
 
 def show_image(img, labels=None):
@@ -34,59 +33,32 @@ def show_image(img, labels=None):
     plt.show()
 
 
-def show_density(density):
-    plt.imshow(density, cmap=CM.jet)
+def show_density(density_mask):
+    plt.imshow(density_mask, cmap=CM.jet)
     plt.show()
 
 
-def double_linear(input_density, out_scale=(30, 40)):
-    in_h, in_w = input_density.shape
-    out_h, out_w = out_scale
-    ratio_x, retio_y = float(in_h) / out_h, float(in_w) / out_w
-
-    # result of resize after double linear
-    output_density = np.zeros(out_scale)
-
-    for i in range(out_scale[0]):
-        for j in range(out_scale[1]):
-            src_x = (i + 0.5) * ratio_x - 0.5
-            src_y = (j + 0.5) * retio_y - 0.5
-
-            # find the coordinates of the points which will be used to compute the interpolation
-            src_x0 = int(np.floor(src_x))
-            src_x1 = min(src_x0 + 1, in_h - 1)
-            src_y0 = int(np.floor(src_y))
-            src_y1 = min(src_y0 + 1, in_w - 1)
-
-            # calculate the interpolation
-            temp0 = (src_x1 - src_x) * input_density[src_x0, src_y0] +\
-                    (src_x - src_x0) * input_density[src_x1, src_y0]
-            temp1 = (src_x1 - src_x) * input_density[src_x0, src_y1] +\
-                    (src_x - src_x0) * input_density[src_x1, src_y1]
-            output_density[i, j] = (src_y1 - src_y) * temp0 +\
-                                   (src_y - src_y0) * temp1
-
-    return output_density
-
-
-def gaussian_filter_density(img, bboxes):
+def gaussian_filter_density(img_scale, bboxes, idx):
+    k = 3  # k neighbor
     if type(bboxes) is not np.ndarray:
         bboxes = np.array(bboxes)
 
-    bboxes[:, [0, 2]] = np.clip(bboxes[:, [0, 2]], 0, img.shape[1])
-    bboxes[:, [1, 3]] = np.clip(bboxes[:, [1, 3]], 0, img.shape[0])
+    bboxes[:, [0, 2]] = np.clip(bboxes[:, [0, 2]], 0, img_scale[1])
+    bboxes[:, [1, 3]] = np.clip(bboxes[:, [1, 3]], 0, img_scale[0])
 
-    gt = np.zeros(img.shape[:2])
+    gt = np.zeros(hyp['stand_scale'])
+    ratio_x = float(hyp['stand_scale'][0]) / img_scale[0]
+    ratio_y = float(hyp['stand_scale'][1]) / img_scale[1]
 
     for bbox in bboxes:
-        c_x = int((bbox[0] + bbox[2]) / 2)
-        c_y = int((bbox[1] + bbox[3]) / 2)
-        gt[c_y][c_x] = 1
+        c_y = int((bbox[0] + bbox[2]) / 2.0 * ratio_y)
+        c_x = int((bbox[1] + bbox[3]) / 2.0 * ratio_x)
+        gt[c_x][c_y] += 1
 
-    density = np.zeros(gt.shape, dtype=np.float32)
+    density_mask = np.zeros(gt.shape, dtype=np.float32)
     gt_count = np.count_nonzero(gt)
     if gt_count == 0:
-        return density
+        return density_mask
 
     pts = np.array(list(zip(np.nonzero(gt)[0], np.nonzero(gt)[1])))
     leafsize = 2048
@@ -94,50 +66,56 @@ def gaussian_filter_density(img, bboxes):
     # build kdtree
     tree = scipy.spatial.KDTree(pts.copy(), leafsize=leafsize)
     # query kdtree
-    distances, locations = tree.query(pts, k=4)
+    distances, locations = tree.query(pts, k=k+1)
 
     for i, pt in enumerate(pts):
         pt2d = np.zeros(gt.shape, dtype=np.float32)
-        pt2d[pt[0], pt[1]] = 1.
+        pt2d[pt[0], pt[1]] = gt[pt[0], pt[1]]
+        nb = 0  # neighbor number
         if gt_count > 1:
-            sigma = (distances[i][1]+distances[i][2]+distances[i][3]) * 0.1
+            dist = 0
+            for j in range(1, k+1):
+                if distances[i][j] != float('inf'):
+                    dist += distances[i][j]
+                    nb += 1
+            sigma = dist * nb * 0.04
         else:
             sigma = np.average(np.array(gt.shape))/2./2.  # case: 1 point
-        density += scipy.ndimage.filters.gaussian_filter(pt2d, sigma, mode='constant')
-    return density
+        density_mask += gaussian_filter(pt2d, sigma, mode='constant')
+        sys.stdout.write('\rcomplete: {:d}/{:d}, {:d}'
+                         .format(i + 1, gt_count, idx + 1))
+        sys.stdout.flush()
+    return density_mask
 
 
-def getDensity(root_path=Path.db_root_dir('visdrone'), dataset='visdrone'):
+def getDensity(dataset_name='visdrone'):
     parser = argparse.ArgumentParser()
     parser.add_argument('--show', action='store_true')
-    parser.add_argument('--type', default='txt', type=str,
-                        choices=['xml', 'json', 'txt'], help='annotation type')
     opt = parser.parse_args()
 
-    imgs_path = osp.join(root_path, 'JPEGImages')
-    img_list = os.listdir(imgs_path)
-    mask_path = osp.join(root_path, 'Mask')
+    dataset = Datasets(dataset_name)
+
+    mask_path = osp.join(dataset.root_path, 'DensityMask')
     if not osp.exists(mask_path):
         os.mkdir(mask_path)
 
-    for img_id in tqdm(img_list):
-        img_path = osp.join(imgs_path, img_id)
-        img = cv2.imread(img_path)
+    for i, sample in enumerate(dataset.samples):
+        img_scale = (sample['height'], sample['width'])
+        density_mask = gaussian_filter_density(img_scale, sample['bboxes'], i)
+        density_mask = density_mask * hyp[dataset_name]
+        dst_density_mask = BiCubic_interpolation(density_mask, 
+                                                 hyp['interpolation_scale'])
 
-        if opt.type == 'json':
-            anno_path = ""
-            bboxes = getGTBox(anno_path, img_id)
-        else:
-            anno_path = img_path.replace('JPEGImages', 'Annotations').replace('jpg', opt.type)
-            bboxes = getGTBox(anno_path)
+        maskname = osp.join(mask_path, osp.basename(sample['image']).
+                            replace(dataset.img_type, '.h5'))
+        with h5py.File(maskname, 'w') as hf:
+            hf['density'] = dst_density_mask
 
-        density = gaussian_filter_density(img, bboxes)
-        density = density * 100
-        final_density = double_linear(density, (30, 40))
-
-        show_density(density)
-        show_image(img, bboxes)
-        show_density(final_density)
+        if opt.show:
+            img = cv2.imread(sample['image'])
+            show_image(img, sample['bboxes'])
+            show_density(density_mask)
+            show_density(dst_density_mask)
 
 
 if __name__ == '__main__':
