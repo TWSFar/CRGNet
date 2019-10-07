@@ -2,10 +2,10 @@ class Path(object):
     @staticmethod
     def db_root_dir(dataset):
         if dataset == 'hkb':
-            return 'G:/CV/Reading/CRGNet/data/hkb'
+            return '/home/twsf/data/hkb/'
 
         elif dataset == 'visdrone':
-            return 'G:/CV/Reading/CRGNet/data/visdrone'
+            return '/home/twsf/data/visdrone/VisDrone2018-DET-train/'
 
         elif dataset == 'coco':
             return 'G:/CV/Reading/CRGNet/data/coco'

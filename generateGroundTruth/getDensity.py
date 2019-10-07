@@ -13,7 +13,7 @@ from ResizeMask import BiLinear_interpolation, BiCubic_interpolation
 import sys
 sys.path.insert(0, osp.join(osp.dirname(osp.abspath(__file__)), '../'))
 from mypath import Path
-from dataloader.datasets import Datasets
+from dataloaders.datasets import Datasets
 
 
 hyp = {'visdrone': 0.1,  # Multiple of the density map numerical magnification
@@ -92,10 +92,13 @@ def getDensity(dataset_name='visdrone'):
     parser = argparse.ArgumentParser()
     parser.add_argument('--show', action='store_true')
     opt = parser.parse_args()
+    opt.data_dir = Path.db_root_dir(dataset_name)
+    opt.input_size = None
+    opt.dataset = dataset_name
 
-    dataset = Datasets(dataset_name)
+    dataset = Datasets(opt)
 
-    mask_path = osp.join(dataset.root_path, 'DensityMask')
+    mask_path = osp.join(dataset.data_dir, 'DensityMask')
     if not osp.exists(mask_path):
         os.mkdir(mask_path)
 
@@ -106,6 +109,7 @@ def getDensity(dataset_name='visdrone'):
         dst_density_mask = BiCubic_interpolation(density_mask, 
                                                  hyp['interpolation_scale'])
 
+        dst_density_mask = dst_density_mask * 9  # 9 is downsample
         maskname = osp.join(mask_path, osp.basename(sample['image']).
                             replace(dataset.img_type, '.h5'))
         with h5py.File(maskname, 'w') as hf:
@@ -119,4 +123,4 @@ def getDensity(dataset_name='visdrone'):
 
 
 if __name__ == '__main__':
-    getDensity()
+    getDensity('hkb')
