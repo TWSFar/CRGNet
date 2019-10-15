@@ -1,19 +1,19 @@
 class Path(object):
     @staticmethod
     def db_root_dir(dataset):
-        if dataset == 'hkb':
-            return '/home/twsf/data/hkb/'
+        if 'hkb' in dataset:
+            return '/home/twsf/work/CRGNet/data/HKB'
 
-        elif dataset == 'visdrone':
-            return '/home/twsf/data/visdrone/VisDrone2018-DET-train/'
+        elif 'visdrone' in dataset:
+            return '/home/twsf/data/visdrone/VisDrone2018-DET-val'
 
-        elif dataset == 'coco':
-            return 'G:/CV/Reading/CRGNet/data/coco'
+        elif 'coco' in dataset:
+            return '/home/twsf/work/CRGNet/data/COCO'
 
-        elif dataset == 'voc':
+        elif 'voc' in dataset:
             return 'G:/CV/Reading/CRGNet/data/voc'
 
-        elif dataset == 'dota':
+        elif 'dota' in dataset:
             return 'G:/CV/Reading/CRGNet/data/dota'
 
         else:

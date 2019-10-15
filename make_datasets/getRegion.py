@@ -7,7 +7,7 @@ from tqdm import tqdm
 import sys
 sys.path.insert(0, osp.join(osp.dirname(osp.abspath(__file__)), '../'))
 from mypath import Path
-from dataloader.datasets import Datasets
+from dataloaders.datasets import Datasets
 
 
 hyp = {'visdrone': 0.1,  # Multiple of the density map numerical magnification
@@ -17,12 +17,13 @@ hyp = {'visdrone': 0.1,  # Multiple of the density map numerical magnification
 
 
 def show_image(img, labels=None):
+    import matplotlib.pyplot as plt
     if type(labels) is not np.ndarray:
         labels = np.array(labels)
     # plt.figure(figsize=(10, 10))
     plt.subplot(1, 1, 1).imshow(img[:, :, ::-1])
     if labels is not None:
-        plt.plot(labels[:, [0, 2, 2, 0, 0]].T, labels[:, [1, 1, 3, 3, 1]].T, '-')
+        plt.plot(labels[:, [1, 3, 3, 1, 1]].T, labels[:, [0, 0, 2, 2, 0]].T, '-')
     # plt.savefig('test_0.jpg')
     plt.show()
 
@@ -48,10 +49,10 @@ def Region(bboxes, img_scale, mask_scale=(30, 40)):
         region_mask = np.zeros((mask_h, mask_w), dtype=np.uint8)
 
         for box in bboxes:
-            xmin = _myaround_down(1.0 * box[0] / width * mask_w)
-            ymin = _myaround_down(1.0 * box[1] / height * mask_h)
-            xmax = _myaround_up(1.0 * box[2] / width * mask_w)
-            ymax = _myaround_up(1.0 * box[3] / height * mask_h)
+            ymin = _myaround_down(1.0 * box[0] / height * mask_h)
+            xmin = _myaround_down(1.0 * box[1] / width * mask_w)
+            ymax = _myaround_up(1.0 * box[2] / height * mask_h)
+            xmax = _myaround_up(1.0 * box[3] / width * mask_w)
             region_mask[ymin:ymax, xmin:xmax] = 1
 
         return region_mask
@@ -61,14 +62,10 @@ def Region(bboxes, img_scale, mask_scale=(30, 40)):
         return None
 
 
-def getRegion(dataset_name='visdrone'):
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--show', action='store_true')
-    opt = parser.parse_args()
+def getRegionMap(opt, mode='train'):
+    dataset = Datasets(opt=opt, mode=mode)
 
-    dataset = Datasets(dataset_name)
-
-    mask_path = osp.join(dataset.root_path, 'RegionMask')
+    mask_path = osp.join(dataset.data_dir, 'RegionMask')
     if not osp.exists(mask_path):
         os.mkdir(mask_path)
 
@@ -82,8 +79,12 @@ def getRegion(dataset_name='visdrone'):
         if opt.show:
             img = cv2.imread(sample['image'])
             show_image(img, sample['bboxes'])
-            show_image(img, sample['bboxes'])
+            show_image(region_mask)
 
 
 if __name__ == '__main__':
-    getRegion()
+    import sys
+    import os.path as osp
+    sys.path.insert(0, osp.join(osp.dirname(osp.abspath(__file__)), '../'))
+    from utils.config import opt
+    getRegionMap(opt)

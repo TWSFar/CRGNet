@@ -8,7 +8,7 @@ import numpy as np
 import os.path as osp
 import matplotlib.pyplot as plt
 from matplotlib import cm as CM
-from scipy.ndimage.filters import gaussian_filter 
+from scipy.ndimage.filters import gaussian_filter
 from ResizeMask import BiLinear_interpolation, BiCubic_interpolation
 import sys
 sys.path.insert(0, osp.join(osp.dirname(osp.abspath(__file__)), '../'))
@@ -17,7 +17,7 @@ from dataloaders.datasets import Datasets
 
 
 hyp = {'visdrone': 0.1,  # Multiple of the density map numerical magnification
-       'hkb': 1,
+       'hkb': 9,
        'interpolation_scale': (30, 40),
        'stand_scale': (90, 120)}
 
@@ -28,7 +28,7 @@ def show_image(img, labels=None):
     # plt.figure(figsize=(10, 10))
     plt.subplot(1, 1, 1).imshow(img[:, :, ::-1])
     if labels is not None:
-        plt.plot(labels[:, [0, 2, 2, 0, 0]].T, labels[:, [1, 1, 3, 3, 1]].T, '-')
+        plt.plot(labels[:, [1, 3, 3, 1, 1]].T, labels[:, [0, 0, 2, 2, 0]].T, '-')
     # plt.savefig('test_0.jpg')
     plt.show()
 
@@ -43,17 +43,17 @@ def gaussian_filter_density(img_scale, bboxes, idx):
     if type(bboxes) is not np.ndarray:
         bboxes = np.array(bboxes)
 
-    bboxes[:, [0, 2]] = np.clip(bboxes[:, [0, 2]], 0, img_scale[1])
-    bboxes[:, [1, 3]] = np.clip(bboxes[:, [1, 3]], 0, img_scale[0])
+    bboxes[:, [0, 2]] = np.clip(bboxes[:, [0, 2]], 0, img_scale[0])
+    bboxes[:, [1, 3]] = np.clip(bboxes[:, [1, 3]], 0, img_scale[1])
 
     gt = np.zeros(hyp['stand_scale'])
-    ratio_x = float(hyp['stand_scale'][0]) / img_scale[0]
-    ratio_y = float(hyp['stand_scale'][1]) / img_scale[1]
+    ratio_y = float(hyp['stand_scale'][0]) / img_scale[0]
+    ratio_x = float(hyp['stand_scale'][1]) / img_scale[1]
 
     for bbox in bboxes:
         c_y = int((bbox[0] + bbox[2]) / 2.0 * ratio_y)
         c_x = int((bbox[1] + bbox[3]) / 2.0 * ratio_x)
-        gt[c_x][c_y] += 1
+        gt[c_y][c_x] += 1
 
     density_mask = np.zeros(gt.shape, dtype=np.float32)
     gt_count = np.count_nonzero(gt)
@@ -109,7 +109,7 @@ def getDensity(dataset_name='visdrone'):
         dst_density_mask = BiCubic_interpolation(density_mask, 
                                                  hyp['interpolation_scale'])
 
-        dst_density_mask = dst_density_mask * 9  # 9 is downsample
+        # dst_density_mask = dst_density_mask * 9  # 9 is downsample
         maskname = osp.join(mask_path, osp.basename(sample['image']).
                             replace(dataset.img_type, '.h5'))
         with h5py.File(maskname, 'w') as hf:

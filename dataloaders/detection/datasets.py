@@ -9,8 +9,8 @@ from PIL import Image
 import os.path as osp
 import xml.etree.ElementTree as ET
 import sys
-sys.path.insert(0, osp.join(osp.dirname(osp.abspath(__file__)), '../'))
-from dataloaders.transforms import train_transforms, test_transforms, normalize
+sys.path.insert(0, osp.join(osp.dirname(osp.abspath(__file__)), '../../'))
+from dataloaders.rcnn_transforms import Transform_Train, Transform_Test
 
 
 def getGTBox(anno_path, **kwargs):
@@ -18,13 +18,14 @@ def getGTBox(anno_path, **kwargs):
     gt_cls = []
     if 'xml' in anno_path:
         xml = ET.parse(anno_path).getroot()
-        pts = ['xmin', 'ymin', 'xmax', 'ymax']
+        # y1, x1, y2, x2
+        pts = ['ymin', 'xmin', 'ymax', 'xmax']
         # bounding boxes
         for obj in xml.iter('object'):
             bbox = obj.find('bndbox')
             bndbox = []
             for i, pt in enumerate(pts):
-                cur_pt = int(bbox.find(pt).text)
+                cur_pt = int(bbox.find(pt).text) - 1
                 bndbox.append(cur_pt)
             box_all += [bndbox]
             cls = obj.find('name').text
@@ -35,11 +36,11 @@ def getGTBox(anno_path, **kwargs):
             data = [x.strip().split(',')[:8] for x in f.readlines()]
             annos = np.array(data)
 
-        bboxes = annos[annos[:, 4] == '1'][:, :6].astype(np.int32)
+        bboxes = annos[annos[:, 4] == '1'][:, :6].astype(np.float64)
         for bbox in bboxes:
             bbox[2] += bbox[0]
             bbox[3] += bbox[1]
-            box_all.append(bbox[:4].tolist())
+            box_all.append(bbox[[1, 0, 3, 2]].tolist()) # (x1,y1,x2,y2) => (y1,x1,y2,x2)
             gt_cls.append(int(bbox[5]))  # index 5 is classes id
 
     elif 'json' in anno_path:
@@ -49,7 +50,7 @@ def getGTBox(anno_path, **kwargs):
         print('No such type {}'.format(type))
         raise NotImplementedError
 
-    return {'bboxes': np.array(box_all),
+    return {'bboxes': np.array(box_all, dtype=np.float64),
             'cls': np.array(gt_cls)}
 
 
@@ -92,52 +93,28 @@ def _load_samples(self):
 
 
 def getitem(self, index):
+    # read information
     assert index <= len(self), 'index range error'
     img_path = self.samples[index]['image']
     img = cv2.imread(img_path)  # BGR
-    scrimg_shape = np.array(img.shape[0:2])
+    scrimg_shape = img.shape[0:2]
     assert img is not None, 'File Not Found ' + img_path
-
     bboxes = self.samples[index]['bboxes']
     gt_cls = self.samples[index]['cls']
-    target = np.hstack((bboxes, np.expand_dims(gt_cls, axis=1)))
 
-    if self.input_size is None:
-        self.input_size = scrimg_shape
+    # img_show = img.permute(1, 2, 0)
+    # show_image(img_show.numpy(), bboxes.numpy())
+    # data agument
     if self.mode in ['train', 'trainval', 'trainaug']:
-        img, target = train_transforms(img,
-                                       target,
-                                       self.input_size)
+        img, bboxes, gt_cls = self.tsf_train(img, bboxes, gt_cls)
+        self.input_size = img.shape[1:3]
+        scale = (self.input_size[0] / scrimg_shape[0],
+                 self.input_size[1] / scrimg_shape[1])
+        return img, bboxes, gt_cls, scale
+
     elif self.mode in ['test', 'val']:
-        img, target = test_transforms(img,
-                                      target,
-                                      self.input_size)
-
-    show_image(img, target)
-    nL = len(target)
-    if nL > 0:
-        target[:, [1, 3]] = np.clip(target[:, [1, 3]], 0, img.shape[0])
-        target[:, [0, 2]] = np.clip(target[:, [0, 2]], 0, img.shape[1])
-        target[:, [1, 3]] = target[:, [1, 3]] / img.shape[0]  # height
-        target[:, [0, 2]] = target[:, [0, 2]] / img.shape[1]  # width
-
-    # Normalize
-    img = img[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB
-    img = np.ascontiguousarray(img, dtype=np.float32)
-    img = normalize(img)
-
-    bboxes = torch.zeros((nL, 4))
-    labels = torch.zeros((nL, 1))
-    if nL:
-        bboxes[:, :] = torch.from_numpy(target[:, :4])
-        labels[:, :] = torch.from_numpy(target[:, 4:5])
-
-    img = torch.from_numpy(img).float()
-    bboxes, labels = bboxes.float(), labels.float()
-    scale = (self.input_size[0] / scrimg_shape[0],
-             self.input_size[1] / scrimg_shape[1])
-
-    return img, bboxes, labels, scale
+        img = self.tsf_test(img)
+        return img, bboxes, gt_cls, scrimg_shape
 
 
 class HKB(Dataset):
@@ -148,6 +125,8 @@ class HKB(Dataset):
         super().__init__()
         self.mode = mode
         self.opt = opt
+        self.tsf_train = Transform_Train(opt.min_size, opt.max_size)
+        self.tsf_test = Transform_Test(opt.min_size, opt.max_size)
 
         # Path and File
         self.data_dir = opt.data_dir
@@ -199,6 +178,8 @@ class VOC(Dataset):
         super().__init__()
         self.mode = mode
         self.opt = opt
+        self.tsf_train = Transform_Train(opt.min_size, opt.max_size)
+        self.tsf_test = Transform_Test(opt.min_size, opt.max_size)
 
         # Path and File
         self.data_dir = opt.data_dir
@@ -249,6 +230,8 @@ class VisDrone(Dataset):
         super().__init__()
         self.mode = mode
         self.opt = opt
+        self.tsf_train = Transform_Train(opt.min_size, opt.max_size)
+        self.tsf_test = Transform_Test(opt.min_size, opt.max_size)
 
         # Path and File
         self.data_dir = opt.data_dir
@@ -345,7 +328,7 @@ class DOTA(Dataset):
         return self.num_images
 
 
-def Datasets(opt, data_dir=None, mode='train'):
+def Datasets(opt, mode='train', data_dir=None):
     if data_dir is not None:
         opt.data_dir = data_dir
     print('{} dataset from path of {}'.format(opt.dataset, opt.data_dir))
@@ -374,7 +357,7 @@ def show_image(img, labels):
     import matplotlib.pyplot as plt
     plt.figure(figsize=(10, 10))
     plt.subplot(1, 1, 1).imshow(img[:, :, ::-1])
-    plt.plot(labels[:, [0, 2, 2, 0, 0]].T, labels[:, [1, 1, 3, 3, 1]].T, '-')
+    plt.plot(labels[:, [1, 3, 3, 1, 1]].T, labels[:, [0, 0, 2, 2, 0]].T, '-')
     plt.show()
     pass
 
@@ -382,9 +365,14 @@ def show_image(img, labels):
 if __name__ == '__main__':
     from easydict import EasyDict as edict
     opt = edict()
-    opt.dataset = 'hkb'
-    opt.input_size = None
-    opt.data_dir = "G:\\CV\\Reading\\Faster-RCNN\\data\\HKB"
-    dataset = Datasets(opt, mode='test')
+    opt.dataset = 'voc'
+    opt.input_size = (1000, 890)
+    opt.min_size = 600
+    opt.max_size = 1000
+    opt.data_dir = "/home/twsf/work/CRGNet/data/VOC2012"
+    dataset = Datasets(opt, mode='train')
     img, target, _, _ = dataset.__getitem__(0)
+    dl = torch.utils.data.DataLoader(dataset)
+    for (img, b, l, _) in dl:
+        pass
     pass

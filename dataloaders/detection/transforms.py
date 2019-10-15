@@ -159,17 +159,6 @@ def random_flip(img, labels, px=0.5):
     return img, labels
 
 
-def normalize(img, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]):
-    """
-    norm = (x - mean) / std
-    """
-    img = img / 255.0
-    mean = np.array(mean)
-    std = np.array(std)
-    img = (img - mean[:, np.newaxis, np.newaxis]) / std[:, np.newaxis, np.newaxis]
-    return img.astype(np.float32)
-
-
 def random_color_distort(src, brightness_delta=32, contrast_low=0.5, contrast_high=1.5,
                          saturation_low=0.5, saturation_high=1.5, hue_delta=18):
     """gluoncv/data/transforms/experimental/image.py
@@ -441,15 +430,16 @@ def rect_input_resize(img, bbox, input_size=None):
     H, W = img.shape[:2]
     img = cv2.resize(img, (input_size[1], input_size[0]), interpolation=cv2.INTER_CUBIC)
 
-    ratio_x = input_size[0] / H
-    ratio_y = input_size[1] / W
-    bbox[:, [0, 2]] = bbox[:, [0, 2]] * ratio_y
-    bbox[:, [1, 3]] = bbox[:, [1, 3]] * ratio_x
+    ratio_y = input_size[0] / H
+    ratio_x = input_size[1] / W
+    bbox[:, [0, 2]] = bbox[:, [0, 2]] * ratio_x
+    bbox[:, [1, 3]] = bbox[:, [1, 3]] * ratio_y
 
     return img, bbox
 
 
 def train_transforms(img, target, input_size):
+    target = target[:, [1, 0, 3, 2, 4]]
     h, w = img.shape[:2]
     size = (w, h)
     # hsv
@@ -468,15 +458,18 @@ def train_transforms(img, target, input_size):
     img, target = random_flip(img, target, 0.5)
     # color distort
     # img = random_color_distort(img)
-
+    target = target[:, [1, 0, 3, 2, 4]]
     return img, target
 
 
 def test_transforms(img, target, input_size):
+    target = target[:, [1, 0, 3, 2, 4]]
     # pad and resize
     if input_size[0] == input_size[1]:
+        # in this program, the box is [y1, x1, y2, x2], however this
+        # transform need [x1, y1, x2, y2]
         img, target = letterbox(img, target, input_size, mode='test')
     else:
         img, target[:, :4] = rect_input_resize(img, target[:, :4], input_size)
-
+    target = target[:, [1, 0, 3, 2, 4]]
     return img, target
