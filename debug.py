@@ -1,54 +1,57 @@
-from scipy.ndimage.filters import gaussian_filter
-import numpy as np
-import cv2
-from skimage import transform as sktsf
+"""
+data aug methods
+"""
 import math
-from PIL import Image
+import cv2
+import random
+import numpy as np
+from skimage import transform as sktsf
+import torch
 
 
-def NN_interpolation(input, out_scale):
-    scrH, scrW = input.shape
-    dstH, dstW = out_scale
+def random_flip(img, bbox, y_random=False, x_random=False,
+                return_param=False):
+    """Randomly flip an image and bbox in vertical or horizontal direction.
 
-    output = np.zeros((dstH, dstW))
-    for i in range(dstH):
-        for j in range(dstW):
-            scrx = round((i+1) * (scrH/dstH))
-            scry = round((j+1) * (scrW/dstW))
-            output[i, j] = input[scrx-1, scry-1]
-    return output
+    Args:
+        img (~numpy.ndarray): An array that gets flipped. This is in
+            HWC format.
+        bbox (~numpy.ndarray): An array whose shape is :math:`(R, 4)`.
+            R is the number of bbox, (y_{min}, x_{min}, y_{max}, x_{max})
+        y_random (bool): Randomly flip in vertical direction.
+        x_random (bool): Randomly flip in horizontal direction.
+        return_param (bool): Returns information of flip.
+
+    Returns:
+        ~numpy.ndarray or (~numpy.ndarray, dict):
+        img, bbox, *param{y_flip (bool), x_flip(bool)}
+    """
+
+    H, W = img.shape[:2]
+    y_flip, x_flip = False, False
+    if y_random:
+        y_flip = random.choice([True, False])
+    if x_random:
+        x_flip = random.choice([True, False])
+
+    if y_flip:
+        img = img[::-1, :, :]
+        y_max = H - bbox[:, 0]
+        y_min = H - bbox[:, 2]
+        bbox[:, 0] = y_min
+        bbox[:, 2] = y_max
+    if x_flip:
+        img = img[:, ::-1, :]
+        x_max = W - bbox[:, 1]
+        x_min = W - bbox[:, 3]
+        bbox[:, 1] = x_min
+        bbox[:, 3] = x_max
+
+    if return_param:
+        return img, bbox, {'y_flip': y_flip, 'x_flip': x_flip}
+    else:
+        return img, bbox
 
 
-def BiLinear_interpolation(input, out_scale):
-    scrH, scrW = input.shape
-    dstH, dstW = out_scale
-    ratio_x = (scrH / dstH)
-    ratio_y = (scrW / dstW)
-    input = np.pad(input, ((0, 1), (0, 1)), 'constant')
-    output = np.zeros(out_scale)
-    for i in range(dstH):
-        for j in range(dstW):
-            scrx = (i+1) * ratio_x - 1
-            scry = (j+1) * ratio_y - 1
-            x = math.floor(scrx)
-            y = math.floor(scry)
-            u = scrx-x
-            v = scry-y
-            output[i, j] = (1-u) * (1-v) * input[x, y] +\
-                           u * (1-v) * input[x+1, y] +\
-                           (1-u) * v * input[x, y+1] +\
-                           u * v * input[x+1, y+1]
-    return output
-
-img = np.random.rand(10, 10) * 7
-sum1 = img.sum()
-
-img2 = sktsf.resize(img, (20, 20))
-sum2 = img2.sum()
-
-
-
-img4 = BiLinear_interpolation(img, (20, 20))
-sum4 = img4.sum()
-
-pass
+if __name__ == "__main__":
+    pass

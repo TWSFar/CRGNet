@@ -14,15 +14,14 @@ def show_image(img, labels):
     pass
 
 
-def pytorch_normalze(img):
+def normalize(img, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]):
     """
-    https://github.com/pytorch/vision/issues/223
-    return appr -1~1 RGB
+    norm = (x - mean) / std
     """
-    normalize = tvtsf.Normalize(mean=[0.485, 0.456, 0.406],
-                                std=[0.229, 0.224, 0.225])
-    img = normalize(torch.from_numpy(img))
-    return img.numpy()
+    mean = np.array(mean)
+    std = np.array(std)
+    img = (img - mean[:, np.newaxis, np.newaxis]) / std[:, np.newaxis, np.newaxis]
+    return img.astype(np.float32)
 
 
 def resize_bbox(bbox, in_size, out_size):
@@ -177,7 +176,7 @@ def preprocess(img, min_size=600, max_size=1000):
                        mode='reflect', anti_aliasing=False)
     # both the longer and shorter should be less than
     # max_size and min_size
-    return pytorch_normalze(img)
+    return normalize(img)
 
 
 class Transform_Train(object):

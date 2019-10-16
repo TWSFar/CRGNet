@@ -1,15 +1,13 @@
 import time
 import torch
-import os.path as osp
 from pprint import pprint
+from mypath import Path
 
 
 class Config:
     # data
-    dataset = "SHTB"
-    root_dir = "/home/twsf/data/Shanghai/part_B_final"
-    train_dir = osp.join(root_dir, "train_data")
-    test_dir = osp.join(root_dir, "test_data")
+    dataset = 'visdrone'
+    data_dir = Path.db_root_dir(dataset)
     pre = '/home/twsf/work/CSRNet/run/SHTB/model_best.pth.tar'
 
     # train

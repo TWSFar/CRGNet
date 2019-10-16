@@ -1,29 +1,19 @@
 import os
 import cv2
-import argparse
+import fire
 import numpy as np
 import os.path as osp
 from tqdm import tqdm
-import sys
-sys.path.insert(0, osp.join(osp.dirname(osp.abspath(__file__)), '../'))
-from mypath import Path
 from dataloaders.datasets import Datasets
+from config import opt
 
 
-hyp = {'visdrone': 0.1,  # Multiple of the density map numerical magnification
-       'hkb': 1,
-       'interpolation_scale': (30, 40),
-       'stand_scale': (90, 120)}
-
-
-def show_image(img, labels=None):
+def show_image(img, labels, mask):
     import matplotlib.pyplot as plt
-    if type(labels) is not np.ndarray:
-        labels = np.array(labels)
-    # plt.figure(figsize=(10, 10))
-    plt.subplot(1, 1, 1).imshow(img[:, :, ::-1])
-    if labels is not None:
-        plt.plot(labels[:, [1, 3, 3, 1, 1]].T, labels[:, [0, 0, 2, 2, 0]].T, '-')
+    plt.figure(figsize=(10, 10))
+    plt.subplot(2, 1, 1).imshow(img[..., ::-1])
+    plt.plot(labels[:, [1, 3, 3,  1, 1]].T, labels[:, [0, 0, 2, 2, 0]].T, '-')
+    plt.subplot(2, 1, 2).imshow(mask)
     # plt.savefig('test_0.jpg')
     plt.show()
 
@@ -62,8 +52,12 @@ def Region(bboxes, img_scale, mask_scale=(30, 40)):
         return None
 
 
-def getRegionMap(opt, mode='train'):
-    dataset = Datasets(opt=opt, mode=mode)
+def getRegionMap(**kwargs):
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument('--show', action='store_true')
+    # args = parser.parse_args()
+    opt._parse(kwargs)
+    dataset = Datasets(opt)
 
     mask_path = osp.join(dataset.data_dir, 'RegionMask')
     if not osp.exists(mask_path):
@@ -78,13 +72,8 @@ def getRegionMap(opt, mode='train'):
 
         if opt.show:
             img = cv2.imread(sample['image'])
-            show_image(img, sample['bboxes'])
-            show_image(region_mask)
+            show_image(img, sample['bboxes'], region_mask)
 
 
 if __name__ == '__main__':
-    import sys
-    import os.path as osp
-    sys.path.insert(0, osp.join(osp.dirname(osp.abspath(__file__)), '../'))
-    from utils.config import opt
-    getRegionMap(opt)
+    fire.Fire(getRegionMap)

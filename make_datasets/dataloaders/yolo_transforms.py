@@ -5,7 +5,7 @@ import math
 import cv2
 import random
 import numpy as np
-from skimage import transform as sktsf
+import torch
 
 
 def iou_calc1(boxes1, boxes2):
@@ -75,8 +75,9 @@ def letterbox(img, labels, input_size=(512, 512), mode='train', color=(127.5, 12
     return img, labels
 
 
-def random_affine(img, targets=(), degrees=(-10, 10), translate=(.1, .1), scale=(.9, 1.1), shear=(-2, 2),
-                  borderValue=(127.5, 127.5, 127.5)):
+def random_affine(img, targets=(), degrees=(-5, 5),
+                  translate=(0.10, 0.10), scale=(0.90, 1.10),
+                  shear=(-2, 2), borderValue=(127.5, 127.5, 127.5)):
     # torchvision.transforms.RandomAffine(degrees=(-10, 10), translate=(.1, .1), scale=(.9, 1.1), shear=(-10, 10))
     # https://medium.com/uruvideo/dataset-augmentation-with-random-homographies-a8f4b44830d4
 
@@ -145,18 +146,36 @@ def random_affine(img, targets=(), degrees=(-10, 10), translate=(.1, .1), scale=
     return imw, targets
 
 
-def random_flip(img, labels, px=0.5):
-    """
-    random horizontal flip
-    """
-    height = img.shape[0]
-    if random.random() < px:
-        img = np.fliplr(img).copy()
-        if(len(labels) > 0):
-            labels[:, 0] = height - labels[:, 0]
-            labels[:, 2] = height - labels[:, 2]
-            labels[:, [0, 2]] = labels[:, [2, 0]]
-    return img, labels
+def random_flip(img, bbox, y_random=False, x_random=False,
+                return_param=False, copy=False):
+    H, W = img.shape[:2]
+    y_flip, x_flip = False, False
+    if y_random:
+        y_flip = random.choice([True, False])
+    if x_random:
+        x_flip = random.choice([True, False])
+
+    if y_flip:
+        img = img[::-1, :, :]
+        y_max = H - bbox[:, 1]
+        y_min = H - bbox[:, 3]
+        bbox[:, 1] = y_min
+        bbox[:, 3] = y_max
+    if x_flip:
+        img = img[:, ::-1, :]
+        x_max = W - bbox[:, 0]
+        x_min = W - bbox[:, 2]
+        bbox[:, 0] = x_min
+        bbox[:, 2] = x_max
+
+    if copy:
+        img = img.copy()
+        bbox = bbox.copy()
+
+    if return_param:
+        return img, bbox, {'y_flip': y_flip, 'x_flip': x_flip}
+    else:
+        return img, bbox
 
 
 def random_color_distort(src, brightness_delta=32, contrast_low=0.5, contrast_high=1.5,
@@ -416,60 +435,103 @@ def normalize(img, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]):
     return img.astype(np.float32)
 
 
-def rect_input_resize(img, bbox, input_size=None):
-    """Preprocess an image for feature extraction.
-
-    The length of the shorter edge is scaled to :obj:`self.min_size`.
-    After the scaling, if the length of the longer edge is longer than
-    :param min_size:
-    :obj:`self.max_size`, the image is scaled to fit the longer edge
-    to :obj:`self.max_size`.
-
-    After resizing the image
+class Transform_Train(object):
     """
-    H, W = img.shape[:2]
-    img = cv2.resize(img, (input_size[1], input_size[0]), interpolation=cv2.INTER_CUBIC)
+    datasets agument
+    Args:
+        img (~numpy.ndarray): shape is (H, W, 3)
+        bboxes (~numpy.ndarray): shape is (R * 4), R is number of box
+        labels (~numpy.naarray): shape is (R), R is number of box
 
-    ratio_y = input_size[0] / H
-    ratio_x = input_size[1] / W
-    bbox[:, [0, 2]] = bbox[:, [0, 2]] * ratio_x
-    bbox[:, [1, 3]] = bbox[:, [1, 3]] * ratio_y
+    Method of transform include:
+        train:
+            augment_hsv: change s and v
+            random_crop_with_constraints: I don't konw what's mean about this,
+            random_affine: rotate img and bbox for a random angle
+            random_flip: flip image. There's half the chance
+                to horizontal flip if x_random is True
+            letterbox: Pad the picture to a square.
+                it don't change length-width ratio.
+    return, type is (tensor):
+        image: (3, H, W), bboxes (R, 4), labels(R)
+    """
+    def __init__(self, w, h):
+        self.input_size = (w, h)
 
-    return img, bbox
+    def __call__(self, img, bboxes, labels):
+        # [y, x, y, x] => [x, y, x, y]
+        bboxes = bboxes[:, [1, 0, 3, 2]]
+        h, w = img.shape[:2]
+        size = (w, h)
+
+        # hsv
+        img = augment_hsv(img, fraction=0.5)
+
+        # random cropm, size (tuple): (w, h)
+        bboxes, crop = random_crop_with_constraints(bboxes, size)
+        img = img[crop[1]:crop[1]+crop[3], crop[0]:crop[0]+crop[2], :].copy()
+
+        # pad and resize
+        img, bboxes = letterbox(img, bboxes, self.input_size, mode='train')
+
+        # Augment image and bboxes
+        img, bboxes = random_affine(img, bboxes)
+
+        # random left-right flip
+        img, bboxes = random_flip(img, bboxes, x_random=True)
+
+        # color distort
+        # img = random_color_distort(img)
+
+        # Normalize
+        img = img[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB
+        img = np.ascontiguousarray(img, dtype=np.float32)
+        img = normalize(img)
+
+        # [x, y, x, y] => [y, x, y, x]
+        bboxes = bboxes[:, [1, 0, 3, 2]]
+
+        # type from numpy to tensor
+        img = torch.from_numpy(img).float()
+        bboxes = torch.from_numpy(bboxes).float()
+        labels = torch.from_numpy(labels).float()
+        return img, bboxes, labels
 
 
-def train_transforms(img, target, input_size):
-    target = target[:, [1, 0, 3, 2, 4]]
-    h, w = img.shape[:2]
-    size = (w, h)
-    # hsv
-    img = augment_hsv(img, fraction=0.5)
-    # random crop
-    target, crop = random_crop_with_constraints(target, size)  # size:(w, h)
-    img = img[crop[1]:crop[1]+crop[3], crop[0]:crop[0]+crop[2], :].copy()
-    # pad and resize
-    if input_size[0] == input_size[1]:
-        img, target = letterbox(img, target, input_size, mode='train')
-    else:
-        img, target[:, :4] = rect_input_resize(img, target[:, :4], input_size)
-    # Augment image and target
-    img, target = random_affine(img, target, degrees=(-5, 5), translate=(0.10, 0.10), scale=(0.90, 1.10))
-    # random left-right flip
-    img, target = random_flip(img, target, 0.5)
-    # color distort
-    # img = random_color_distort(img)
-    target = target[:, [1, 0, 3, 2, 4]]
-    return img, target
+class Transform_Test(object):
+    """
+    datasets agument
+    Args:
+        img (~numpy.ndarray): shape is (H, W, 3)
+        bboxes (~numpy.ndarray): shape is (R * 4), R is number of box
+        labels (~numpy.naarray): shape is (R), R is number of box
 
+    Method of transform include:
+        test:
+            letterbox: Pad the picture to a square.
+                it don't change length-width ratio.
+    return, type is (tensor):
+        image: (3, H, W), bboxes (R, 4), labels(R)
+    """
+    def __init__(self, w, h):
+        self.input_size = (w, h)
 
-def test_transforms(img, target, input_size):
-    target = target[:, [1, 0, 3, 2, 4]]
-    # pad and resize
-    if input_size[0] == input_size[1]:
-        # in this program, the box is [y1, x1, y2, x2], however this
-        # transform need [x1, y1, x2, y2]
-        img, target = letterbox(img, target, input_size, mode='test')
-    else:
-        img, target[:, :4] = rect_input_resize(img, target[:, :4], input_size)
-    target = target[:, [1, 0, 3, 2, 4]]
-    return img, target
+    def __call__(self, img, bboxes, labels):
+        # [y, x, y, x] => [x, y, x, y]
+        bboxes = bboxes[:, [1, 0, 3, 2]]
+
+        # pad and resize
+        img, bboxes = letterbox(img, bboxes, self.input_size, mode='test')
+
+        # Normalize
+        img = img[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB
+        img = np.ascontiguousarray(img, dtype=np.float32)
+        img = normalize(img)
+
+        # [x, y, x, y] => [y, x, y, x]
+        bboxes = bboxes[:, [1, 0, 3, 2]]
+
+        img = torch.from_numpy(img).float()
+        bboxes = torch.from_numpy(bboxes).float()
+        labels = torch.from_numpy(labels).float()
+        return img, bboxes, labels

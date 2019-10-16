@@ -9,8 +9,9 @@ from PIL import Image
 import os.path as osp
 import xml.etree.ElementTree as ET
 import sys
-sys.path.insert(0, osp.join(osp.dirname(osp.abspath(__file__)), '../../'))
+sys.path.insert(0, osp.join(osp.dirname(osp.abspath(__file__)), '../'))
 from dataloaders.rcnn_transforms import Transform_Train, Transform_Test
+# from dataloaders.yolo_transforms import Transform_Train, Transform_Test
 
 
 def getGTBox(anno_path, **kwargs):
@@ -121,10 +122,10 @@ class HKB(Dataset):
     classes = ('__background__',  # always index 0
                'Vehicle')
 
-    def __init__(self, opt, mode='train'):
+    def __init__(self, opt):
         super().__init__()
-        self.mode = mode
         self.opt = opt
+        self.mode = opt.mode
         self.tsf_train = Transform_Train(opt.min_size, opt.max_size)
         self.tsf_test = Transform_Test(opt.min_size, opt.max_size)
 
@@ -142,7 +143,6 @@ class HKB(Dataset):
         self.class_to_id = dict(zip(self.classes, range(self.num_classes)))
         self.im_ids = self._load_image_set_index()
         self.num_images = len(self.im_ids)
-        self.input_size = opt.input_size
 
         # bounding boxes and image information
         self.samples = _load_samples(self)
@@ -174,10 +174,10 @@ class VOC(Dataset):
                'motorbike', 'person', 'pottedplant', 'sheep', 'sofa', 'train',
                'tvmonitor')
 
-    def __init__(self, opt, mode='train'):
+    def __init__(self, opt):
         super().__init__()
-        self.mode = mode
         self.opt = opt
+        self.mode = opt.mode
         self.tsf_train = Transform_Train(opt.min_size, opt.max_size)
         self.tsf_test = Transform_Test(opt.min_size, opt.max_size)
 
@@ -195,7 +195,6 @@ class VOC(Dataset):
         self.class_to_id = dict(zip(self.classes, range(self.num_classes)))
         self.im_ids = self._load_image_set_index()
         self.num_images = len(self.im_ids)
-        self.input_size = opt.input_size
 
         # bounding boxes and image information
         self.samples = _load_samples(self)
@@ -226,15 +225,20 @@ class VisDrone(Dataset):
                'bicycle', 'car', 'van', 'truck', 'tricycle',
                'awning-tricycle', 'bus', 'motor', 'others')
 
-    def __init__(self, opt, mode='train'):
+    def __init__(self, opt):
         super().__init__()
-        self.mode = mode
         self.opt = opt
+        self.mode = opt.mode
         self.tsf_train = Transform_Train(opt.min_size, opt.max_size)
         self.tsf_test = Transform_Test(opt.min_size, opt.max_size)
 
         # Path and File
-        self.data_dir = opt.data_dir
+        if self.mode in ['train', 'trainval']:
+            root_dir = 'VisDrone2019-DET-train'
+        elif self.mode in ['val', 'test']:
+            root_dir = 'VisDrone2019-DET-val'
+
+        self.data_dir = osp.join(opt.data_dir, root_dir)
         self.img_dir = osp.join(self.data_dir, 'images')
         self.ann_dir = osp.join(self.data_dir, 'annotations')
         self.cache_path = cre_cache_path(self.data_dir)
@@ -247,7 +251,6 @@ class VisDrone(Dataset):
         self.class_to_id = dict(zip(self.classes, range(self.num_classes)))
         self.im_ids = self._load_image_set_index()
         self.num_images = len(self.im_ids)
-        self.input_size = opt.input_size
 
         # bounding boxes and image information
         self.samples = _load_samples(self)
@@ -286,7 +289,7 @@ class COCO(Dataset):
                'refrigerator', 'book', 'clock', 'vase', 'scissors',
                'teddy bear', 'hair drier', 'toothbrush')
 
-    def __init__(self, opt, mode='train'):
+    def __init__(self, opt):
         pass
 
     def __getitem__(self, index):
@@ -328,25 +331,25 @@ class DOTA(Dataset):
         return self.num_images
 
 
-def Datasets(opt, mode='train', data_dir=None):
+def Datasets(opt, data_dir=None):
     if data_dir is not None:
         opt.data_dir = data_dir
     print('{} dataset from path of {}'.format(opt.dataset, opt.data_dir))
 
     if 'hkb' in opt.dataset:
-        return HKB(opt, mode)
+        return HKB(opt)
 
     elif 'visdrone' in opt.dataset:
-        return VisDrone(opt, mode)
+        return VisDrone(opt)
 
     elif 'voc' in opt.dataset:
-        return VOC(opt, mode)
+        return VOC(opt)
 
     elif 'coco' in opt.dataset:
-        return COCO(opt, mode)
+        return COCO(opt)
 
     elif 'dota' in opt.dataset:
-        return DOTA(opt, mode)
+        return DOTA(opt)
 
     else:
         print('Dataset {} not available.'.format(opt.dataset))
@@ -365,13 +368,14 @@ def show_image(img, labels):
 if __name__ == '__main__':
     from easydict import EasyDict as edict
     opt = edict()
-    opt.dataset = 'voc'
-    opt.input_size = (1000, 890)
+    opt.mode = 'train'
+    opt.dataset = 'hkb'
     opt.min_size = 600
-    opt.max_size = 1000
-    opt.data_dir = "/home/twsf/work/CRGNet/data/VOC2012"
-    dataset = Datasets(opt, mode='train')
-    img, target, _, _ = dataset.__getitem__(0)
+    opt.max_size = 600
+    opt.data_dir = "/home/twsf/work/CRGNet/data/HKB"
+    dataset = Datasets(opt)
+    img, target, _, _ = dataset.__getitem__(1)
+    show_image(img.permute(1, 2, 0).numpy(), target.numpy())
     dl = torch.utils.data.DataLoader(dataset)
     for (img, b, l, _) in dl:
         pass

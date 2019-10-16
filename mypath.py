@@ -5,7 +5,8 @@ class Path(object):
             return '/home/twsf/work/CRGNet/data/HKB'
 
         elif 'visdrone' in dataset:
-            return '/home/twsf/data/visdrone/VisDrone2018-DET-val'
+            # return '/home/twsf/data/visdrone'
+            return '/home/twsf/work/CRGNet/data/VisDrone'
 
         elif 'coco' in dataset:
             return '/home/twsf/work/CRGNet/data/COCO'

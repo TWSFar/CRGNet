@@ -7,7 +7,7 @@ class CSRNet(nn.Module):
     def __init__(self, load_weights=False):
         super(CSRNet, self).__init__()
         self.frontend_feat = [64, 64, 'M', 128, 128, 'M',
-                              256, 256, 256, 'M', 512, 512, 512]
+                              256, 256, 256, 'M', 512, 512, 512, 'M']
         self.backend_feat = [512, 512, 512, 256, 128, 64]
         self.frontend = self.make_layers(self.frontend_feat, batch_norm=True)
         self.backend = self.make_layers(self.backend_feat,

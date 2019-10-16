@@ -1,29 +1,19 @@
 import os
 import cv2
-import argparse
+import fire
 import numpy as np
 import os.path as osp
 from tqdm import tqdm
-import sys
-sys.path.insert(0, osp.join(osp.dirname(osp.abspath(__file__)), '../'))
-from mypath import Path
+from config import opt
 from dataloaders.datasets import Datasets
 
 
-hyp = {'visdrone': 0.1,  # Multiple of the density map numerical magnification
-       'hkb': 1,
-       'interpolation_scale': (30, 40),
-       'stand_scale': (90, 120)}
-
-
-def show_image(img, labels=None):
+def show_image(img, labels, mask):
     import matplotlib.pyplot as plt
-    # plt.figure(figsize=(10, 10))
-    plt.subplot(1, 1, 1).imshow(img[:, :, ::-1])
-    if labels is not None:
-        if type(labels) is not np.ndarray:
-            labels = np.array(labels)
-        plt.plot(labels[:, [1, 3, 3, 1, 1]].T, labels[:, [0, 0, 2, 2, 0]].T, '-')
+    plt.figure(figsize=(10, 10))
+    plt.subplot(2, 1, 1).imshow(img)
+    plt.plot(labels[:, [1, 3, 3,  1, 1]].T, labels[:, [0, 0, 2, 2, 0]].T, '-')
+    plt.subplot(2, 1, 2).imshow(mask)
     # plt.savefig('test_0.jpg')
     plt.show()
 
@@ -62,8 +52,9 @@ def Density(bboxes, img_scale, mask_scale=(30, 40)):
         return None
 
 
-def getDensityMap(opt, mode='train'):
-    dataset = Datasets(opt, mode=mode)
+def getDensityMap(**kwargs):
+    opt._parse(kwargs)
+    dataset = Datasets(opt)
 
     mask_path = osp.join(dataset.data_dir, 'DensityMask')
     if not osp.exists(mask_path):
@@ -78,16 +69,12 @@ def getDensityMap(opt, mode='train'):
 
         if opt.show:
             img = cv2.imread(sample['image'])
-            show_image(img, sample['bboxes'])
-            _max = density_mask.max()
-            density_mask = (density_mask / _max * 255)
-            show_density = density_mask[:, :, None].repeat(3, 2)
-            show_image(show_density.astype(np.uint8), labels=None)
+            show_image(img, sample['bboxes'], density_mask)
+            # _max = density_mask.max()
+            # density_mask = (density_mask / _max * 255)
+            # show_density = density_mask[:, :, None].repeat(3, 2)
+            # show_image(show_density.astype(np.uint8), labels=None)
 
 
 if __name__ == '__main__':
-    import sys
-    import os.path as osp
-    sys.path.insert(0, osp.join(osp.dirname(osp.abspath(__file__)), '../'))
-    from utils.config import opt
-    getDensityMap(opt)
+    fire.Fire(getDensityMap)

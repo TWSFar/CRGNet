@@ -9,45 +9,10 @@ import torch
 from torch.utils.data import Dataset
 import sys
 sys.path.insert(0, osp.join(osp.dirname(osp.abspath(__file__)), '../../'))
-from dataloaders.density_region.transforms import transfrom
+from dataloaders.region_density.csr_transforms import transfrom
 
 
-def BiBubic(x):
-    x = abs(x)
-    if x <= 1:
-        return 1 - 2 * (x**2) + (x**3)
-    elif x < 2:
-        return 4 - 8 * x + 5 * (x**2) - (x**3)
-    else:
-        return 0
-
-
-def BiCubic_interpolation(input, out_scale=(30, 40)):
-    scrH, scrW = input.shape
-    dstH, dstW = out_scale
-    output = np.zeros(out_scale)
-    ratio_x = (scrH / dstH)
-    ratio_y = (scrW / dstW)
-    for i in range(dstH):
-        for j in range(dstW):
-            scrx = i * ratio_x
-            scry = j * ratio_y
-            x = math.floor(scrx)
-            y = math.floor(scry)
-            u = scrx - x
-            v = scry - y
-            tmp = 0
-            for ii in range(-1, 2):
-                for jj in range(-1, 2):
-                    if x+ii < 0 or y+jj < 0 or x+ii >= scrH or y+jj >= scrW:
-                        continue
-                    tmp += input[x+ii, y+jj] * BiBubic(ii-u) * BiBubic(jj-v)
-            output[i, j] = tmp
-
-    return output
-
-
-class Datasets(Dataset):
+class VisDroneSegmentation(Dataset):
     def __init__(self, data_dir, train=True):
         super().__init__()
         self.data_dir = data_dir
