@@ -9,3 +9,4 @@ weights/
 debug/
 work_dirs/
 .debug.py
+.introduction.txt

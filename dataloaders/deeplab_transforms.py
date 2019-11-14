@@ -1,52 +1,19 @@
 import random
 import numpy as np
 from PIL import Image, ImageOps, ImageFilter
-
+from torchvision.transforms import ColorJitter
 import torch
 
 
-class FixScaleCrop(object):
-    def __init__(self, crop_size):
-        self.crop_size = crop_size
-
-    def __call__(self, sample):
-        img = sample['image']
-        mask = sample['label']
-        w, h = img.size
-        if w > h:
-            oh = self.crop_size
-            ow = int(1.0 * w * oh / h)
-        else:
-            ow = self.crop_size
-            oh = int(1.0 * h * ow / w)
-        img = img.resize((ow, oh), Image.BILINEAR)
-        mask = mask.resize((ow, oh), Image.NEAREST)
-        # center crop, x1 and y1 are left-top corner
-        w, h = img.size
-        x1 = int(round((w - self.crop_size) / 2.)) 
-        y1 = int(round((h - self.crop_size) / 2.))
-        img = img.crop((x1, y1, x1 + self.crop_size, y1 + self.crop_size))
-        mask = mask.crop((x1, y1, x1 + self.crop_size, y1 + self.crop_size))
-
-        return {'image': img,
-                'label': mask}
-
-
-class FixedResize(object):
+class ImgFixedResize(object):
     def __init__(self, size):
         self.size = (size, size)  # size: (h, w)
 
     def __call__(self, sample):
-        img = sample['image']
-        mask = sample['label']
 
-        assert img.size == mask.size
+        sample['image'] = sample['image'].resize(self.size, Image.BILINEAR)
 
-        img = img.resize(self.size, Image.BILINEAR)
-        mask = mask.resize(self.size, Image.NEAREST)
-
-        return {'image': img,
-                'label': mask}
+        return sample
 
 
 class Normalize(object):
@@ -55,45 +22,60 @@ class Normalize(object):
         mean (tuple): means for each channel.
         std (tuple): standard deviations for each channel.
     """
-    def __init__(self, mean=(0., 0., 0.), std=(1., 1., 1.)):
+    def __init__(self, mean=(127.5., 127.5, 127.5), std=(1., 1., 1.)):
         self.mean = mean
         self.std = std
 
     def __call__(self, sample):
         img = sample['image']
-        mask = sample['label']
+        gt = sample['target']
         img = np.array(img).astype(np.float32)
-        mask = np.array(mask).astype(np.float32)
-        img /= 255.0
+        gt = np.array(gt).astype(np.float32)
         img -= self.mean
         img /= self.std
+        img /= 255.0
 
         return {'image': img,
-                'label': mask}
+                'target': gt}
+
+
+class RandomColorJeter(object):
+    def __init__(self, brightness=0, contrast=0, saturation=0, hue=0):
+        self.tr = ColorJitter(brightness, contrast, saturation, hue)
+
+    def __call__(self, sample):
+        sample['image'] = self.tr(sample['image'])
+
+        return sample
 
 
 class RandomGaussianBlur(object):
     def __call__(self, sample):
         img = sample['image']
-        mask = sample['label']
+        den = sample['density']
+        rgn = sample['region']
         if random.random() < 0.5:
             img = img.filter(ImageFilter.GaussianBlur(
                 radius=random.random()))
 
         return {'image': img,
-                'label': mask}
+                'density': den,
+                'region': rgn}
 
 
 class RandomHorizontalFlip(object):
     def __call__(self, sample):
         img = sample['image']
-        mask = sample['label']
+        den = sample['density']
+        rgn = sample['region']
         if random.random() < 0.5:
-            img = img.transpose(Image.FLIP_LEFT_RIGHT)
-            mask = mask.transpose(Image.FLIP_LEFT_RIGHT)
+            img = img[:, ::-1, :]
+            den = den[:, ::-1]
+            rgn = rgn[:, ::-1]
 
         return {'image': img,
-                'label': mask}
+                'density': den,
+                'region': rgn}
 
 
 class RandomRotate(object):
@@ -102,50 +84,16 @@ class RandomRotate(object):
 
     def __call__(self, sample):
         img = sample['image']
-        mask = sample['label']
+        den = sample['density']
+        rgn = sample['region']
         rotate_degree = random.uniform(-1*self.degree, self.degree)
         img = img.rotate(rotate_degree, Image.BILINEAR)
-        mask = mask.rotate(rotate_degree, Image.NEAREST)
+        den = den.rotate(rotate_degree, Image.NEAREST)
+        rgn = rgn.rotate(rotate_degree, Image.NEAREST)
 
         return {'image': img,
-                'label': mask}
-
-
-class RandomScaleCrop(object):
-    def __init__(self, base_size, crop_size, fill=0):
-        self.base_size = base_size
-        self.crop_size = crop_size
-        self.fill = fill
-
-    def __call__(self, sample):
-        img = sample['image']
-        mask = sample['label']
-        # random scale (short edge)
-        short_size = random.randint(int(self.base_size * 0.5), int(self.base_size * 2.0))
-        w, h = img.size
-        if h > w:
-            ow = short_size
-            oh = int(1.0 * h * ow / w)
-        else:
-            oh = short_size
-            ow = int(1.0 * w * oh / h)
-        img = img.resize((ow, oh), Image.BILINEAR)
-        mask = mask.resize((ow, oh), Image.NEAREST)
-        # pad crop
-        if short_size < self.crop_size:
-            padh = self.crop_size - oh if oh < self.crop_size else 0
-            padw = self.crop_size - ow if ow < self.crop_size else 0
-            img = ImageOps.expand(img, border=(0, 0, padw, padh), fill=0)
-            mask = ImageOps.expand(mask, border=(0, 0, padw, padh), fill=self.fill)
-        # random crop crop_size
-        w, h = img.size
-        x1 = random.randint(0, w - self.crop_size)
-        y1 = random.randint(0, h - self.crop_size)
-        img = img.crop((x1, y1, x1 + self.crop_size, y1 + self.crop_size))
-        mask = mask.crop((x1, y1, x1 + self.crop_size, y1 + self.crop_size))
-
-        return {'image': img,
-                'label': mask}
+                'density': den,
+                'region': rgn}
 
 
 class ToTensor(object):
@@ -156,15 +104,19 @@ class ToTensor(object):
         # numpy image: H x W x C
         # torch image: C X H X W
         img = sample['image']
-        mask = sample['label']
+        den = sample['density']
+        rgn = sample['region']
         img = np.array(img).astype(np.float32).transpose((2, 0, 1))
-        mask = np.array(mask).astype(np.float32)
+        den = np.array(den).astype(np.float32)
+        rgn = np.array(rgn).astype(np.float32)
 
         img = torch.from_numpy(img).float()
-        mask = torch.from_numpy(mask).float()
+        den = torch.from_numpy(den).float()
+        rgn = torch.from_numpy(rgn).float()
 
         return {'image': img,
-                'label': mask}
+                'density': den,
+                'region': rgn}
 
 
 if __name__ == "__main__":

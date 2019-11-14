@@ -1,7 +1,25 @@
 import time
 import torch
+import numpy as np
 from pprint import pprint
 from mypath import Path
+
+
+def select_device(force_cpu=False):
+    cuda = False if force_cpu else torch.cuda.is_available()
+    device = torch.device('cuda:0' if cuda else 'cpu')
+    ng = 0
+    if not cuda:
+        print('Using CPU\n')
+    if cuda:
+        c = 1024 ** 2
+        ng = torch.cuda.device_count()
+        x = [torch.cuda.get_device_properties(i) for i in range(ng)]
+        for i in range(ng):
+            print('Using CUDA device{} _CudaDeviceProperties(name={}, total_memory={}MB'.\
+                  format(i, x[i].name, round(x[i].total_memory/c)))
+        print('')
+    return device, np.arange(0, ng).tolist()
 
 
 class Config:
@@ -31,8 +49,6 @@ class Config:
     scales = 0.3
 
     use_mulgpu = False
-    gpu_id = [0, 1, 2]
-    device = torch.device('cuda:0')
     visualize = True
     resume = False
     print_freq = 10
@@ -45,6 +61,9 @@ class Config:
             if k not in state_dict:
                 raise ValueError('UnKnown Option: "--%s"' % k)
             setattr(self, k, v)
+
+        self.device, self.gpu_id = select_device()
+        self.sync_bn = len(self.gpu_id) > 1
 
         print('======user config========')
         pprint(self._state_dict())

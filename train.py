@@ -3,15 +3,16 @@ import fire
 import time
 import numpy as np
 from tqdm import tqdm
-from dataloaders.region_density.datasets import Datasets
+
+# from models_demo import model_demo
+from dataloaders import make_data_loader
 from utils.visualization import TensorboardSummary
-from models.model import CSRNet
+from models import csrnet, deeplab
 from utils.saver import Saver
 from utils.config import opt
 
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader
 import multiprocessing
 multiprocessing.set_start_method('spawn', True)
 
@@ -24,31 +25,21 @@ class Trainer(object):
         self.saver = Saver(opt)
         self.saver.save_experiment_config()
 
-        # visualize
-        if opt.visualize:
-            # vis_legend = ["Loss", "MAE"]
-            # batch_plot = create_vis_plot(vis, 'Batch', 'Loss', 'batch loss', vis_legend[0:1])
-            # val_plot = create_vis_plot(vis, 'Epoch', 'result', 'val result', vis_legend[1:2])
-            # Define Tensorboard Summary
-            self.summary = TensorboardSummary(self.saver.experiment_dir)
-            self.writer = self.summary.create_summary()
+        # Define Tensorboard Summary
+        self.summary = TensorboardSummary(self.saver.experiment_dir)
+        self.writer = self.summary.create_summary()
 
         # Dataset dataloader
-        self.train_dataset = Datasets(opt.train_dir, train=True)
-        self.train_loader = DataLoader(
-            self.train_dataset,
-            num_workers=opt.workers,
-            shuffle=True,
-            batch_size=opt.batch_size)   # must be 1
-        self.test_dataset = Datasets(opt.test_dir, train=False)
-        self.test_loader = torch.utils.data.DataLoader(
-            self.test_dataset,
-            shuffle=False,
-            batch_size=opt.batch_size)  # must be 1, because per image size is different
+        self.train_dataset, self.train_loader = make_data_loader(opt, train=True)
+        self.test_dataset, self.test_loader = make_data_loader(opt.test_dir, train=False)
 
         torch.cuda.manual_seed(opt.seed)
 
-        model = CSRNet()
+        # model = csrnet.CSRNet()
+        model = deeplab.DeepLab(backbone=opt.backbone,
+                                num_classes=self.train_dataset.nclass,
+                                sync_bn=opt.sync_bn)
+
         self.model = model.to(opt.device)
         if opt.resume:
             if os.path.isfile(opt.pre):
