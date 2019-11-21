@@ -18,8 +18,8 @@ class VisDrone(object):
         self._init_path()
 
     def _init_path(self):
-        if not osp.exists(self.cache_path):
-            os.makedirs(self.cache_path)
+        if not osp.exists(self.cache_dir):
+            os.makedirs(self.cache_dir)
 
     def _get_imglist(self, split='train'):
         """ return list of all image paths
@@ -53,7 +53,7 @@ class VisDrone(object):
             box_all.append(bbox[:4].tolist())
 
         return {'bboxes': np.array(box_all, dtype=np.float64),
-                'cls': bboxes[:, 5]}
+                'cls': bboxes[:, 5] - 1}  # cls id run from 0
 
     def _load_samples(self, split):
         cache_file = osp.join(self.cache_dir, split + '_samples.pkl')
