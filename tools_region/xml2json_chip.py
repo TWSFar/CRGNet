@@ -10,7 +10,7 @@ from collections import OrderedDict
 hyp = {
     'dataset': 'VisDrone2019_detect_voc',
     'img_type': '.jpg',
-    'mode': 'val',  # for save instance_train.json
+    'mode': 'train',  # for save instance_train.json
     'data_dir': '/home/twsf/data/Visdrone/detect_voc/',
 }
 hyp['json_dir'] = osp.join(hyp['data_dir'], 'annotations_json')
@@ -68,9 +68,7 @@ def getGTBox(anno_xml, **kwargs):
     box_all = []
     gt_cls = []
     xml = ET.parse(anno_xml).getroot()
-    # y1, x1, y2, x2
-    pts = ['ymin', 'xmin', 'ymax', 'xmax']
-    
+    pts = ['xmin', 'ymin', 'xmax', 'ymax']
     # bounding boxes
     for obj in xml.iter('object'):
         bbox = obj.find('bndbox')

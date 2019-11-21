@@ -84,8 +84,6 @@ class MakeDataset(object):
             chip_label = []
 
             for i, box in enumerate(gt_bboxes):
-                if labels[i] == 0 or labels[i] == 11:
-                    continue
                 if utils.overlap(chip, box, 0.75):
                     box = [max(box[0], chip[0]), max(box[1], chip[1]), 
                         min(box[2], chip[2]), min(box[3], chip[3])]
