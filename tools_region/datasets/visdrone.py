@@ -5,6 +5,8 @@ import pickle
 import numpy as np
 import os.path as osp
 from PIL import Image
+IMG_ROOT = "images"
+ANNO_ROOT = "annotations"
 
 
 class VisDrone(object):
@@ -25,11 +27,11 @@ class VisDrone(object):
         """ return list of all image paths
         """
         if split == 'train':
-            return glob.glob(self.src_traindir + '/images/*.jpg')
+            return glob.glob(self.src_traindir + '/{}/*.jpg'.format(IMG_ROOT))
         elif split == 'val':
-            return glob.glob(self.src_valdir + '/images/*.jpg')
+            return glob.glob(self.src_valdir + '/{}/*.jpg'.format(IMG_ROOT))
         elif split == 'test':
-            return glob.glob(self.src_testdir + '/images/*.jpg')
+            return glob.glob(self.src_testdir + '/{}/*.jpg'.format(IMG_ROOT))
         else:
             raise('error')
 
@@ -38,7 +40,7 @@ class VisDrone(object):
         return list of all image annotation path
         """
         img_list = self._get_imglist(split)
-        return [img.replace('images', 'annotations').replace('jpg', 'txt') for img in img_list]
+        return [img.replace(IMG_ROOT, ANNO_ROOT).replace('jpg', 'txt') for img in img_list]
 
     def _get_gtbox(self, anno_path):
         box_all = []
@@ -66,7 +68,7 @@ class VisDrone(object):
             return samples
 
         img_list = self._get_imglist(split)
-        anno_path = [img_path.replace('images', 'annotations').replace('jpg', 'txt')
+        anno_path = [img_path.replace(IMG_ROOT, ANNO_ROOT).replace('jpg', 'txt')
                      for img_path in img_list]
 
         # load information of image and save to cache
@@ -87,6 +89,6 @@ class VisDrone(object):
 
 
 if __name__ == "__main__":
-    dataset = VisDrone("E:\CV\data\\visdrone")
+    dataset = VisDrone("/home/twsf/data/Visdrone")
     out = dataset._load_samples('train')
     pass
