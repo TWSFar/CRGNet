@@ -6,9 +6,11 @@ def make_data_loader(opt, train=True):
     if opt.dataset in ['visdrone', 'VisDrone', 'Visdrone']:
         dataset = visdrone.VisDroneSegmentation(opt, train=train)
         dataloader = DataLoader(dataset,
-                                num_workers=opt.workers,
                                 batch_size=opt.batch_size,
-                                collate_fn=dataset.collater)
+                                num_workers=opt.workers,
+                                shuffle=True,
+                                pin_memory=True,
+                                drop_last=True)
 
         return dataset, dataloader
 

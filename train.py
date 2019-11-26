@@ -1,15 +1,19 @@
 import os
 import fire
 import time
+import collections
 import numpy as np
 from tqdm import tqdm
 
 # from models_demo import model_demo
+from config.visdrone_deeplabv3 import opt
 from dataloaders import make_data_loader
-from utils.visualization import TensorboardSummary
 from models import csrnet, deeplab
+from models.functions import loss, metrics
 from utils.saver import Saver
-from utils.config import opt
+from utils.timer import Timer
+from utils.visualization import TensorboardSummary
+from utils.lr_scheduler import LR_Scheduler
 
 import torch
 import torch.nn as nn
@@ -19,28 +23,46 @@ multiprocessing.set_start_method('spawn', True)
 
 class Trainer(object):
     def __init__(self):
-        self.best_pred = 1e6
+        torch.cuda.manual_seed(opt.seed)
+        self.best_pred = 0.0
+        self.start_epoch = opt.start_epoch
 
         # Define Saver
         self.saver = Saver(opt)
-        self.saver.save_experiment_config()
 
-        # Define Tensorboard Summary
-        self.summary = TensorboardSummary(self.saver.experiment_dir)
-        self.writer = self.summary.create_summary()
+        # visualize
+        if opt.visualize:
+            self.summary = TensorboardSummary(self.saver.experiment_dir)
+            self.writer = self.summary.create_summary()
 
         # Dataset dataloader
         self.train_dataset, self.train_loader = make_data_loader(opt, train=True)
-        self.test_dataset, self.test_loader = make_data_loader(opt.test_dir, train=False)
+        self.val_dataset, self.val_loader = make_data_loader(opt.test_dir, train=False)
+        self.nclass = self.train_dataset.nclass
 
-        torch.cuda.manual_seed(opt.seed)
-
-        # model = csrnet.CSRNet()
+        # model
         model = deeplab.DeepLab(backbone=opt.backbone,
                                 num_classes=self.train_dataset.nclass,
                                 sync_bn=opt.sync_bn)
-
         self.model = model.to(opt.device)
+
+        # Define Optimizer
+        train_params = [{'params': model.get_1x_lr_params(), 'lr': opt.lr},
+                        {'params': model.get_10x_lr_params(), 'lr': opt.lr * 10}]
+        self.optimizer = torch.optim.SGD(train_params, momentum=opt.momentum,
+                                         weight_decay=opt.decay)
+
+        # Loss
+        weight = torch.tensor([1, 2]).float()
+        self.criterion = loss.SegmentationLosses(weight=weight, cuda=len(opt.gpu_id)>0).build_loss(mode=opt.loss_type)
+
+        # Define Evaluator
+        self.evaluator = metrics.Evaluator(self.nclass)
+
+        # Define lr scheduler
+        self.scheduler = LR_Scheduler(opt.lr_scheduler, opt.lr,
+                                      opt.epochs, len(self.train_loader), 140)
+
         if opt.resume:
             if os.path.isfile(opt.pre):
                 print("=> loading checkpoint '{}'".format(opt.pre))
@@ -52,12 +74,12 @@ class Trainer(object):
                       .format(opt.pre, checkpoint['epoch']))
             else:
                 print("=> no checkpoint found at '{}'".format(opt.pre))
-        if opt.use_mulgpu:
+
+        if len(opt.gpu_id) > 1:
             self.model = torch.nn.DataParallel(self.model, device_ids=opt.gpu_id)
-        self.criterion = nn.MSELoss(reduction='mean').to(opt.device)
-        self.optimizer = torch.optim.SGD(self. model.parameters(), opt.lr,
-                                         momentum=opt.momentum,
-                                         weight_decay=opt.decay)
+
+        self.timer = Timer(opt.epochs, len(self.trian_loader), self.num_bt_val)
+        self.step_time = collections.deque(maxlen=opt.print_freq)
 
     def train(self, epoch):
         self.model.train()
@@ -131,18 +153,6 @@ class Trainer(object):
         return mae
 
 
-def adjust_learning_rate(optimizer, epoch):
-    """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
-    lr = opt.lr
-    for i in opt.steps:
-        if epoch / opt.epochs > i:
-            lr = lr * (opt.scales ** (i + 1))
-            break
-
-    for param_group in optimizer.param_groups:
-        param_group['lr'] = lr
-
-
 class AverageMeter(object):
     """Computes and stores the average and current value"""
     def __init__(self):
@@ -165,8 +175,6 @@ def train(**kwargs):
     opt._parse(kwargs)
     trainer = Trainer()
     for epoch in range(opt.start_epoch, opt.epochs):
-        adjust_learning_rate(trainer.optimizer, epoch)
-
         # train
         trainer.train(epoch)
 
