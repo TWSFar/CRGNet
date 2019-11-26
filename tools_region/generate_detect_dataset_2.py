@@ -95,12 +95,12 @@ class MakeDataset(object):
                             box[2] - chip[0], box[3] - chip[1]]
                     chip_gt.append(np.array(new_box))
                     chip_label.append(labels[i])
-                else utils.overlap(chip, box, 0.001):
+                elif utils.overlap(chip, box, 0.001):
                     box = [max(box[0], chip[0]), max(box[1], chip[1]), 
                         min(box[2], chip[2]), min(box[3], chip[3])]
                     new_box = [box[0] - chip[0], box[1] - chip[1],
                             box[2] - chip[0], box[3] - chip[1]]
-                    neglect_gt.append(np.array(new_box))
+                    neglect_gt.append(np.array(new_box, dtype=np.int))
 
             chip_gt_list.append(chip_gt)
             chip_label_list.append(chip_label)
@@ -213,7 +213,7 @@ class MakeDataset(object):
             for neg_box in neglect_list[i]:
                 neg_w = neg_box[2] - neg_box[0]
                 neg_h = neg_box[3] - neg_box[1]
-                random_box = np.random.rand(neg_h, neg_w, 3) * 255
+                random_box = np.random.randint(0, 256, (neg_h, neg_w, 3))
                 chip_img[neg_box[1]:neg_box[3], neg_box[0]:neg_box[2], :] = random_box
 
             bbox = np.array(chip_gt_list[i], dtype=np.int)
