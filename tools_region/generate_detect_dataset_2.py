@@ -24,6 +24,8 @@ def parse_args():
                         help="dataset's root path")
     parser.add_argument('--imgsets', type=list, default=['train', 'val'],
                         choices=['train', 'val'], help='for train or test')
+    parser.add_argument('--padding', type=list, default=['train', 'val'],
+                        choices=['train', 'val'], help='random padding neglect box')
     args = parser.parse_args()
     return args
 
@@ -192,12 +194,12 @@ class MakeDataset(object):
         chip_list, chip_gt_list, chip_label_list, neglect_list = self.generate_region_gt(
             region_box, gt_bboxes, gt_cls)
         chip_loc = self.write_chip_and_anno(
-            image, img_id, chip_list, chip_gt_list, chip_label_list, neglect_list)
+            image, img_id, chip_list, chip_gt_list, chip_label_list, neglect_list, imgset)
 
         return len(chip_list), chip_loc
 
     def write_chip_and_anno(self, image, img_id, 
-        chip_list, chip_gt_list, chip_label_list, neglect_list):
+        chip_list, chip_gt_list, chip_label_list, neglect_list, imgset):
         """write chips of one image to disk and make xml annotations
         """
         assert len(chip_gt_list) > 0
@@ -210,11 +212,12 @@ class MakeDataset(object):
 
             chip_img = image[chip[1]:chip[3], chip[0]:chip[2], :].copy()
             assert len(chip_img.shape) == 3
-            for neg_box in neglect_list[i]:
-                neg_w = neg_box[2] - neg_box[0]
-                neg_h = neg_box[3] - neg_box[1]
-                random_box = np.random.randint(0, 256, (neg_h, neg_w, 3))
-                chip_img[neg_box[1]:neg_box[3], neg_box[0]:neg_box[2], :] = random_box
+            if imgset in args.padding:
+                for neg_box in neglect_list[i]:
+                    neg_w = neg_box[2] - neg_box[0]
+                    neg_h = neg_box[3] - neg_box[1]
+                    random_box = np.random.randint(0, 256, (neg_h, neg_w, 3))
+                    chip_img[neg_box[1]:neg_box[3], neg_box[0]:neg_box[2], :] = random_box
 
             bbox = np.array(chip_gt_list[i], dtype=np.int)
             label = np.array(chip_label_list[i], dtype=np.int)
