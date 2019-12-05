@@ -147,4 +147,5 @@ def make_json():
     print('done!')
 
 if __name__ == '__main__':
+    print(hyp)
     make_json()
