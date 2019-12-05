@@ -96,7 +96,7 @@ def _generate_mask(sample, mask_scale=(30, 40)):
 
 if __name__ == "__main__":
     args = parse_args()
-
+    print(args)
     dataset = get_dataset(args.dataset, args.db_root)
     dest_datadir = dataset.region_voc_dir
     image_dir = dest_datadir + '/JPEGImages'
