@@ -22,10 +22,8 @@ def parse_args():
                         choices=['VisDrone'], help='dataset name')
     parser.add_argument('--db_root', type=str, default="/home/visitor1/data/Visdrone",
                         help="dataset's root path")
-    parser.add_argument('--imgsets', type=list, default=['train', 'val'],
-                        choices=['train', 'val'], help='for train or test')
-    parser.add_argument('--padding', type=list, default=['train', 'val'],
-                        choices=['train', 'val'], help='random padding neglect box')
+    parser.add_argument('--imgsets', type=list, default=['train', 'val'], help='for train or test')
+    parser.add_argument('--padding', type=list, default=['train', 'val'], help='random padding neglect box')
     args = parser.parse_args()
     return args
 
