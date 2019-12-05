@@ -1,6 +1,3 @@
-"""
-use rondom array replace objce witch was neglected
-"""
 import os
 import cv2
 import sys
@@ -22,8 +19,8 @@ def parse_args():
                         choices=['VisDrone'], help='dataset name')
     parser.add_argument('--db_root', type=str, default="/home/visitor1/data/Visdrone",
                         help="dataset's root path")
-    parser.add_argument('--imgsets', type=list, default=['train', 'val'], help='for train or test')
-    parser.add_argument('--padding', type=list, default=['train', 'val'], help='random padding neglect box')
+    parser.add_argument('--imgsets', type=str, default=['train', 'val'],
+                        nargs='+', help='for train or test')
     args = parser.parse_args()
     return args
 
@@ -76,7 +73,6 @@ class MakeDataset(object):
 
     def generate_region_gt(self, region_box, gt_bboxes, labels):
         chip_list = []
-        neglect_list = []
         for box in region_box:
             chip_list.append(np.array(box))
 
@@ -86,27 +82,21 @@ class MakeDataset(object):
         for chip in chip_list:
             chip_gt = []
             chip_label = []
-            neglect_gt = []
+
             for i, box in enumerate(gt_bboxes):
                 if utils.overlap(chip, box, 0.75):
                     box = [max(box[0], chip[0]), max(box[1], chip[1]), 
                         min(box[2], chip[2]), min(box[3], chip[3])]
                     new_box = [box[0] - chip[0], box[1] - chip[1],
                             box[2] - chip[0], box[3] - chip[1]]
+
                     chip_gt.append(np.array(new_box))
                     chip_label.append(labels[i])
-                elif utils.overlap(chip, box, 0.001):
-                    box = [max(box[0], chip[0]), max(box[1], chip[1]), 
-                        min(box[2], chip[2]), min(box[3], chip[3])]
-                    new_box = [box[0] - chip[0], box[1] - chip[1],
-                            box[2] - chip[0], box[3] - chip[1]]
-                    neglect_gt.append(np.array(new_box, dtype=np.int))
 
             chip_gt_list.append(chip_gt)
             chip_label_list.append(chip_label)
-            neglect_list.append(neglect_gt)
 
-        return chip_list, chip_gt_list, chip_label_list, neglect_list
+        return chip_list, chip_gt_list, chip_label_list
 
     def generate_imgset(self, img_list, imgset):
         with open(os.path.join(self.list_dir, imgset+'.txt'), 'w') as f:
@@ -189,15 +179,13 @@ class MakeDataset(object):
 
         gt_bboxes, gt_cls = sample['bboxes'], sample['cls']
 
-        chip_list, chip_gt_list, chip_label_list, neglect_list = self.generate_region_gt(
-            region_box, gt_bboxes, gt_cls)
-        chip_loc = self.write_chip_and_anno(
-            image, img_id, chip_list, chip_gt_list, chip_label_list, neglect_list, imgset)
+        chip_list, chip_gt_list, chip_label_list = self.generate_region_gt(region_box, gt_bboxes, gt_cls)
+        chip_loc = self.write_chip_and_anno(image, img_id, chip_list, chip_gt_list, chip_label_list)
 
         return len(chip_list), chip_loc
 
     def write_chip_and_anno(self, image, img_id, 
-        chip_list, chip_gt_list, chip_label_list, neglect_list, imgset):
+        chip_list, chip_gt_list, chip_label_list):
         """write chips of one image to disk and make xml annotations
         """
         assert len(chip_gt_list) > 0
@@ -210,12 +198,6 @@ class MakeDataset(object):
 
             chip_img = image[chip[1]:chip[3], chip[0]:chip[2], :].copy()
             assert len(chip_img.shape) == 3
-            if imgset in args.padding:
-                for neg_box in neglect_list[i]:
-                    neg_w = neg_box[2] - neg_box[0]
-                    neg_h = neg_box[3] - neg_box[1]
-                    random_box = np.random.randint(0, 256, (neg_h, neg_w, 3))
-                    chip_img[neg_box[1]:neg_box[3], neg_box[0]:neg_box[2], :] = random_box
 
             bbox = np.array(chip_gt_list[i], dtype=np.int)
             label = np.array(chip_label_list[i], dtype=np.int)

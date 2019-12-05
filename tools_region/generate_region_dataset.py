@@ -22,8 +22,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description="convert to voc dataset")
     parser.add_argument('--dataset', type=str, default='VisDrone',
                         choices=['VisDrone'], help='dataset name')
-    parser.add_argument('--mode', type=list, default=['train', 'val'],
-                        choices=['train', 'val', 'test'], help='for train or test')
+    parser.add_argument('--mode', type=str, default=['train', 'val'],
+                        nargs='+', help='for train or test')
     parser.add_argument('--db_root', type=str, default="/home/visitor1/data/Visdrone",
                         help="dataset's root path")
     parser.add_argument('--mask_size', type=list, default=[30, 40],
