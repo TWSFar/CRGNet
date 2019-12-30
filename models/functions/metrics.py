@@ -1,7 +1,5 @@
-import os
 import cv2
 import numpy as np
-import json
 import utils.dataset_utils as utils
 
 

@@ -1,14 +1,24 @@
-from models.backbones import resnet, xception, mobilenetv2, mobilenetv3
+from .resnet import resnet50, resnet101
+from .xception import AlignedXception
+from .mobilenetv2 import MobileNetV2
+from .mobilenetv3 import MobileNetV3_Small
 
 
 def build_backbone(backbone, output_stride, BatchNorm):
-    if backbone == 'resnet101':
-        return resnet.ResNet101(output_stride, BatchNorm)
+    if backbone == 'resnet50':
+        return resnet50(output_stride, BatchNorm)
+
+    elif backbone == 'resnet101':
+        return resnet101(output_stride, BatchNorm)
+
     elif backbone == 'xception':
-        return xception.AlignedXception(output_stride, BatchNorm)
+        return AlignedXception(output_stride, BatchNorm)
+
     elif backbone == 'mobilenetv2':
-        return mobilenetv2.MobileNetV2(output_stride, BatchNorm)
+        return MobileNetV2(output_stride, BatchNorm)
+
     elif backbone == 'mobilenetv3':
-        return mobilenetv3.MobileNetV3_Small()
+        return MobileNetV3_Small()
+
     else:
         raise NotImplementedError

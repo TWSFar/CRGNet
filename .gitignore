@@ -1,12 +1,13 @@
 # compile file of python
 *.py[cod]
 _pycache_
+*$py.class
+
+# C extensions
+*.so
 
 # My configurations:
-data/
 weights/
 .vscode/
 debug/
-work_dirs/
 .debug.py
-.introduction.txt

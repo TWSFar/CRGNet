@@ -1,7 +1,6 @@
 import os
 import time
-import numpy as np
-from mypath import Path
+import torch
 from pprint import pprint
 from utils.devices import select_device
 user_dir = os.path.expanduser('~')
@@ -10,13 +9,17 @@ user_dir = os.path.expanduser('~')
 class Config:
     # data
     dataset = "visdrone"
-    root_dir = Path.db_root_dir(dataset)
-    resume = False
+    root_dir = user_dir + "/data/Visdrone/detect_voc"
     input_size = (640, 480)
+    mean = [0.382, 0.383, 0.367]
+    std = [0.164, 0.156, 0.164]
+    resume = False
     pre = None
 
     # model
     backbone = 'mobilenetv2'
+    output_stride = 16
+    sync_bn = False
     hrnet_cfg = user_dir + '/work/RetinaNet/lib/hrnet_config/hrnet_w48.yaml'
 
     # train
@@ -25,10 +28,16 @@ class Config:
     epochs = 200
     workers = 16
 
+    # loss
+    loss = dict(
+        type="CrossEntropyLoss",
+        ignore_index=255,
+        weight=torch.tensor([1, 2]).float()
+    )
+
     # param for optimizer
-    loss_type = 'ce'  # Choices: 'ce' or 'focal'
+    use_balanced_weights = False
     lr_scheduler = 'poly'  # choices = 'poly', 'step', 'cos'
-    adam = True
     lr = 0.0005
     momentum = 0.9
     decay = 5e-4

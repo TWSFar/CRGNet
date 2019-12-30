@@ -6,29 +6,28 @@ import numpy as np
 from tqdm import tqdm
 
 # from models_demo import model_demo
-from config.visdrone_deeplabv3 import opt
+from configs.visdrone_deeplabv3 import opt
+
+from models import DeepLab
+# from models import CSRNet
+from models.functions import Evaluator, LR_Scheduler
+from models.losses import build_loss
 from dataloaders import make_data_loader
-from models import csrnet, deeplab
-from models.functions import loss, metrics
-from utils.saver import Saver
-from utils.timer import Timer
-from utils.visualization import TensorboardSummary
-from utils.lr_scheduler import LR_Scheduler
+
+from utils import (Saver, Timer, TensorboardSummary,
+                   calculate_weigths_labels)
 
 import torch
-import torch.nn as nn
+
 import multiprocessing
 multiprocessing.set_start_method('spawn', True)
 
 
 class Trainer(object):
-    def __init__(self):
+    def __init__(self, mode):
         torch.cuda.manual_seed(opt.seed)
-        self.best_pred = 0.0
-        self.start_epoch = opt.start_epoch
-
         # Define Saver
-        self.saver = Saver(opt)
+        self.saver = Saver(opt, mode)
 
         # visualize
         if opt.visualize:
@@ -36,14 +35,18 @@ class Trainer(object):
             self.writer = self.summary.create_summary()
 
         # Dataset dataloader
-        self.train_dataset, self.train_loader = make_data_loader(opt, train=True)
-        self.val_dataset, self.val_loader = make_data_loader(opt.test_dir, train=False)
+        self.train_dataset, self.train_loader = make_data_loader(opt, train=True)  # train
+        self.nbatch_train = len(self.train_loader)
         self.nclass = self.train_dataset.nclass
+        self.val_dataset, self.val_loader = make_data_loader(opt.test_dir, train=False)  # val
+        self.nbatch_val = len(self.val_loader)
 
         # model
-        model = deeplab.DeepLab(backbone=opt.backbone,
-                                num_classes=self.train_dataset.nclass,
-                                sync_bn=opt.sync_bn)
+        if opt.sync_bn is None and len(opt.gpu_id) > 1:
+            opt.sync_bn = True
+        else:
+            opt.sync_bn = False
+        model = DeepLab(opt, self.nclass)
         self.model = model.to(opt.device)
 
         # Define Optimizer
@@ -53,16 +56,22 @@ class Trainer(object):
                                          weight_decay=opt.decay)
 
         # Loss
-        weight = torch.tensor([1, 2]).float()
-        self.criterion = loss.SegmentationLosses(weight=weight, cuda=len(opt.gpu_id)>0).build_loss(mode=opt.loss_type)
+        if opt.use_balanced_weights:
+            calculate_weigths_labels(opt.dataset,
+                                     self.train_loader,
+                                     self.nclass,)
+        self.loss = build_loss(opt.loss)
 
         # Define Evaluator
-        self.evaluator = metrics.Evaluator(self.nclass)
+        self.evaluator = Evaluator(self.nclass)
 
         # Define lr scheduler
         self.scheduler = LR_Scheduler(opt.lr_scheduler, opt.lr,
                                       opt.epochs, len(self.train_loader), 140)
 
+        # Resuming Checkpoint
+        self.best_pred = 0.0
+        self.start_epoch = opt.start_epoch
         if opt.resume:
             if os.path.isfile(opt.pre):
                 print("=> loading checkpoint '{}'".format(opt.pre))
@@ -76,57 +85,71 @@ class Trainer(object):
                 print("=> no checkpoint found at '{}'".format(opt.pre))
 
         if len(opt.gpu_id) > 1:
-            self.model = torch.nn.DataParallel(self.model, device_ids=opt.gpu_id)
+            print("Using multiple gpu")
+            self.model = torch.nn.DataParallel(self.model,
+                                               device_ids=opt.gpu_id)
 
+        self.loss_hist = collections.deque(maxlen=500)
         self.timer = Timer(opt.epochs, len(self.trian_loader), self.num_bt_val)
         self.step_time = collections.deque(maxlen=opt.print_freq)
 
     def train(self, epoch):
         self.model.train()
-        losses = AverageMeter()
-        batch_time = AverageMeter()
-        data_time = AverageMeter()
-        num_img_tr = len(self.train_loader)
-        print('epoch %d, processed %d samples, lr %.10f' %
-              (epoch, epoch * len(self.train_loader.dataset), opt.lr))
+        if len(opt.gpu_id) > 1:
+            self.model.module.freeze_bn()
+        else:
+            self.model.freeze_bn()
+        epoch_loss = []
+        for iter_num, sample in enumerate(self.train_loader):
+            # if iter_num > 3: break
+            try:
+                temp_time = time.time()
+                imgs = sample["image"].to(opt.device)
+                labels = sample["label"].type(torch.FloatTensor).to(opt.device)
 
-        end = time.time()
-        for i, (img, target, _)in enumerate(self.train_loader):
-            data_time.update(time.time() - end)
-            img = img.to(opt.device)
-            target = target.type(torch.FloatTensor).unsqueeze(1).to(opt.device)
+                output = self.model(imgs)
 
-            output = self.model(img)
+                loss = self.loss(output, labels.unsqueeze(1))
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(), 3)
+                loss.backward()
+                self.loss_hist.append(float(loss))
+                epoch_loss.append(float(loss))
 
-            loss = self.criterion(output, target)
-            losses.update(loss.item(), img.size(0))
-            self.optimizer.zero_grad()
-            loss.backward()
-            self.optimizer.step()
+                self.optimizer.step()
+                self.optimizer.zero_grad()
+                self.scheduler(self.optimizer, iter_num, epoch, self.best_pred)
 
-            batch_time.update(time.time() - end)
+                # Visualize
+                global_step = iter_num + self.nbatch_train * epoch + 1
+                self.writer.add_scalar('train/loss', loss.cpu().item(), global_step)
+                if global_step % opt.plot_every == 0:
+                    self.summary.visualize_image(self.writer,
+                                                 opt.dataset,
+                                                 imgs,
+                                                 labels,
+                                                 output,
+                                                 global_step)
 
-            # visualize
-            # if opt.visualize:
-            #     update_vis_plot(vis, i, [loss.cpu().tolist()], batch_plot, 'append')
-            global_step = i + num_img_tr * epoch
-            self.writer.add_scalar('train/total_loss_epoch', loss.cpu().item(), global_step)
-            if (i + 1) % opt.plot_every == 0:
-                self.summary.visualize_image(self.writer, opt.dataset, img, target, output, global_step)
+                batch_time = time.time() - temp_time
+                eta = self.timer.eta(global_step, batch_time)
+                if global_step % opt.print_freq == 0:
+                    print('Epoch: [{0}][{1}/{2}]\t'
+                          'lr: (1x:{}, 10x:{}),\t'
+                          'eta: {}, time: {:1.3f},\t'
+                          'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
+                          .format(
+                            epoch, iter_num+1, self.nbatch_train,
+                            self.optimizer.param_groups[0]['lr'],
+                            self.optimizer.param_groups[1]['lr'],
+                            eta, np.sum(self.step_time),
+                            loss=np.mean(self.loss_hist)))
+                del loss
 
-            if i % opt.print_freq == 0:
-                print('Epoch: [{0}][{1}/{2}]\t'
-                      'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
-                      'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
-                      'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-                      .format(
-                        epoch, i, len(self.train_loader),
-                        batch_time=batch_time,
-                        data_time=data_time, loss=losses))
+            except Exception as e:
+                print(e)
+                continue
 
     def validate(self, epoch):
-        maes = AverageMeter()
-        mses = AverageMeter()
         self.model.eval()
 
         for i, (img, target, scale) in enumerate(tqdm(self.test_loader)):
@@ -153,47 +176,40 @@ class Trainer(object):
         return mae
 
 
-class AverageMeter(object):
-    """Computes and stores the average and current value"""
-    def __init__(self):
-        self.reset()
-
-    def reset(self):
-        self.val = 0
-        self.avg = 0
-        self.sum = 0
-        self.count = 0
-
-    def update(self, val, n=1):
-        self.val = val
-        self.sum += val * n
-        self.count += n
-        self.avg = self.sum / self.count
-
 
 def train(**kwargs):
     opt._parse(kwargs)
     trainer = Trainer()
+
+    print('Num training images: {}'.format(len(trainer.train_dataset)))
+
     for epoch in range(opt.start_epoch, opt.epochs):
         # train
-        trainer.train(epoch)
+        trainer.train(epoch, 'train')
 
         # val
-        mae = trainer.validate(epoch)
+        val_time = time.time()
+        mae = trainer.validate(epoch, 'val')
+        trainer.timer.set_val_eta(epoch, time.time() - val_time)
 
         is_best = mae < trainer.best_pred
         trainer.best_pred = min(mae, trainer.best_pred)
         print(' * best MAE {mae:.3f}'.format(mae=trainer.best_pred))
         if (epoch % 20 == 0 and epoch != 0) or is_best:
             trainer.saver.save_checkpoint({
-                'epoch': epoch + 1,
-                'state_dict': trainer.model.module.state_dict() if opt.use_mulgpu
+                'epoch': epoch,
+                'state_dict': trainer.model.module.state_dict() if len(opt.gpu_id) > 1
                 else trainer.model.state_dict(),
                 'best_pred': trainer.best_pred,
                 'optimizer': trainer.optimizer.state_dict(),
             }, is_best)
 
+    # cache result
+    print("Backup result...")
+    trainer.saver.backup_result()
+    print("Done!")
+
 
 if __name__ == '__main__':
     train()
-    fire.Fire()
+    # fire.Fire()

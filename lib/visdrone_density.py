@@ -20,6 +20,8 @@ class VisDroneDensity(Dataset):
     def __init__(self, opt, train=True):
         super().__init__()
         self.data_dir = opt.data_dir
+        self.train = train
+
         if train:
             self.data_dir = osp(self.data_dir, "VisDrone2019-DET-train")
         else:
@@ -27,10 +29,8 @@ class VisDroneDensity(Dataset):
 
         self.img_dir = osp.join(self.data_dir, 'images', '{}.jpg')
         self.den_dir = osp.join(self.data_dir, 'DensityMask', '{}.png')
-        self.img_ids = [osp.splitext(file)[0]
-                        for file in os.listdir(self.img_dir)
-                        if osp.splitext(file)[-1] == '.jpg']
-        self.train = train
+        self.im_ids = self._load_image_set_index()
+
         self.img_number = len(self.img_list)
 
         # transform
@@ -44,6 +44,20 @@ class VisDroneDensity(Dataset):
             dtf.ImgFixedResize(crop_size=self.opt.input_size),  # default = 513
             dtf.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
             dtf.ToTensor()])
+
+    def _load_image_set_index(self):
+        """
+        Load the indexes listed in this dataset's image set file.
+        """
+        image_index = []
+        image_set_file = os.path.join(self._base_dir, 'ImageSets', 'Main',
+                                      split + '.txt')
+        assert os.path.exists(image_set_file), \
+            'Path does not exist: {}'.format(image_set_file)
+        with open(image_set_file) as f:
+            for line in f.readlines():
+                image_index.append(line.strip())
+        return image_index
 
     def __getitem__(self, index):
         id = self.img_ids[index]

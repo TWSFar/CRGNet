@@ -1,19 +1,9 @@
+import cv2
 import random
 import numpy as np
-from PIL import Image, ImageOps, ImageFilter
+from PIL import Image, ImageFilter
 from torchvision.transforms import ColorJitter
 import torch
-
-
-class ImgFixedResize(object):
-    def __init__(self, size):
-        self.size = (size, size)  # size: (h, w)
-
-    def __call__(self, sample):
-
-        sample['image'] = sample['image'].resize(self.size, Image.BILINEAR)
-
-        return sample
 
 
 class Normalize(object):
@@ -22,21 +12,21 @@ class Normalize(object):
         mean (tuple): means for each channel.
         std (tuple): standard deviations for each channel.
     """
-    def __init__(self, mean=(127.5., 127.5, 127.5), std=(1., 1., 1.)):
+    def __init__(self, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)):
         self.mean = mean
         self.std = std
 
     def __call__(self, sample):
         img = sample['image']
-        gt = sample['target']
-        img = np.array(img).astype(np.float32)
-        gt = np.array(gt).astype(np.float32)
+        gt = sample['label']
+        img = img.astype(np.float32)
+        gt = gt.astype(np.float32)
+        img /= 255.0
         img -= self.mean
         img /= self.std
-        img /= 255.0
 
         return {'image': img,
-                'target': gt}
+                'label': gt}
 
 
 class RandomColorJeter(object):
@@ -44,7 +34,8 @@ class RandomColorJeter(object):
         self.tr = ColorJitter(brightness, contrast, saturation, hue)
 
     def __call__(self, sample):
-        sample['image'] = self.tr(sample['image'])
+        sample['image'] = self.tr(Image.fromarray(sample['image']))
+        sample['image'] = np.array(sample['image'])
 
         return sample
 
@@ -52,48 +43,42 @@ class RandomColorJeter(object):
 class RandomGaussianBlur(object):
     def __call__(self, sample):
         img = sample['image']
-        den = sample['density']
-        rgn = sample['region']
+        gt = sample['label']
         if random.random() < 0.5:
             img = img.filter(ImageFilter.GaussianBlur(
                 radius=random.random()))
 
         return {'image': img,
-                'density': den,
-                'region': rgn}
+                'label': gt}
 
 
 class RandomHorizontalFlip(object):
     def __call__(self, sample):
         img = sample['image']
-        den = sample['density']
-        rgn = sample['region']
+        gt = sample['label']
         if random.random() < 0.5:
             img = img[:, ::-1, :]
-            den = den[:, ::-1]
-            rgn = rgn[:, ::-1]
+            gt = gt[:, ::-1]
 
         return {'image': img,
-                'density': den,
-                'region': rgn}
+                'label': gt}
 
 
-class RandomRotate(object):
-    def __init__(self, degree):
-        self.degree = degree
+class FixedNoMaskResize(object):
+    def __init__(self, size):
+        if isinstance(size, int):
+            self.size = (size, size)
+        elif isinstance(size, tuple):
+            self.size = size  # size: (w, h)
 
     def __call__(self, sample):
         img = sample['image']
-        den = sample['density']
-        rgn = sample['region']
-        rotate_degree = random.uniform(-1*self.degree, self.degree)
-        img = img.rotate(rotate_degree, Image.BILINEAR)
-        den = den.rotate(rotate_degree, Image.NEAREST)
-        rgn = rgn.rotate(rotate_degree, Image.NEAREST)
+        mask = sample['label']
+
+        img = cv2.resize(img, self.size)
 
         return {'image': img,
-                'density': den,
-                'region': rgn}
+                'label': mask}
 
 
 class ToTensor(object):
@@ -104,36 +89,27 @@ class ToTensor(object):
         # numpy image: H x W x C
         # torch image: C X H X W
         img = sample['image']
-        den = sample['density']
-        rgn = sample['region']
+        gt = sample['label']
         img = np.array(img).astype(np.float32).transpose((2, 0, 1))
-        den = np.array(den).astype(np.float32)
-        rgn = np.array(rgn).astype(np.float32)
+        gt = np.array(gt).astype(np.float32)
 
         img = torch.from_numpy(img).float()
-        den = torch.from_numpy(den).float()
-        rgn = torch.from_numpy(rgn).float()
+        gt = torch.from_numpy(gt).float()
 
         return {'image': img,
-                'density': den,
-                'region': rgn}
+                'label': gt}
 
 
 if __name__ == "__main__":
-    import matplotlib.pyplot as plt
-    from glob import glob
-    from PIL import Image
-    path = glob('G:\\CV\\Dataset\\PASCAL VOC 2012\\VOCdevkit\\VOC2012\\JPEGImages\\2007_004052*')[0]
-    img = Image.open(path).convert('RGB')
-    pair = {'image':img, 'label':img}
-    model = RandomScaleCrop(400, 600)
+    from torchvision import transforms
+    img = cv2.imread("/home/twsf/work/CRGNet/data/Visdrone_Region/JPEGImages/0000001_02999_d_0000005.jpg")
+    gt = cv2.imread("/home/twsf/work/CRGNet/data/Visdrone_Region/SegmentationClass/0000001_02999_d_0000005.png")
+    pair = {'image': img, 'label': gt}
+    model = transforms.Compose([
+            FixedNoMaskResize(size=(640, 480)),
+            RandomColorJeter(0.3, 0.3, 0.3, 0.3),
+            RandomHorizontalFlip(),
+            Normalize(),
+            ToTensor()])
     sample = model(pair)
-    img2 = sample['image']
-    plt.figure()
-    plt.title('display')
-    plt.subplot(211)
-    plt.imshow(img)
-    plt.subplot(212)
-    plt.imshow(img2)
-    plt.show(block=True)
     pass
