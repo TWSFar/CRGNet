@@ -1,0 +1,34 @@
+dataset: visdrone
+root_dir: /home/twsf/data/Visdrone/region_voc
+input_size: (640, 480)
+mean: [0.382, 0.383, 0.367]
+std: [0.164, 0.156, 0.164]
+resume: False
+pre: None
+backbone: mobilenetv2
+output_stride: 16
+sync_bn: False
+hrnet_cfg: /home/twsf/work/RetinaNet/lib/hrnet_config/hrnet_w48.yaml
+batch_size: 16
+start_epoch: 0
+epochs: 200
+loss: {'type': 'CrossEntropyLoss', 'ignore_index': 255, 'weight': tensor([1., 2.])}
+use_balanced_weights: False
+lr_scheduler: poly
+lr: 0.0005
+momentum: 0.9
+decay: 0.0005
+steps: [0.8, 0.9]
+scales: 0.3
+visualize: True
+print_freq: 50
+plot_every: 100
+saver_freq: 1
+workers: 16
+seed: 1577885517.8403602
+Epoch: [0][50/405] lr: (1x:0.00050, 10x:0.00500), eta: 21:24:13, time: 11.343, Loss: 0.4672 
+Epoch: [0][100/405] lr: (1x:0.00050, 10x:0.00499), eta: 21:19:16, time: 10.990, Loss: 0.4026 
+Epoch: [0][150/405] lr: (1x:0.00050, 10x:0.00499), eta: 21:18:27, time: 11.097, Loss: 0.3753 
+Epoch: [0][200/405] lr: (1x:0.00050, 10x:0.00499), eta: 21:17:10, time: 10.980, Loss: 0.3583 
+Epoch: [0][250/405] lr: (1x:0.00050, 10x:0.00499), eta: 21:16:49, time: 11.072, Loss: 0.3459 
+Epoch: [0][300/405] lr: (1x:0.00050, 10x:0.00498), eta: 21:16:26, time: 11.051, Loss: 0.3355 

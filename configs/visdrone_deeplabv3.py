@@ -9,7 +9,7 @@ user_dir = os.path.expanduser('~')
 class Config:
     # data
     dataset = "visdrone"
-    root_dir = user_dir + "/data/Visdrone/detect_voc"
+    root_dir = user_dir + "/data/Visdrone/region_voc"
     input_size = (640, 480)
     mean = [0.382, 0.383, 0.367]
     std = [0.164, 0.156, 0.164]
@@ -23,10 +23,9 @@ class Config:
     hrnet_cfg = user_dir + '/work/RetinaNet/lib/hrnet_config/hrnet_w48.yaml'
 
     # train
-    batch_size = 24
+    batch_size = 16
     start_epoch = 0
     epochs = 200
-    workers = 16
 
     # loss
     loss = dict(
@@ -44,15 +43,12 @@ class Config:
     steps = [0.8, 0.9]
     scales = 0.3
 
-    # eval
-    # parameters
-    pst_thd = 0.05
-
     # visual
     visualize = True
-    print_freq = 10
-    plot_every = 50  # every n batch plot
+    print_freq = 50
+    plot_every = 100  # every n batch plot
     saver_freq = 1
+    workers = 16
 
     seed = time.time()
 

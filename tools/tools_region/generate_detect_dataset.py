@@ -6,7 +6,6 @@ import cv2
 import sys
 import json
 import argparse
-import traceback
 import numpy as np
 import os.path as osp
 from xml.etree.ElementTree import Element, SubElement, tostring
@@ -28,6 +27,7 @@ def parse_args():
                         nargs='+', help='random padding neglect box')
     args = parser.parse_args()
     return args
+
 
 args = parse_args()
 print(args)
@@ -57,14 +57,14 @@ class MakeDataset(object):
         for imgset in args.imgsets:
             print("make {} detect dataset...".format(imgset))
             samples = self.dataset._load_samples(imgset)
-            chip_ids= []
+            chip_ids = []
             chip_loc = dict()
             for i, sample in enumerate(samples):
                 img_id = osp.basename(sample['image'])[:-4]
                 sys.stdout.write('\rcomplete: {:d}/{:d} {:s}'
-                            .format(i + 1, len(samples), img_id))
+                                 .format(i + 1, len(samples), img_id))
                 sys.stdout.flush()
-    
+
                 chiplen, loc = self.make_chip(sample, imgset)
                 for i in range(chiplen):
                     chip_ids.append('{}_{}'.format(img_id, i))
@@ -92,17 +92,17 @@ class MakeDataset(object):
             neglect_gt = []
             for i, box in enumerate(gt_bboxes):
                 if utils.overlap(chip, box, 0.75):
-                    box = [max(box[0], chip[0]), max(box[1], chip[1]), 
-                        min(box[2], chip[2]), min(box[3], chip[3])]
+                    box = [max(box[0], chip[0]), max(box[1], chip[1]),
+                           min(box[2], chip[2]), min(box[3], chip[3])]
                     new_box = [box[0] - chip[0], box[1] - chip[1],
-                            box[2] - chip[0], box[3] - chip[1]]
+                               box[2] - chip[0], box[3] - chip[1]]
                     chip_gt.append(np.array(new_box))
                     chip_label.append(labels[i])
                 elif utils.overlap(chip, box, 0.001):
-                    box = [max(box[0], chip[0]), max(box[1], chip[1]), 
-                        min(box[2], chip[2]), min(box[3], chip[3])]
+                    box = [max(box[0], chip[0]), max(box[1], chip[1]),
+                           min(box[2], chip[2]), min(box[3], chip[3])]
                     new_box = [box[0] - chip[0], box[1] - chip[1],
-                            box[2] - chip[0], box[3] - chip[1]]
+                               box[2] - chip[0], box[3] - chip[1]]
                     neglect_gt.append(np.array(new_box, dtype=np.int))
 
             chip_gt_list.append(chip_gt)
@@ -199,8 +199,9 @@ class MakeDataset(object):
 
         return len(chip_list), chip_loc
 
-    def write_chip_and_anno(self, image, img_id, 
-        chip_list, chip_gt_list, chip_label_list, neglect_list, imgset):
+    def write_chip_and_anno(self, image, img_id,
+                            chip_list, chip_gt_list,
+                            chip_label_list, neglect_list, imgset):
         """write chips of one image to disk and make xml annotations
         """
         assert len(chip_gt_list) > 0

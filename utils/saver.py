@@ -33,12 +33,6 @@ class Saver(object):
         with open(self.logfile, 'a') as f:
             f.write(line + '\n')
 
-    def save_coco_eval_result(self, epoch, stats):
-        with open(os.path.join(self.experiment_dir, 'result.txt'), 'a') as f:
-            f.writelines(
-                "[epoch: {}, AP@50:95: {:.3%}, AP@50: {:.3%}]\n".format(
-                    epoch, stats[0], stats[1]))
-
     def save_eval_result(self, stats):
         with open(os.path.join(self.experiment_dir, 'result.txt'), 'a') as f:
             f.writelines(stats + '\n')

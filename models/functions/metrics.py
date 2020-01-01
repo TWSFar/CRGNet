@@ -37,8 +37,8 @@ class Evaluator(object):
         return FWIoU
 
     def Region_Recall(self):
-        return np.sum(self.detect_object) / np.sum(self.label_object)
-    
+        return max(np.sum(self.detect_object)/np.sum(self.label_object), 0.00001)
+
     def Region_Num(self):
         return np.mean(self.mask_object)
 
@@ -59,8 +59,8 @@ class Evaluator(object):
             mask_h, mask_w = mask_img.shape[:2]
             mask_box = utils.generate_box_from_mask(mask_img.astype(np.uint8))
             mask_box = list(map(utils.resize_box, mask_box,
-                            [(mask_w, mask_h)]*len(mask_box),
-                            [(width, height)]*len(mask_box)))
+                            [(mask_w, mask_h)] * len(mask_box),
+                            [(width, height)] * len(mask_box)))
             mask_box = utils.enlarge_box(mask_box, (width, height), ratio=1.1)
 
             count = 0
@@ -77,7 +77,6 @@ class Evaluator(object):
         assert gt_image.shape == pre_image.shape
         self.confusion_matrix += self._generate_matrix(gt_image, pre_image)
         self._generate_count(pre_image, paths, dataset)
-        
 
     def reset(self):
         self.confusion_matrix = np.zeros((self.num_class,) * 2)

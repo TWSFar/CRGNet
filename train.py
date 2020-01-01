@@ -15,17 +15,18 @@ from models.losses import build_loss
 from dataloaders import make_data_loader
 
 from utils import (Saver, Timer, TensorboardSummary,
-                   calculate_weigths_labels)
+                   calculate_weights_labels)
 
 import torch
 
 import multiprocessing
 multiprocessing.set_start_method('spawn', True)
+torch.manual_seed(opt.seed)
+torch.cuda.manual_seed(opt.seed)
 
 
 class Trainer(object):
     def __init__(self, mode):
-        torch.cuda.manual_seed(opt.seed)
         # Define Saver
         self.saver = Saver(opt, mode)
 
@@ -35,10 +36,10 @@ class Trainer(object):
             self.writer = self.summary.create_summary()
 
         # Dataset dataloader
-        self.train_dataset, self.train_loader = make_data_loader(opt, train=True)  # train
+        self.train_dataset, self.train_loader = make_data_loader(opt, mode)  # train
         self.nbatch_train = len(self.train_loader)
         self.nclass = self.train_dataset.nclass
-        self.val_dataset, self.val_loader = make_data_loader(opt.test_dir, train=False)  # val
+        self.val_dataset, self.val_loader = make_data_loader(opt, mode="val")  # val
         self.nbatch_val = len(self.val_loader)
 
         # model
@@ -57,7 +58,7 @@ class Trainer(object):
 
         # Loss
         if opt.use_balanced_weights:
-            calculate_weigths_labels(opt.dataset,
+            calculate_weights_labels(opt.dataset,
                                      self.train_loader,
                                      self.nclass,)
         self.loss = build_loss(opt.loss)
@@ -90,7 +91,7 @@ class Trainer(object):
                                                device_ids=opt.gpu_id)
 
         self.loss_hist = collections.deque(maxlen=500)
-        self.timer = Timer(opt.epochs, len(self.trian_loader), self.num_bt_val)
+        self.timer = Timer(opt.epochs, len(self.train_loader), self.nbatch_val)
         self.step_time = collections.deque(maxlen=opt.print_freq)
 
     def train(self, epoch):
@@ -99,50 +100,53 @@ class Trainer(object):
             self.model.module.freeze_bn()
         else:
             self.model.freeze_bn()
-        epoch_loss = []
+
         for iter_num, sample in enumerate(self.train_loader):
             # if iter_num > 3: break
             try:
                 temp_time = time.time()
                 imgs = sample["image"].to(opt.device)
-                labels = sample["label"].type(torch.FloatTensor).to(opt.device)
+                labels = sample["label"].to(opt.device)
 
                 output = self.model(imgs)
 
-                loss = self.loss(output, labels.unsqueeze(1))
+                loss = self.loss(output, labels)
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(), 3)
                 loss.backward()
                 self.loss_hist.append(float(loss))
-                epoch_loss.append(float(loss))
 
                 self.optimizer.step()
                 self.optimizer.zero_grad()
-                self.scheduler(self.optimizer, iter_num, epoch, self.best_pred)
+                self.scheduler(self.optimizer, iter_num, epoch)
 
                 # Visualize
                 global_step = iter_num + self.nbatch_train * epoch + 1
                 self.writer.add_scalar('train/loss', loss.cpu().item(), global_step)
                 if global_step % opt.plot_every == 0:
+                    pred = torch.argmax(output, dim=1)
                     self.summary.visualize_image(self.writer,
                                                  opt.dataset,
                                                  imgs,
                                                  labels,
-                                                 output,
+                                                 pred,
                                                  global_step)
 
                 batch_time = time.time() - temp_time
                 eta = self.timer.eta(global_step, batch_time)
+                self.step_time.append(batch_time)
                 if global_step % opt.print_freq == 0:
-                    print('Epoch: [{0}][{1}/{2}]\t'
-                          'lr: (1x:{}, 10x:{}),\t'
-                          'eta: {}, time: {:1.3f},\t'
-                          'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-                          .format(
-                            epoch, iter_num+1, self.nbatch_train,
-                            self.optimizer.param_groups[0]['lr'],
-                            self.optimizer.param_groups[1]['lr'],
-                            eta, np.sum(self.step_time),
-                            loss=np.mean(self.loss_hist)))
+                    printline = ('Epoch: [{}][{}/{}] '
+                                 'lr: (1x:{:1.5f}, 10x:{:1.5f}), '
+                                 'eta: {}, time: {:1.3f}, '
+                                 'Loss: {:1.4f} '.format(
+                                    epoch, iter_num+1, self.nbatch_train,
+                                    self.optimizer.param_groups[0]['lr'],
+                                    self.optimizer.param_groups[1]['lr'],
+                                    eta, np.sum(self.step_time),
+                                    np.mean(self.loss_hist)))
+                    print(printline)
+                    self.saver.save_experiment_log(printline)
+
                 del loss
 
             except Exception as e:
@@ -151,50 +155,69 @@ class Trainer(object):
 
     def validate(self, epoch):
         self.model.eval()
+        test_loss = 0.0
+        with torch.no_grad():
+            tbar = tqdm(self.val_loader, desc='\r')
+            for i, sample in enumerate(tbar):
+                imgs = sample['image'].to(opt.device)
+                labels = sample['label'].to(opt.device)
 
-        for i, (img, target, scale) in enumerate(tqdm(self.test_loader)):
-            img = img.to(opt.device)
-            output = self.model(img)
-            output = output.data.cpu().numpy()
-            target = target.data.numpy()
-            for i_img in range(output.shape[0]):
-                pred_count = np.sum(output[i_img]) / opt.log_para
-                gt_count = np.sum(target[i_img]) / opt.log_para
-                maes.update(abs(gt_count - pred_count))
-                mses.update((gt_count - pred_count) ** 2)
+                output = self.model(imgs)
+                loss = self.loss(output, labels)
+                test_loss += loss.item()
+                tbar.set_description('Test loss: %.3f' % (loss / (i + 1)))
 
-        mae = maes.avg
-        mse = np.sqrt(mses.avg)
+                pred = output.data.cpu().numpy()
+                target = labels.cpu().numpy()
+                pred = np.argmax(pred, axis=1)
+                self.evaluator.add_batch(target, pred, sample["path"], opt.dataset)
 
-        # visualize
-        # if opt.visualize:
-        #     update_vis_plot(vis, epoch, [mae], val_plot, 'append')
-        self.writer.add_scalar('val/mae', mae, epoch)
-        self.writer.add_scalar('val/mse', mse, epoch)
-        print(' * MAE {mae:.3f} | * MSE {mse:.3f}'.format(mae=mae, mse=mse))
+            # Fast test during the training
+            Acc = self.evaluator.Pixel_Accuracy()
+            Acc_class = self.evaluator.Pixel_Accuracy_Class()
+            mIoU = self.evaluator.Mean_Intersection_over_Union()
+            FWIoU = self.evaluator.Frequency_Weighted_Intersection_over_Union()
+            RRecall = self.evaluator.Region_Recall()
+            RNum = self.evaluator.Region_Num()
+            mean_loss = test_loss / self.nbatch_val
+            self.writer.add_scalar('val/mean_loss_epoch', mean_loss, epoch)
+            self.writer.add_scalar('val/mIoU', mIoU, epoch)
+            self.writer.add_scalar('val/Acc', Acc, epoch)
+            self.writer.add_scalar('val/Acc_class', Acc_class, epoch)
+            self.writer.add_scalar('val/fwIoU', FWIoU, epoch)
+            self.writer.add_scalar('val/RRecall', RRecall, epoch)
+            self.writer.add_scalar('val/RNum', RNum, epoch)
 
-        return mae
+            printline = ("Epoch: [{}], mean_loss: {:1.3f}, mIoU: {:1.5f}, "
+                         "Acc: {:1.5f}, Acc_class: {:1.5f}, fwIoU: {:1.5f}, "
+                         "RRecall: {:1.5f}, RNum: {:1.1f}\n").format(
+                             epoch, mean_loss, mIoU,
+                             Acc, Acc_class, FWIoU,
+                             RRecall, RNum)
+            print(printline)
+            self.saver.save_eval_result(printline)
 
+        return 2 / (1 / mIoU + 1 / RRecall)
 
 
 def train(**kwargs):
+    start_time = time.time()
     opt._parse(kwargs)
-    trainer = Trainer()
+    trainer = Trainer(mode="train")
 
     print('Num training images: {}'.format(len(trainer.train_dataset)))
 
     for epoch in range(opt.start_epoch, opt.epochs):
         # train
-        trainer.train(epoch, 'train')
+        trainer.train(epoch)
 
         # val
         val_time = time.time()
-        mae = trainer.validate(epoch, 'val')
+        pred = trainer.validate(epoch)
         trainer.timer.set_val_eta(epoch, time.time() - val_time)
 
-        is_best = mae < trainer.best_pred
-        trainer.best_pred = min(mae, trainer.best_pred)
-        print(' * best MAE {mae:.3f}'.format(mae=trainer.best_pred))
+        is_best = pred > trainer.best_pred
+        trainer.best_pred = max(pred, trainer.best_pred)
         if (epoch % 20 == 0 and epoch != 0) or is_best:
             trainer.saver.save_checkpoint({
                 'epoch': epoch,
@@ -203,6 +226,9 @@ def train(**kwargs):
                 'best_pred': trainer.best_pred,
                 'optimizer': trainer.optimizer.state_dict(),
             }, is_best)
+
+    all_time = trainer.timer.second2hour(time.time() - start_time)
+    print("Train done!, Sum time: {}, Best result: {}".format(all_time, trainer.best_pred))
 
     # cache result
     print("Backup result...")

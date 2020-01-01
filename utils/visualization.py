@@ -13,13 +13,13 @@ class TensorboardSummary(object):
 
     def visualize_image(self, writer, dataset, image, target, output, global_step):
         # images
-        grid_image = make_grid(image[:2].clone().cpu().data, nrow=3, normalize=True)
+        grid_image = make_grid(image[:3].clone().cpu().data, nrow=2, normalize=True)
         writer.add_image('Image', grid_image, global_step)
 
-        # output
-        grid_output = make_grid(output[:2].clone().cpu(), nrow=3, normalize=True)
-        writer.add_image('Predicted label', grid_output, global_step)
-
         # target
-        grid_target = make_grid(target[:2].clone().cpu(), nrow=3, normalize=True)
+        grid_target = make_grid(target[:3].clone().cpu(), nrow=2, normalize=True)
         writer.add_image('Groundtruth label', grid_target, global_step)
+
+        # output
+        grid_output = make_grid(output[:3].clone().cpu(), nrow=2, normalize=True)
+        writer.add_image('Predicted label', grid_output, global_step)

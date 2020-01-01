@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from modeling.sync_batchnorm.batchnorm import SynchronizedBatchNorm2d
+from models.sync_batchnorm.batchnorm import SynchronizedBatchNorm2d
 
 
 class _ASPPModule(nn.Module):
@@ -37,7 +37,7 @@ class ASPP(nn.Module):
         super(ASPP, self).__init__()
         if backbone == 'drn':
             inplanes = 512
-        elif backbone == 'mobilenet':
+        elif backbone == 'mobilenetv2':
             inplanes = 320+128
         elif backbone == 'mobilenetv3':
             inplanes = 96+96

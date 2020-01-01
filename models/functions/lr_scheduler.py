@@ -1,12 +1,12 @@
-##+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-## Created by: Hang Zhang
-## ECE Department, Rutgers University
-## Email: zhang.hang@rutgers.edu
-## Copyright (c) 2017
-##
-## This source code is licensed under the MIT-style license found in the
-## LICENSE file in the root directory of this source tree
-##+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# Created by: Hang Zhang
+# ECE Department, Rutgers University
+# Email: zhang.hang@rutgers.edu
+# Copyright (c) 2017
+#
+# This source code is licensed under the MIT-style license found in the
+# LICENSE file in the root directory of this source tree
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 import math
 
@@ -41,7 +41,7 @@ class LR_Scheduler(object):
         self.epoch = -1
         self.warmup_iters = warmup_epochs * iters_per_epoch
 
-    def __call__(self, optimizer, i, epoch, best_pred):
+    def __call__(self, optimizer, i, epoch):
         T = epoch * self.iters_per_epoch + i
         if self.mode == 'cos':
             lr = 0.5 * self.lr * (1 + math.cos(1.0 * T / self.N * math.pi))
@@ -51,13 +51,13 @@ class LR_Scheduler(object):
             lr = self.lr * (0.1 ** (epoch // self.lr_step))
         else:
             raise NotImplemented
+
         # warm up lr schedule
         if self.warmup_iters > 0 and T < self.warmup_iters:
             lr = lr * 1.0 * T / self.warmup_iters
-        if epoch > self.epoch:
-            print('\n=>Epoches %i, learning rate = %.4f, \
-                previous best = %.4f' % (epoch, lr, best_pred))
-            self.epoch = epoch
+
+        self.epoch = epoch
+
         assert lr >= 0
         self._adjust_learning_rate(optimizer, lr)
 

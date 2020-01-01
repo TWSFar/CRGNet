@@ -13,6 +13,7 @@ class Normalize(object):
         std (tuple): standard deviations for each channel.
     """
     def __init__(self, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)):
+        assert max(mean) <= 1 and max(std) <= 1, "mean or std value error!"
         self.mean = mean
         self.std = std
 
@@ -90,11 +91,8 @@ class ToTensor(object):
         # torch image: C X H X W
         img = sample['image']
         gt = sample['label']
-        img = np.array(img).astype(np.float32).transpose((2, 0, 1))
-        gt = np.array(gt).astype(np.float32)
-
-        img = torch.from_numpy(img).float()
-        gt = torch.from_numpy(gt).float()
+        img = torch.from_numpy(img).permute(2, 0, 1)
+        gt = torch.from_numpy(gt)
 
         return {'image': img,
                 'label': gt}

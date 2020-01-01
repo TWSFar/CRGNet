@@ -1,25 +1,15 @@
-from .datasets import VisDroneRegion, VisDroneDensity
+from .datasets import VisDroneRegion
 from torch.utils.data import DataLoader
 
 
-def make_data_loader(opt, train=True):
+def make_data_loader(opt, mode="train"):
 
     if opt.dataset in ['visdrone', 'VisDrone', 'Visdrone']:
-        dataset = VisDroneRegion(opt, train=train)
+        dataset = VisDroneRegion(opt, mode="train")
         dataloader = DataLoader(dataset,
                                 batch_size=opt.batch_size,
                                 num_workers=opt.workers,
-                                shuffle=train,
-                                pin_memory=True)
-
-        return dataset, dataloader
-
-    if opt.dataset in ['visdrone', 'VisDrone', 'Visdrone']:
-        dataset = VisDroneDensity(opt, train=train)
-        dataloader = DataLoader(dataset,
-                                batch_size=opt.batch_size,
-                                num_workers=opt.workers,
-                                shuffle=train,
+                                shuffle=True if mode == "train" else False,
                                 pin_memory=True)
 
         return dataset, dataloader

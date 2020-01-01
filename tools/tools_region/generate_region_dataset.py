@@ -4,19 +4,17 @@
     + SegmentationClass
 """
 
-import os, sys
-import glob
+import os
 import cv2
-import random
 import shutil
 import argparse
 import numpy as np
-import pandas as pd
 import os.path as osp
 import concurrent.futures
 from tqdm import tqdm
 
 from datasets import get_dataset
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description="convert to voc dataset")
@@ -128,7 +126,7 @@ if __name__ == "__main__":
             for sample in tqdm(samples):
                 region_mask = _generate_mask(sample, args.mask_size)
                 maskname = osp.join(mask_dir, osp.basename(sample['image']).
-                                replace('jpg', 'png'))
+                                    replace('jpg', 'png'))
                 cv2.imwrite(maskname, region_mask)
 
                 if args.show:
@@ -140,4 +138,4 @@ if __name__ == "__main__":
             with concurrent.futures.ThreadPoolExecutor() as exector:
                 exector.map(_copy, anno_list, [annotation_dir]*len(anno_list))
 
-        print('done.')    
+        print('done.')
