@@ -7,7 +7,7 @@ _pycache_
 *.so
 
 # My configurations:
-weights/
+run/
 .vscode/
 debug/
 .debug.py
