@@ -39,7 +39,7 @@ class VisDroneRegion(Dataset):
                 dtf.ToTensor()])
         else:
             self.transform = transforms.Compose([
-                dtf.FixedNoMaskResize(crop_size=self.opt.input_size),  # 513
+                dtf.FixedNoMaskResize(crop_size=opt.input_size),  # 513
                 dtf.Normalize(opt.mean, opt.std),
                 dtf.ToTensor()])
 
