@@ -221,7 +221,7 @@ def train(**kwargs):
         pred = trainer.validate(epoch)
         trainer.timer.set_val_eta(epoch, time.time() - val_time)
 
-        print("Val[New pred: {:1.4f}", "previous best: {:1.4f}]".format(
+        print("Val[New pred: {:1.4f}, previous best: {:1.4f}]".format(
             pred, trainer.best_pred
         ))
         is_best = pred > trainer.best_pred
