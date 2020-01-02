@@ -93,7 +93,7 @@ class Trainer(object):
                                                device_ids=opt.gpu_id)
 
         self.loss_hist = collections.deque(maxlen=500)
-        self.timer = Timer(opt.epochs, len(self.train_loader), self.nbatch_val)
+        self.timer = Timer(opt.epochs, self.nbatch_train, self.nbatch_val)
         self.step_time = collections.deque(maxlen=opt.print_freq)
 
     def train(self, epoch):
