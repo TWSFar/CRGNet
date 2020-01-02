@@ -6,7 +6,8 @@ import numpy as np
 from tqdm import tqdm
 
 # from models_demo import model_demo
-from configs.visdrone_deeplabv3_sample import opt
+# from configs.visdrone_deeplabv3_sample import opt
+from configs.visdrone_deeplabv3 import opt
 
 from models import DeepLab
 # from models import CSRNet
