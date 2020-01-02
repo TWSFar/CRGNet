@@ -1,6 +1,5 @@
 import os
 import time
-import torch
 from pprint import pprint
 from utils.devices import select_device
 user_dir = os.path.expanduser('~')
@@ -26,12 +25,13 @@ class Config:
     batch_size = 1
     start_epoch = 0
     epochs = 3
+    freeze_bn = False
 
     # loss
     loss = dict(
         type="CrossEntropyLoss",
         ignore_index=255,
-        weight=torch.tensor([1, 2]).float()
+        weight=[1, 2]
     )
 
     # param for optimizer
@@ -49,7 +49,6 @@ class Config:
     pst_thd = 0.05
 
     # visual
-    visualize = True
     print_freq = 1
     plot_every = 1  # every n batch plot
     saver_freq = 1

@@ -3,9 +3,9 @@ import torch.nn as nn
 
 
 class CrossEntropyLoss(object):
-    def __init__(self, weight=None, ignore_index=255):
+    def __init__(self, weight=None, ignore_index=-1):
         self.ignore_index = ignore_index
-        self.weight = weight
+        self.weight = torch.tensor(weight).float()
 
     def __call__(self, logit, target):
         n, c, h, w = logit.size()

@@ -18,16 +18,13 @@ class Normalize(object):
         self.std = std
 
     def __call__(self, sample):
-        img = sample['image']
-        gt = sample['label']
-        img = img.astype(np.float32)
-        gt = gt.astype(np.float32)
-        img /= 255.0
-        img -= self.mean
-        img /= self.std
+        sample['image'] = sample['image'].astype(np.float32)
+        sample['label'] = sample['label'].astype(np.float32)
+        sample['image'] /= 255.0
+        sample['image'] -= self.mean
+        sample['image'] /= self.std
 
-        return {'image': img,
-                'label': gt}
+        return sample
 
 
 class RandomColorJeter(object):
@@ -43,26 +40,22 @@ class RandomColorJeter(object):
 
 class RandomGaussianBlur(object):
     def __call__(self, sample):
-        img = sample['image']
-        gt = sample['label']
+        img = Image.fromarray(sample['image'])
         if random.random() < 0.5:
             img = img.filter(ImageFilter.GaussianBlur(
                 radius=random.random()))
+            sample['image'] = np.array(sample['image'])
 
-        return {'image': img,
-                'label': gt}
+        return sample
 
 
 class RandomHorizontalFlip(object):
     def __call__(self, sample):
-        img = sample['image']
-        gt = sample['label']
         if random.random() < 0.5:
-            img = img[:, ::-1, :]
-            gt = gt[:, ::-1]
+            sample['image'] = sample['image'][:, ::-1, :]
+            sample['label'] = sample['label'][:, ::-1]
 
-        return {'image': img,
-                'label': gt}
+        return sample
 
 
 class FixedNoMaskResize(object):
@@ -73,13 +66,9 @@ class FixedNoMaskResize(object):
             self.size = size  # size: (w, h)
 
     def __call__(self, sample):
-        img = sample['image']
-        mask = sample['label']
+        sample['image'] = cv2.resize(sample['image'], self.size)
 
-        img = cv2.resize(img, self.size)
-
-        return {'image': img,
-                'label': mask}
+        return sample
 
 
 class ToTensor(object):
@@ -89,13 +78,10 @@ class ToTensor(object):
         # swap color axis because
         # numpy image: H x W x C
         # torch image: C X H X W
-        img = sample['image']
-        gt = sample['label']
-        img = torch.from_numpy(img).permute(2, 0, 1)
-        gt = torch.from_numpy(gt)
+        sample['image'] = torch.from_numpy(sample['image']).permute(2, 0, 1)
+        sample['label'] = torch.from_numpy(sample['label'])
 
-        return {'image': img,
-                'label': gt}
+        return sample
 
 
 if __name__ == "__main__":

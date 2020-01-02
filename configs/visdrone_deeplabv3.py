@@ -1,6 +1,5 @@
 import os
 import time
-import torch
 from pprint import pprint
 from utils.devices import select_device
 user_dir = os.path.expanduser('~')
@@ -11,8 +10,10 @@ class Config:
     dataset = "visdrone"
     root_dir = user_dir + "/data/Visdrone/region_voc"
     input_size = (640, 480)
-    mean = [0.382, 0.383, 0.367]
-    std = [0.164, 0.156, 0.164]
+    # mean = [0.382, 0.383, 0.367]
+    # std = [0.164, 0.156, 0.164]
+    mean = (0.485, 0.456, 0.406)
+    std = (0.229, 0.224, 0.225)
     resume = False
     pre = None
 
@@ -26,29 +27,29 @@ class Config:
     batch_size = 16
     start_epoch = 0
     epochs = 200
+    freeze_bn = False
 
     # loss
     loss = dict(
         type="CrossEntropyLoss",
-        ignore_index=255,
-        weight=torch.tensor([1, 2]).float()
+        ignore_index=-1,
+        weight=[1, 2]
     )
 
     # param for optimizer
     use_balanced_weights = False
-    lr_scheduler = 'poly'  # choices = 'poly', 'step', 'cos'
+    lr_scheduler = 'step'  # choices = 'poly', 'step', 'cos'
     lr = 0.0005
     momentum = 0.9
     decay = 5e-4
     steps = [0.8, 0.9]
     scales = 0.3
+    workers = 12
 
     # visual
-    visualize = True
     print_freq = 50
     plot_every = 100  # every n batch plot
     saver_freq = 1
-    workers = 16
 
     seed = time.time()
 
