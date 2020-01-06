@@ -29,7 +29,7 @@ def region_cluster(regions, mask_shape):
         new_box = [min(boxes[:, 0]), min(boxes[:, 1]),
                    max(boxes[:, 2]), max(boxes[:, 3])]
         cluster_regions.append(new_box)
-    
+
     return cluster_regions
 
 
@@ -91,7 +91,7 @@ def region_postprocess(regions, contours, mask_shape):
             big_contours.append(contours[i])
         else:
             small_regions.append(box)
-            
+
     # 2. image open
     regions = region_morphology(big_contours, mask_shape) + small_regions
 
@@ -120,7 +120,7 @@ def region_postprocess(regions, contours, mask_shape):
         big_regions = region_split(big_regions, mask_shape)
     if len(small_regions) > 1:
         small_regions = region_cluster(small_regions, mask_shape)
-    
+
     regions = np.array(small_regions + big_regions)
 
     return regions
@@ -151,11 +151,11 @@ def generate_crop_region(regions, img_size):
             center_y = crop_size if center_y < crop_size else center_y
             center_x = width - crop_size - 1 if center_x > width - crop_size - 1 else center_x
             center_y = height - crop_size - 1 if center_y > height - crop_size - 1 else center_y
-            
+
             new_box = [center_x - crop_size if center_x - crop_size > 0 else 0,
-                    center_y - crop_size if center_y - crop_size > 0 else 0,
-                    center_x + crop_size if center_x + crop_size < width else width-1,
-                    center_y + crop_size if center_y + crop_size < height else height-1]
+                       center_y - crop_size if center_y - crop_size > 0 else 0,
+                       center_x + crop_size if center_x + crop_size < width else width-1,
+                       center_y + crop_size if center_y + crop_size < height else height-1]
             for x in new_box:
                 if x < 0:
                     pdb.set_trace()
@@ -212,9 +212,9 @@ def enlarge_box(mask_box, image_size, ratio=2):
         w = w * ratio / 2
         h = h * ratio / 2
         new_box = [center_x-w if center_x-w > 0 else 0,
-                    center_y-h if center_y-h > 0 else 0,
-                    center_x+w if center_x+w < image_size[0] else image_size[0]-1,
-                    center_y+h if center_y+h < image_size[1] else image_size[1]-1]
+                   center_y-h if center_y-h > 0 else 0,
+                   center_x+w if center_x+w < image_size[0] else image_size[0]-1,
+                   center_y+h if center_y+h < image_size[1] else image_size[1]-1]
         new_box = [int(x) for x in new_box]
         new_mask_box.append(new_box)
     return new_mask_box
@@ -236,7 +236,7 @@ def resize_box(box, original_size, dest_size):
 
 
 def overlap(box1, box2, thresh=0.75):
-    """ (box1 \cup box2) / box2
+    """ (box1 cup box2) / box2
     Args:
         box1: [xmin, ymin, xmax, ymax]
         box2: [xmin, ymin, xmax, ymax]
@@ -333,14 +333,14 @@ def nms(prediction, score_threshold=0.005, iou_threshold=0.5, overlap_threshold=
             # iou
             iou = iou_calc1(best_bbox[np.newaxis, :4], cls_bboxes[:, :4])
             iou_mask = iou > iou_threshold
-             # overlap
+            # overlap
             overlap = iou_calc2(best_bbox[np.newaxis, :4], cls_bboxes[:, :4])
             overlap_mask = overlap > overlap_threshold
 
             weight = np.ones((len(iou),), dtype=np.float32)
             weight[iou_mask] = 0.0
             weight[overlap_mask] = 0.0
-           
+
             cls_bboxes[:, 4] = cls_bboxes[:, 4] * weight
             score_mask = cls_bboxes[:, 4] > score_threshold
             cls_bboxes = cls_bboxes[score_mask]
