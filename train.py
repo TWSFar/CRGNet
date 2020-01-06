@@ -5,13 +5,14 @@ import collections
 import numpy as np
 from tqdm import tqdm
 
-# from models_demo import model_demo
-# from configs.visdrone_deeplabv3_sample import opt
-from configs.visdrone_deeplabv3 import opt
+# from configs.deeplabv3_region_sample import opt
+# from configs.deeplabv3_region import opt
+from configs.deeplabv3_density_sample import opt
+
 
 from models import DeepLab
 # from models import CSRNet
-from models.functions import Evaluator, LR_Scheduler
+from models.utils import Evaluator, LR_Scheduler
 from models.losses import build_loss
 from dataloaders import make_data_loader
 
@@ -103,7 +104,7 @@ class Trainer(object):
                 else self.model.freeze_bn()
 
         for iter_num, sample in enumerate(self.train_loader):
-            # if iter_num > 3: break
+            if iter_num > 3: break
             try:
                 temp_time = time.time()
                 imgs = sample["image"].to(opt.device)
