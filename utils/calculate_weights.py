@@ -31,4 +31,4 @@ def calculate_weights_labels(dataloader, num_classes, root_dir):
         weight = np.array(class_weights)
         np.save(classes_weights_file, weight)
 
-    return torch.from_numpy(weight.astype(np.float32))
+    return weight.astype(np.float32)

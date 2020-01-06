@@ -118,7 +118,7 @@ if __name__ == "__main__":
             for sample in tqdm(samples):
                 density_mask = _generate_mask(sample, args.mask_size)
                 maskname = osp.join(mask_dir, osp.basename(sample['image']).
-                                replace('jpg', 'png'))
+                                    replace('jpg', 'png'))
                 cv2.imwrite(maskname, density_mask)
 
                 if args.show:

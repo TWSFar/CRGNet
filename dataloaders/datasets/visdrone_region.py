@@ -5,8 +5,8 @@ import os.path as osp
 import torch
 from torchvision import transforms
 from torch.utils.data import Dataset
-import sys
-sys.path.insert(0, osp.join(osp.dirname(osp.abspath(__file__)), '../../'))
+# import sys
+# sys.path.insert(0, osp.join(osp.dirname(osp.abspath(__file__)), '../../'))
 from dataloaders import deeplab_transforms as dtf
 IMG_ROOT = "JPEGImages"
 REGION_ROOT = "SegmentationClass"
@@ -39,7 +39,7 @@ class VisDroneRegion(Dataset):
                 dtf.ToTensor()])
         else:
             self.transform = transforms.Compose([
-                dtf.FixedNoMaskResize(crop_size=self.opt.input_size),  # 513
+                dtf.FixedNoMaskResize(size=opt.input_size),  # 513
                 dtf.Normalize(opt.mean, opt.std),
                 dtf.ToTensor()])
 

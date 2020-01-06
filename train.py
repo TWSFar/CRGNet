@@ -5,12 +5,14 @@ import collections
 import numpy as np
 from tqdm import tqdm
 
-# from models_demo import model_demo
-from configs.visdrone_deeplabv3 import opt
+# from configs.deeplabv3_region_sample import opt
+# from configs.deeplabv3_region import opt
+from configs.deeplabv3_density_sample import opt
+
 
 from models import DeepLab
 # from models import CSRNet
-from models.functions import Evaluator, LR_Scheduler
+from models.utils import Evaluator, LR_Scheduler
 from models.losses import build_loss
 from dataloaders import make_data_loader
 
@@ -31,15 +33,14 @@ class Trainer(object):
         self.saver = Saver(opt, mode)
 
         # visualize
-        if opt.visualize:
-            self.summary = TensorboardSummary(self.saver.experiment_dir)
-            self.writer = self.summary.create_summary()
+        self.summary = TensorboardSummary(self.saver.experiment_dir)
+        self.writer = self.summary.create_summary()
 
         # Dataset dataloader
-        self.train_dataset, self.train_loader = make_data_loader(opt, mode)  # train
+        self.train_dataset, self.train_loader = make_data_loader(opt)
         self.nbatch_train = len(self.train_loader)
         self.nclass = self.train_dataset.nclass
-        self.val_dataset, self.val_loader = make_data_loader(opt, mode="val")  # val
+        self.val_dataset, self.val_loader = make_data_loader(opt, mode="val")
         self.nbatch_val = len(self.val_loader)
 
         # model
@@ -58,17 +59,19 @@ class Trainer(object):
 
         # Loss
         if opt.use_balanced_weights:
-            calculate_weights_labels(opt.dataset,
-                                     self.train_loader,
-                                     self.nclass,)
+            opt.loss["weight"] = calculate_weights_labels(
+                opt.dataset, self.train_loader, self.nclass,)
         self.loss = build_loss(opt.loss)
 
         # Define Evaluator
         self.evaluator = Evaluator(self.nclass)
 
         # Define lr scheduler
-        self.scheduler = LR_Scheduler(opt.lr_scheduler, opt.lr,
-                                      opt.epochs, len(self.train_loader), 140)
+        self.scheduler = LR_Scheduler(mode=opt.lr_scheduler,
+                                      base_lr=opt.lr,
+                                      num_epochs=opt.epochs,
+                                      iters_per_epoch=self.nbatch_train,
+                                      lr_step=140)
 
         # Resuming Checkpoint
         self.best_pred = 0.0
@@ -91,18 +94,17 @@ class Trainer(object):
                                                device_ids=opt.gpu_id)
 
         self.loss_hist = collections.deque(maxlen=500)
-        self.timer = Timer(opt.epochs, len(self.train_loader), self.nbatch_val)
+        self.timer = Timer(opt.epochs, self.nbatch_train, self.nbatch_val)
         self.step_time = collections.deque(maxlen=opt.print_freq)
 
     def train(self, epoch):
         self.model.train()
-        if len(opt.gpu_id) > 1:
-            self.model.module.freeze_bn()
-        else:
-            self.model.freeze_bn()
+        if opt.freeze_bn:
+            self.model.module.freeze_bn() if len(opt.gpu_id) > 1 \
+                else self.model.freeze_bn()
 
         for iter_num, sample in enumerate(self.train_loader):
-            # if iter_num > 3: break
+            if iter_num > 3: break
             try:
                 temp_time = time.time()
                 imgs = sample["image"].to(opt.device)
@@ -111,7 +113,7 @@ class Trainer(object):
                 output = self.model(imgs)
 
                 loss = self.loss(output, labels)
-                torch.nn.utils.clip_grad_norm_(self.model.parameters(), 3)
+                # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 3)
                 loss.backward()
                 self.loss_hist.append(float(loss))
 
@@ -155,22 +157,25 @@ class Trainer(object):
 
     def validate(self, epoch):
         self.model.eval()
+        self.evaluator.reset()
         test_loss = 0.0
         with torch.no_grad():
             tbar = tqdm(self.val_loader, desc='\r')
             for i, sample in enumerate(tbar):
                 imgs = sample['image'].to(opt.device)
                 labels = sample['label'].to(opt.device)
+                path = sample["path"]
 
                 output = self.model(imgs)
+
                 loss = self.loss(output, labels)
                 test_loss += loss.item()
-                tbar.set_description('Test loss: %.3f' % (loss / (i + 1)))
+                tbar.set_description('Test loss: %.4f' % (test_loss / (i + 1)))
 
                 pred = output.data.cpu().numpy()
                 target = labels.cpu().numpy()
                 pred = np.argmax(pred, axis=1)
-                self.evaluator.add_batch(target, pred, sample["path"], opt.dataset)
+                self.evaluator.add_batch(target, pred, path, opt.dataset)
 
             # Fast test during the training
             Acc = self.evaluator.Pixel_Accuracy()
@@ -180,6 +185,7 @@ class Trainer(object):
             RRecall = self.evaluator.Region_Recall()
             RNum = self.evaluator.Region_Num()
             mean_loss = test_loss / self.nbatch_val
+            result = 2 / (1 / mIoU + 1 / RRecall)
             self.writer.add_scalar('val/mean_loss_epoch', mean_loss, epoch)
             self.writer.add_scalar('val/mIoU', mIoU, epoch)
             self.writer.add_scalar('val/Acc', Acc, epoch)
@@ -187,10 +193,11 @@ class Trainer(object):
             self.writer.add_scalar('val/fwIoU', FWIoU, epoch)
             self.writer.add_scalar('val/RRecall', RRecall, epoch)
             self.writer.add_scalar('val/RNum', RNum, epoch)
+            self.writer.add_scalar('val/Result', result, epoch)
 
-            printline = ("Epoch: [{}], mean_loss: {:1.3f}, mIoU: {:1.5f}, "
-                         "Acc: {:1.5f}, Acc_class: {:1.5f}, fwIoU: {:1.5f}, "
-                         "RRecall: {:1.5f}, RNum: {:1.1f}\n").format(
+            printline = ("Val[Epoch: [{}], mean_loss: {:.4f}, mIoU: {:.4f}, "
+                         "Acc: {:.4f}, Acc_class: {:.4f}, fwIoU: {:.4f}, "
+                         "RRecall: {:.4f}, RNum: {:.1f}]").format(
                              epoch, mean_loss, mIoU,
                              Acc, Acc_class, FWIoU,
                              RRecall, RNum)
@@ -216,6 +223,9 @@ def train(**kwargs):
         pred = trainer.validate(epoch)
         trainer.timer.set_val_eta(epoch, time.time() - val_time)
 
+        print("Val[New pred: {:1.4f}, previous best: {:1.4f}]".format(
+            pred, trainer.best_pred
+        ))
         is_best = pred > trainer.best_pred
         trainer.best_pred = max(pred, trainer.best_pred)
         if (epoch % 20 == 0 and epoch != 0) or is_best:
@@ -237,5 +247,5 @@ def train(**kwargs):
 
 
 if __name__ == '__main__':
-    train()
-    # fire.Fire()
+    # train()
+    fire.Fire(train)

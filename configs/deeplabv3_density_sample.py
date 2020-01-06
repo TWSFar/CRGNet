@@ -1,6 +1,5 @@
 import os
 import time
-import torch
 from pprint import pprint
 from utils.devices import select_device
 user_dir = os.path.expanduser('~')
@@ -9,7 +8,7 @@ user_dir = os.path.expanduser('~')
 class Config:
     # data
     dataset = "visdrone"
-    root_dir = user_dir + "/data/Visdrone/region_voc"
+    root_dir = user_dir + "/work/CRGNet/data/Visdrone_Density"
     input_size = (640, 480)
     mean = [0.382, 0.383, 0.367]
     std = [0.164, 0.156, 0.164]
@@ -23,18 +22,19 @@ class Config:
     hrnet_cfg = user_dir + '/work/RetinaNet/lib/hrnet_config/hrnet_w48.yaml'
 
     # train
-    batch_size = 16
+    batch_size = 1
     start_epoch = 0
-    epochs = 200
+    epochs = 3
+    freeze_bn = False
 
     # loss
     loss = dict(
         type="CrossEntropyLoss",
         ignore_index=255,
-        weight=torch.tensor([1, 2]).float()
+        weight=[1, 2]
     )
 
-    # param for optimizer
+    # optimizer
     use_balanced_weights = False
     lr_scheduler = 'poly'  # choices = 'poly', 'step', 'cos'
     lr = 0.0005
@@ -42,13 +42,16 @@ class Config:
     decay = 5e-4
     steps = [0.8, 0.9]
     scales = 0.3
+    workers = 16
+
+    # eval
+    # parameters
+    pst_thd = 0.05
 
     # visual
-    visualize = True
-    print_freq = 50
-    plot_every = 100  # every n batch plot
+    print_freq = 1
+    plot_every = 1  # every n batch plot
     saver_freq = 1
-    workers = 16
 
     seed = time.time()
 

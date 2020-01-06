@@ -1,5 +1,4 @@
 import os
-import cv2
 import glob
 import pickle
 import numpy as np
@@ -40,7 +39,8 @@ class VisDrone(object):
         return list of all image annotation path
         """
         img_list = self._get_imglist(split)
-        return [img.replace(IMG_ROOT, ANNO_ROOT).replace('jpg', 'txt') for img in img_list]
+        return [img.replace(IMG_ROOT, ANNO_ROOT).replace('jpg', 'txt')
+                for img in img_list]
 
     def _get_gtbox(self, anno_path):
         box_all = []

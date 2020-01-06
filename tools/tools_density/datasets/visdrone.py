@@ -5,33 +5,33 @@ import pickle
 import numpy as np
 import os.path as osp
 from PIL import Image
+IMG_ROOT = "images"
+ANNO_ROOT = "annotations"
 
 
 class VisDrone(object):
     def __init__(self, db_root):
-        self._init_path(db_root)
-
-    def _init_path(self, db_root):
         self.src_traindir = db_root + '/VisDrone2019-DET-train'
         self.src_valdir = db_root + '/VisDrone2019-DET-val'
         self.src_testdir = db_root + '/VisDrone2019-DET-test-challenge'
         self.region_voc_dir = db_root + '/region_voc'
         self.density_voc_dir = db_root + '/density_voc'
-        self.region_detc
-        cache_path = osp.join(db_root, 'cache')
-        if not osp.exists(cache_path):
-            os.makedirs(cache_path)
-        self.cache_dir = cache_path
+        self.cache_path = osp.join(db_root, 'cache')
+        self._init_path()
+
+    def _init_path(self):
+        if not osp.exists(self.cache_dir):
+            os.makedirs(self.cache_dir)
 
     def _get_imglist(self, split='train'):
         """ return list of all image paths
         """
         if split == 'train':
-            return glob.glob(self.src_traindir + '/images/*.jpg')
+            return glob.glob(self.src_traindir + '/{}/*.jpg'.format(IMG_ROOT))
         elif split == 'val':
-            return glob.glob(self.src_valdir + '/images/*.jpg')
+            return glob.glob(self.src_valdir + '/{}/*.jpg'.format(IMG_ROOT))
         elif split == 'test':
-            return glob.glob(self.src_testdir + '/images/*.jpg')
+            return glob.glob(self.src_testdir + '/{}/*.jpg'.format(IMG_ROOT))
         else:
             raise('error')
 
@@ -40,7 +40,8 @@ class VisDrone(object):
         return list of all image annotation path
         """
         img_list = self._get_imglist(split)
-        return [img.replace('images', 'annotations').replace('jpg', 'txt') for img in img_list]
+        return [img.replace(IMG_ROOT, ANNO_ROOT).replace('jpg', 'txt')
+                for img in img_list]
 
     def _get_gtbox(self, anno_path):
         box_all = []
@@ -55,7 +56,7 @@ class VisDrone(object):
             box_all.append(bbox[:4].tolist())
 
         return {'bboxes': np.array(box_all, dtype=np.float64),
-                'cls': bboxes[:, 5]}
+                'cls': bboxes[:, 5] - 1}  # cls id run from 0
 
     def _load_samples(self, split):
         cache_file = osp.join(self.cache_dir, split + '_samples.pkl')

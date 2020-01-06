@@ -26,7 +26,8 @@ class DeepLab(nn.Module):
                                        nn.Conv2d(128, num_classes, kernel_size=1, stride=1))
 
         self._init_weight()
-        self.freeze_bn()
+        if opt.freeze_bn:
+            self.freeze_bn()
 
     def forward(self, input):
         x, low_level_feat = self.backbone(input)
