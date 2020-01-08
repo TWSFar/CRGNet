@@ -20,7 +20,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description="convert to voc dataset")
     parser.add_argument('--dataset', type=str, default='VisDrone',
                         choices=['VisDrone'], help='dataset name')
-    parser.add_argument('--db_root', type=str, default="G:\\CV\\Dataset\\Detection\\Visdrone",
+    parser.add_argument('--db_root', type=str,
+                        default="G:\\CV\\Dataset\\Detection\\Visdrone",
                         help="dataset's root path")
     parser.add_argument('--imgsets', type=str, default=['train', 'val'],
                         nargs='+', help='for train or test')
@@ -38,8 +39,8 @@ class MakeDataset(object):
     def __init__(self):
         self.dataset = get_dataset(args.dataset, args.db_root)
 
-        self.region_dir = self.dataset.region_voc_dir
-        self.segmentation_dir = self.region_dir + '/SegmentationClass'
+        self.density_dir = self.dataset.density_voc_dir
+        self.segmentation_dir = self.density_dir + '/SegmentationClass'
 
         self.dest_datadir = self.dataset.detect_voc_dir
         self.image_dir = self.dest_datadir + '/JPEGImages'
@@ -171,7 +172,7 @@ class MakeDataset(object):
         xml = tostring(node_root, encoding='utf-8')
         dom = parseString(xml)
         # print(xml)
-        return dom        
+        return dom
 
     def make_chip(self, sample, imgset):
         image = cv2.imread(sample['image'])

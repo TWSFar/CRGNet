@@ -14,9 +14,9 @@ class VisDrone(object):
         self.src_traindir = db_root + '/VisDrone2019-DET-train'
         self.src_valdir = db_root + '/VisDrone2019-DET-val'
         self.src_testdir = db_root + '/VisDrone2019-DET-test-challenge'
-        self.region_voc_dir = db_root + '/region_voc'
         self.density_voc_dir = db_root + '/density_voc'
-        self.cache_path = osp.join(db_root, 'cache')
+        self.detect_voc_dir = db_root + '/density_detect_voc'
+        self.cache_dir = osp.join(db_root, 'cache')
         self._init_path()
 
     def _init_path(self):

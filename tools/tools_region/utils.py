@@ -47,7 +47,7 @@ def region_split(regions, mask_shape):
             mid = int(box[1] + height / 2.0)
             new_regions.append([box[0], box[1], box[2], mid + alpha])
             new_regions.append([box[0], mid - alpha, box[2], box[3]])
-        elif width > mask_w * 0.6 and height > 0.7:
+        elif width > mask_w * 0.6 and height > mask_h * 0.7:
             mid_w = int(box[0] + width / 2.0)
             mid_h = int(box[1] + height / 2.0)
             new_regions.append([box[0], box[1], mid_w + alpha, mid_h + alpha])
@@ -193,6 +193,7 @@ def generate_box_from_mask(mask):
     for i in range(len(contours)):
         x, y, w, h = cv2.boundingRect(contours[i])
         regions.append([x, y, x+w, y+h])
+    show_image(mask, np.array(regions))
     return regions, contours
 
 
@@ -348,6 +349,28 @@ def nms(prediction, score_threshold=0.005, iou_threshold=0.5, overlap_threshold=
     return best_bboxes
 
 
+def show_image(img, labels=None):
+    import matplotlib.pyplot as plt
+    # plt.figure(figsize=(10, 10))
+    plt.imshow(img)
+    if labels is not None:
+        if labels.shape[0] > 0:
+            plt.plot(labels[:, [0, 2, 2, 0, 0]].T, labels[:, [1, 1, 3, 3, 1]].T, '-')
+    plt.show()
+    pass
+
+
+def _boxvis(img, box_list, origin_img=None, binary=True):
+    import cv2
+    # if binary:
+    #     ret, img = cv.threshold(img, 0, 255, cv.THRESH_BINARY)
+    for box in box_list:
+        cv2.rectangle(img, (box[0], box[1]), (box[2], box[3]), color=(255, 255, 255), thickness=1)
+    # plt.subplot(1, 2, 1)
+    plt.imshow(img)
+    plt.show()
+
+
 class MyEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.integer):
@@ -358,3 +381,10 @@ class MyEncoder(json.JSONEncoder):
             return obj.tolist()
         else:
             return super(MyEncoder, self).default(obj)
+
+
+if __name__ == "__main__":
+    mask = np.zeros((4, 4, 3), dtype=np.int)
+    labels = np.array([[1, 1, 3, 3]])
+    # show_image(mask)
+    _boxvis(mask, labels)
