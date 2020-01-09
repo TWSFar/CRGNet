@@ -75,7 +75,11 @@ class VisDrone(object):
         # load information of image and save to cache
         sizes = [Image.open(img).size for img in img_list]
 
-        samples = [self._get_gtbox(ann) for ann in anno_path]
+        if "test" in split:
+            sample = [{} for _ in img_list]
+        else:
+            samples = [self._get_gtbox(ann) for ann in anno_path]
+
 
         for i, img in enumerate(img_list):
             samples[i]['image'] = img  # image path

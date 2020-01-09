@@ -51,8 +51,8 @@ class Statistics(object):
             samples = self.dataset._load_samples(imgset)
             chip_obj_density = []
             chip_obj_scale = []
-            chip_obj_weigth = []
-            chip_obj_weigth3D = []
+            chip_obj_weight = []
+            chip_obj_weight3D = []
             for i, sample in enumerate(samples):
                 # if '0000100_03906_d_0000014' not in sample["image"]:
                 #     continue
@@ -63,11 +63,11 @@ class Statistics(object):
                 if mask.sum() == 0:
                     continue
 
-                density, scale, weigth, weigth3D = self.statistics(mask, chips)
+                density, scale, weight, weight3D = self.statistics(mask, chips)
                 chip_obj_density.extend(density)
                 chip_obj_scale.extend(scale)
-                chip_obj_weigth.extend(weigth)
-                chip_obj_weigth3D.extend(weigth3D)
+                chip_obj_weight.extend(weight)
+                chip_obj_weight3D.extend(weight3D)
 
                 sys.stdout.write('\rcomplete: {:d}/{:d} {:s}'
                                  .format(i + 1, len(samples), img_id))
@@ -76,7 +76,9 @@ class Statistics(object):
             result_list = dict(
                 Scale=np.array(chip_obj_scale),
                 Density=np.array(chip_obj_density),
-                weigth=np.array(chip_obj_weigth)
+                Weight=np.array(chip_obj_weight),
+                ChipNobj=np.array(chip_obj_weight3D)[:, 0],
+                ChipArea=np.array(chip_obj_weight3D)[:, 1],
             )
 
             result_file = osp.join(result_dir, "chip_informations.txt")
@@ -91,16 +93,18 @@ class Statistics(object):
             fig = plt.figure()
             ax = fig.add_subplot(111, projection='3d')
 
-            chip_obj_weigth3D = np.array(chip_obj_weigth3D)
-            xs = chip_obj_weigth3D[:, 0]
-            ys = chip_obj_weigth3D[:, 1]
-            zs = chip_obj_weigth3D[:, 2]
+            chip_obj_weight3D = np.array(chip_obj_weight3D)
+            xs = chip_obj_weight3D[:, 0]
+            ys = chip_obj_weight3D[:, 1]
+            zs = chip_obj_weight3D[:, 2]
             # 去除重复
-            obj_weigth3D = np.zeros((int(xs.max()+1), int(ys.max()+1)))
+            max_xs = int(xs.max()+1)
+            max_ys = int(ys.max()+1)
+            obj_weight3D = np.zeros((max_xs, max_ys))
             for x, y, z in zip(xs, ys, zs):
-                obj_weigth3D[int(x), int(y)] = z
+                obj_weight3D[int(x), int(y)] = z
             xs, ys, zs = [], [], []
-            for x, line in enumerate(obj_weigth3D):
+            for x, line in enumerate(obj_weight3D):
                 for y, z in enumerate(line):
                     if z != 0:
                         xs.append(x)
@@ -110,11 +114,9 @@ class Statistics(object):
             ax.scatter(xs, ys, zs, c='r')
             ax.set_xlabel('number')
             ax.set_ylabel('area')
-            ax.set_zlabel('weigth')
+            ax.set_zlabel('weight')
 
             plt.show()
-            
-
 
     def get_ChipAndMask(self, sample, imgset):
         img_id = osp.basename(sample['image'])[:-4]
@@ -127,16 +129,16 @@ class Statistics(object):
         region_box, contours = utils.generate_box_from_mask(mask)
         region_box = utils.region_postprocess(
             region_box, contours, (mask_w, mask_h))
-        region_box = utils.generate_crop_region(
-            region_box, (mask_w, mask_h))
+        # region_box = utils.generate_crop_region(
+        #     region_box, (mask_w, mask_h))
 
         return mask, region_box
 
     def statistics(self, mask, chips):
         scale = []
         density = []
-        weigth = []
-        weigth3D = []
+        weight = []
+        weight3D = []
         for chip in chips:
             mask_chip = mask[chip[1]:chip[3]+1, chip[0]:chip[2]+1]
             chip_area = np.where(mask_chip > 0, 1, 0).sum()
@@ -145,13 +147,15 @@ class Statistics(object):
                 utils.show_image(mask, chip[None, :])
                 continue
             # utils.show_image(mask, chips[:])
-            temp = (chip_area**0.5) * np.exp(chip_area/chip_nobj)
-            weigth.append(temp)
-            weigth3D.append([chip_nobj, chip_area, temp])
+            # temp = chip_area ** 0.1 * np.exp(chip_area/chip_nobj)
+            # temp = np.log(1 + chip_area/chip_nobj) + 1
+            temp = np.log(1 + chip_area ** 1.5 / (chip_nobj * 35)) + 1
+            weight.append(temp)
+            weight3D.append([chip_nobj, chip_area, temp])
             scale.append(chip_area / chip_nobj)
             density.append(chip_nobj / chip_area)
 
-        return density, scale, weigth, weigth3D
+        return density, scale, weight, weight3D
 
 
 if __name__ == "__main__":
