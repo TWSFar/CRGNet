@@ -193,7 +193,7 @@ def generate_box_from_mask(mask):
     for i in range(len(contours)):
         x, y, w, h = cv2.boundingRect(contours[i])
         regions.append([x, y, x+w, y+h])
-    show_image(mask, np.array(regions))
+    # show_image(mask, np.array(regions))
     return regions, contours
 
 

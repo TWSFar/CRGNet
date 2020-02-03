@@ -10,8 +10,8 @@ from collections import OrderedDict
 hyp = {
     'dataset': 'VisDrone2019_detect_voc',
     'img_type': '.jpg',
-    'mode': 'val',  # for save instance_train.json
-    'data_dir': '/home/visitor1/data/Visdrone/detect_voc/',
+    'mode': 'train',  # for save instance_train.json
+    'data_dir': '/home/twsf/data/Visdrone/detect_voc/',
 }
 hyp['json_dir'] = osp.join(hyp['data_dir'], 'annotations_json')
 hyp['xml_dir'] = osp.join(hyp['data_dir'], 'Annotations')
@@ -145,6 +145,7 @@ def make_json():
     print('Saving annotations to {}'.format(save_file))
     json.dump(ann, open(save_file, 'w'), indent=4)
     print('done!')
+
 
 if __name__ == '__main__':
     print(hyp)
