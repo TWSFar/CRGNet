@@ -81,37 +81,38 @@ class MakeDataset(object):
 
     def generate_region_gt(self, region_box, gt_bboxes, labels):
         chip_list = []
-        neglect_list = []
         for box in region_box:
             chip_list.append(np.array(box))
 
         # chip gt
         chip_gt_list = []
         chip_label_list = []
-        for chip in chip_list:
-            chip_gt = []
-            chip_label = []
-            neglect_gt = []
-            for i, box in enumerate(gt_bboxes):
-                if utils.overlap(chip, box, 0.75):
-                    box = [max(box[0], chip[0]), max(box[1], chip[1]),
-                           min(box[2], chip[2]), min(box[3], chip[3])]
-                    new_box = [box[0] - chip[0], box[1] - chip[1],
-                               box[2] - chip[0], box[3] - chip[1]]
-                    chip_gt.append(np.array(new_box))
-                    chip_label.append(labels[i])
-                elif utils.overlap(chip, box, 0.001):
-                    box = [max(box[0], chip[0]), max(box[1], chip[1]),
-                           min(box[2], chip[2]), min(box[3], chip[3])]
-                    new_box = [box[0] - chip[0], box[1] - chip[1],
-                               box[2] - chip[0], box[3] - chip[1]]
-                    neglect_gt.append(np.array(new_box, dtype=np.int))
+        chip_neglect_list = []
+        if gt_bboxes is not None:
+            for chip in chip_list:
+                chip_gt = []
+                chip_label = []
+                neglect_gt = []
+                for i, box in enumerate(gt_bboxes):
+                    if utils.overlap(chip, box, 0.75):
+                        box = [max(box[0], chip[0]), max(box[1], chip[1]),
+                            min(box[2], chip[2]), min(box[3], chip[3])]
+                        new_box = [box[0] - chip[0], box[1] - chip[1],
+                                box[2] - chip[0], box[3] - chip[1]]
+                        chip_gt.append(np.array(new_box))
+                        chip_label.append(labels[i])
+                    elif utils.overlap(chip, box, 0.001):
+                        box = [max(box[0], chip[0]), max(box[1], chip[1]),
+                            min(box[2], chip[2]), min(box[3], chip[3])]
+                        new_box = [box[0] - chip[0], box[1] - chip[1],
+                                box[2] - chip[0], box[3] - chip[1]]
+                        neglect_gt.append(np.array(new_box, dtype=np.int))
 
-            chip_gt_list.append(chip_gt)
-            chip_label_list.append(chip_label)
-            neglect_list.append(neglect_gt)
+                chip_gt_list.append(chip_gt)
+                chip_label_list.append(chip_label)
+            chip_neglect_list.append(neglect_gt)
 
-        return chip_list, chip_gt_list, chip_label_list, neglect_list
+        return chip_list, chip_gt_list, chip_label_list, chip_neglect_list
 
     def generate_imgset(self, img_list, imgset):
         with open(os.path.join(self.list_dir, imgset+'.txt'), 'w') as f:
@@ -186,13 +187,16 @@ class MakeDataset(object):
         # make chip
         region_box, contours = utils.generate_box_from_mask(mask)
         region_box = utils.region_postprocess(region_box, contours, (mask_w, mask_h))
+        region_box = utils.generate_crop_region(region_box, mask, (mask_w, mask_h))
         region_box = utils.resize_box(region_box, (mask_w, mask_h), (width, height))
-        region_box = utils.generate_crop_region(region_box, (width, height))
 
         # if imgset == 'train':
         #     region_box = np.vstack((region_box, np.array([0, 0, width-1, height-1])))
 
-        gt_bboxes, gt_cls = sample['bboxes'], sample['cls']
+        if "test" in imgset:
+            gt_bboxes, gt_cls = None, None
+        else:
+            gt_bboxes, gt_cls = sample['bboxes'], sample['cls']
 
         chip_list, chip_gt_list, chip_label_list, neglect_list = self.generate_region_gt(
             region_box, gt_bboxes, gt_cls)
@@ -206,7 +210,6 @@ class MakeDataset(object):
                             chip_label_list, neglect_list, imgset):
         """write chips of one image to disk and make xml annotations
         """
-        assert len(chip_gt_list) > 0
         chip_loc = dict()
         for i, chip in enumerate(chip_list):
             img_name = '{}_{}.jpg'.format(img_id, i)
@@ -216,20 +219,24 @@ class MakeDataset(object):
 
             chip_img = image[chip[1]:chip[3], chip[0]:chip[2], :].copy()
             assert len(chip_img.shape) == 3
-            if imgset in args.padding:
+            if imgset in args.padding and neglect_list is not None:
                 for neg_box in neglect_list[i]:
                     neg_w = neg_box[2] - neg_box[0]
                     neg_h = neg_box[3] - neg_box[1]
                     random_box = np.random.randint(0, 256, (neg_h, neg_w, 3))
                     chip_img[neg_box[1]:neg_box[3], neg_box[0]:neg_box[2], :] = random_box
 
-            bbox = np.array(chip_gt_list[i], dtype=np.int)
-            label = np.array(chip_label_list[i], dtype=np.int)
+            if chip_gt_list is not None:
+                bbox = np.array(chip_gt_list[i], dtype=np.int)
+                label = np.array(chip_label_list[i], dtype=np.int)
+            else:
+                bbox = np.array()
+                label = np.array()
             dom = self.make_xml(chip, bbox, label, img_name, chip_size)
-
-            cv2.imwrite(os.path.join(self.image_dir, img_name), chip_img)
             with open(os.path.join(self.anno_dir, xml_name), 'w') as f:
                 f.write(dom.toprettyxml(indent='\t', encoding='utf-8').decode('utf-8')) 
+
+            cv2.imwrite(os.path.join(self.image_dir, img_name), chip_img)
         return chip_loc
 
 

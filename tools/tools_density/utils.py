@@ -58,42 +58,43 @@ def generate_box_from_mask(mask):
     return regions, contours
 
 
-def generate_crop_region(regions, img_size):
+def generate_crop_region(regions, mask, mask_size):
     """
     generate final regions
     enlarge regions < 300
     """
-    width, height = img_size
+    width, height = mask_size
     final_regions = []
     for box in regions:
+        # show_image(mask, np.array(box)[None])
         box_w, box_h = box[2] - box[0], box[3] - box[1]
         center_x, center_y = box[0] + box_w / 2.0, box[1] + box_h / 2.0
-        if box_w < min(img_size) * 0.4 and box_h < min(img_size) * 0.4:
-            refine = True
-            crop_size = min(img_size) * 0.2
-        # elif box_w / box_h > 1.3 or box_h / box_w > 1.3:
-        #     refine = True
-        #     crop_size = max(box_w, box_h) / 2
-        else:
-            refine = True
-            crop_size = max(box_w, box_h) / 2
 
-        if refine:
-            center_x = crop_size if center_x < crop_size else center_x
-            center_y = crop_size if center_y < crop_size else center_y
-            center_x = width - crop_size - 1 if center_x > width - crop_size - 1 else center_x
-            center_y = height - crop_size - 1 if center_y > height - crop_size - 1 else center_y
+        mask_chip = mask[box[1]:box[3]+1, box[0]:box[2]+1]
+        chip_area = np.where(mask_chip > 0, 1, 0).sum()
+        chip_nobj = mask_chip.sum()
+        # weight = np.exp(0.5 * chip_area/chip_nobj)
+        weight = np.log(1 + chip_area ** 1.5 / (chip_nobj * 35)) + 1
 
-            new_box = [center_x - crop_size if center_x - crop_size > 0 else 0,
-                       center_y - crop_size if center_y - crop_size > 0 else 0,
-                       center_x + crop_size if center_x + crop_size < width else width-1,
-                       center_y + crop_size if center_y + crop_size < height else height-1]
-            for x in new_box:
-                if x < 0:
-                    pdb.set_trace()
-            final_regions.append([int(x) for x in new_box])
-        else:
-            final_regions.append([int(x) for x in box])
+        crop_size_w = 0.5 * box_w * weight
+        crop_size_h = 0.5 * box_h * weight
+        crop_size_w = np.clip(crop_size_w, max(box_w/2.0, 6), max(box_w/2.0, 24))
+        crop_size_h = np.clip(crop_size_h, max(box_h/2.0, 6), max(box_h/2.0, 24))
+
+        center_x = crop_size_w if center_x < crop_size_w else center_x
+        center_y = crop_size_h if center_y < crop_size_h else center_y
+        center_x = width - crop_size_w - 1 if center_x > width - crop_size_w - 1 else center_x
+        center_y = height - crop_size_h - 1 if center_y > height - crop_size_h - 1 else center_y
+
+        new_box = [center_x - crop_size_w if center_x - crop_size_w > 0 else 0,
+                    center_y - crop_size_h if center_y - crop_size_h > 0 else 0,
+                    center_x + crop_size_w if center_x + crop_size_w < width else width-1,
+                    center_y + crop_size_h if center_y + crop_size_h < height else height-1]
+        for x in new_box:
+            if x < 0:
+                pdb.set_trace()
+        final_regions.append([int(x) for x in new_box])
+        # show_image(mask, np.array(final_regions)[None, -1])
 
     regions = np.array(final_regions)
     while(1):
