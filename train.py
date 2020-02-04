@@ -105,7 +105,7 @@ class Trainer(object):
             self.model.module.freeze_bn() if len(opt.gpu_id) > 1 \
                 else self.model.freeze_bn()
         for iter_num, sample in enumerate(self.train_loader):
-            if iter_num >= 1: break
+            # if iter_num >= 1: break
             try:
                 temp_time = time.time()
                 imgs = sample["image"].to(opt.device)
@@ -126,10 +126,11 @@ class Trainer(object):
                 global_step = iter_num + self.nbatch_train * epoch + 1
                 self.writer.add_scalar('train/loss', loss.cpu().item(), global_step)
                 if global_step % opt.plot_every == 0:
+                    pred = output.data.cup().numpy()
                     if self.nclass > 1:
-                        pred = np.argmax(output, axis=1)
+                        pred = np.argmax(pred, axis=1)
                     else:
-                        pred = output > opt.region_thd
+                        pred = pred > opt.region_thd
                     self.summary.visualize_image(self.writer,
                                                  opt.dataset,
                                                  imgs,
@@ -211,7 +212,7 @@ class Trainer(object):
             print(printline)
             self.saver.save_eval_result(printline)
 
-        return 2 / (1 / mIoU + 1 / RRecall)
+        return result
 
 
 def train(**kwargs):

@@ -44,8 +44,8 @@ class Evaluator(object):
         return np.mean(self.mask_object)
 
     def _generate_matrix(self, gt_image, pre_image):
-        # mask = (gt_image >= 0) & (gt_image < self.num_class)
-        mask = gt_image >= 0
+        mask = (gt_image >= 0) & (gt_image < self.num_class)
+        # mask = gt_image >= 0
         label = self.num_class * gt_image[mask].astype('int') + pre_image[mask]
         count = np.bincount(label, minlength=self.num_class**2)
         confusion_matrix = count.reshape(self.num_class, self.num_class)
