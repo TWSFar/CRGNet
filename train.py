@@ -21,8 +21,8 @@ from utils import (Saver, Timer, TensorboardSummary,
 
 import torch
 
-import multiprocessing
-multiprocessing.set_start_method('spawn', True)
+# import multiprocessing
+# multiprocessing.set_start_method('spawn', True)
 torch.manual_seed(opt.seed)
 torch.cuda.manual_seed(opt.seed)
 
@@ -104,7 +104,7 @@ class Trainer(object):
                 else self.model.freeze_bn()
 
         for iter_num, sample in enumerate(self.train_loader):
-            if iter_num > 3: break
+            # if iter_num >= 0: break
             try:
                 temp_time = time.time()
                 imgs = sample["image"].to(opt.device)
@@ -173,8 +173,11 @@ class Trainer(object):
                 tbar.set_description('Test loss: %.4f' % (test_loss / (i + 1)))
 
                 pred = output.data.cpu().numpy()
-                target = labels.cpu().numpy()
-                pred = np.argmax(pred, axis=1)
+                target = labels.cpu().numpy() > 0
+                if self.nclass > 1:
+                    pred = np.argmax(pred, axis=1)
+                else:
+                    pred = pred > opt.region_thd
                 self.evaluator.add_batch(target, pred, path, opt.dataset)
 
             # Fast test during the training

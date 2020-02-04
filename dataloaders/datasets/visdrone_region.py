@@ -16,7 +16,6 @@ class VisDroneRegion(Dataset):
     """
     Visdrone dataset
     """
-    nclass = 2
 
     def __init__(self, opt, mode="train"):
         super().__init__()
@@ -28,6 +27,7 @@ class VisDroneRegion(Dataset):
         self.img_ids = self._load_image_set_index()
 
         self.img_number = len(self.img_ids)
+        self.nclass = opt.nclass
 
         # transform
         if self.mode == "train":

@@ -24,7 +24,7 @@ def parse_args():
     parser.add_argument('--mode', type=str, default=['train', 'val'],
                         nargs='+', help='for train or test')
     parser.add_argument('--db_root', type=str,
-                        default="G:\\CV\\Dataset\\Detection\\Visdrone",
+                        default="E:\\CV\\data\\visdrone",
                         help="dataset's root path")
     parser.add_argument('--mask_size', type=list, default=[30, 40],
                         help="Size of production target mask")
@@ -87,7 +87,7 @@ if __name__ == "__main__":
     args = parse_args()
 
     dataset = get_dataset(args.dataset, args.db_root)
-    dest_datadir = dataset.detect_voc_dir
+    dest_datadir = dataset.density_voc_dir
     image_dir = dest_datadir + '/JPEGImages'
     mask_dir = dest_datadir + '/SegmentationClass'
     annotation_dir = dest_datadir + '/Annotations'

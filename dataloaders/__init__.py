@@ -10,7 +10,7 @@ def make_data_loader(opt, mode="train"):
                                 batch_size=opt.batch_size,
                                 num_workers=opt.workers,
                                 shuffle=True if mode == "train" else False,
-                                pin_memory=True)
+                                pin_memory=False)
 
         return dataset, dataloader
 

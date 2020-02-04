@@ -1,14 +1,16 @@
 import os
 import time
 from pprint import pprint
-from utils.devices import select_device
+from utils import select_device
 user_dir = os.path.expanduser('~')
 
 
 class Config:
     # data
     dataset = "visdrone"
-    root_dir = user_dir + "/work/CRGNet/data/Visdrone_Density"
+    # root_dir = user_dir + "/work/CRGNet/data/Visdrone_Density"
+    root_dir = "E:\\CV\\data\\visdrone\\density_voc"
+    nclass = 1
     input_size = (640, 480)
     mean = [0.382, 0.383, 0.367]
     std = [0.164, 0.156, 0.164]
@@ -29,9 +31,8 @@ class Config:
 
     # loss
     loss = dict(
-        type="CrossEntropyLoss",
-        ignore_index=255,
-        weight=[1, 2]
+        type="MSELoss",
+        reduction="mean"
     )
 
     # optimizer
@@ -42,11 +43,11 @@ class Config:
     decay = 5e-4
     steps = [0.8, 0.9]
     scales = 0.3
-    workers = 16
+    workers = 2
 
     # eval
     # parameters
-    pst_thd = 0.05
+    region_thd = 0.5
 
     # visual
     print_freq = 1

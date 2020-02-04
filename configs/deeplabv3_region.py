@@ -10,6 +10,7 @@ class Config:
     dataset = "visdrone"
     root_dir = user_dir + "/data/Visdrone/region_voc"
     input_size = (640, 480)
+    nclass = 2
     # mean = [0.382, 0.383, 0.367]
     # std = [0.164, 0.156, 0.164]
     mean = (0.485, 0.456, 0.406)
