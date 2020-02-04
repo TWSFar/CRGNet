@@ -128,9 +128,9 @@ class Trainer(object):
                 if global_step % opt.plot_every == 0:
                     # pred = output.data.cpu().numpy()
                     if opt.output_channels > 1:
-                        pred = torch.argmax(pred, dim=1)
+                        pred = torch.argmax(output, dim=1)
                     else:
-                        pred = pred > opt.region_thd
+                        pred = output > opt.region_thd
                     self.summary.visualize_image(self.writer,
                                                  opt.dataset,
                                                  imgs,
