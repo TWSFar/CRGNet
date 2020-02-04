@@ -9,7 +9,7 @@ from .sync_batchnorm import SynchronizedBatchNorm2d
 
 
 class DeepLab(nn.Module):
-    def __init__(self, opt, num_classes=21):
+    def __init__(self, opt):
         super(DeepLab, self).__init__()
 
         if opt.sync_bn == True:
@@ -23,7 +23,7 @@ class DeepLab(nn.Module):
         self.last_conv = nn.Sequential(nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1, bias=False),
                                        nn.BatchNorm2d(128),
                                        nn.ReLU(),
-                                       nn.Conv2d(128, num_classes, kernel_size=1, stride=1))
+                                       nn.Conv2d(128, opt.output_channels, kernel_size=1, stride=1))
 
         self._init_weight()
         if opt.freeze_bn:
@@ -34,7 +34,7 @@ class DeepLab(nn.Module):
         low_level_feat = self.link_conv(low_level_feat)
         x = torch.cat((x, low_level_feat), dim=1)
         x = self.aspp(x)
-        x = self.last_conv(x)
+        x = self.last_conv(x).sigmoid()
 
         return x
 

@@ -7,8 +7,8 @@ from tqdm import tqdm
 
 # from configs.deeplabv3_region_sample import opt
 # from configs.deeplabv3_region import opt
-from configs.deeplabv3_density_sample import opt
-
+# from configs.deeplabv3_density_sample import opt
+from configs.deeplabv3_density import opt
 
 from models import DeepLab
 # from models import CSRNet
@@ -21,8 +21,8 @@ from utils import (Saver, Timer, TensorboardSummary,
 
 import torch
 
-# import multiprocessing
-# multiprocessing.set_start_method('spawn', True)
+import multiprocessing
+multiprocessing.set_start_method('spawn', True)
 torch.manual_seed(opt.seed)
 torch.cuda.manual_seed(opt.seed)
 
@@ -38,6 +38,7 @@ class Trainer(object):
 
         # Dataset dataloader
         self.train_dataset, self.train_loader = make_data_loader(opt)
+        sample = self.train_dataset.__getitem__(0)
         self.nbatch_train = len(self.train_loader)
         self.nclass = self.train_dataset.nclass
         self.val_dataset, self.val_loader = make_data_loader(opt, mode="val")
@@ -48,7 +49,7 @@ class Trainer(object):
             opt.sync_bn = True
         else:
             opt.sync_bn = False
-        model = DeepLab(opt, self.nclass)
+        model = DeepLab(opt)
         self.model = model.to(opt.device)
 
         # Define Optimizer
@@ -97,14 +98,14 @@ class Trainer(object):
         self.timer = Timer(opt.epochs, self.nbatch_train, self.nbatch_val)
         self.step_time = collections.deque(maxlen=opt.print_freq)
 
+
     def train(self, epoch):
         self.model.train()
         if opt.freeze_bn:
             self.model.module.freeze_bn() if len(opt.gpu_id) > 1 \
                 else self.model.freeze_bn()
-
         for iter_num, sample in enumerate(self.train_loader):
-            # if iter_num >= 0: break
+            if iter_num >= 1: break
             try:
                 temp_time = time.time()
                 imgs = sample["image"].to(opt.device)
@@ -125,7 +126,10 @@ class Trainer(object):
                 global_step = iter_num + self.nbatch_train * epoch + 1
                 self.writer.add_scalar('train/loss', loss.cpu().item(), global_step)
                 if global_step % opt.plot_every == 0:
-                    pred = torch.argmax(output, dim=1)
+                    if self.nclass > 1:
+                        pred = np.argmax(output, axis=1)
+                    else:
+                        pred = output > opt.region_thd
                     self.summary.visualize_image(self.writer,
                                                  opt.dataset,
                                                  imgs,
@@ -177,7 +181,7 @@ class Trainer(object):
                 if self.nclass > 1:
                     pred = np.argmax(pred, axis=1)
                 else:
-                    pred = pred > opt.region_thd
+                    pred = (pred > opt.region_thd).reshape(target.shape)
                 self.evaluator.add_batch(target, pred, path, opt.dataset)
 
             # Fast test during the training

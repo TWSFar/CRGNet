@@ -10,7 +10,7 @@ class MSELoss(object):
         device = pred.device
         criterion = nn.MSELoss(reduction=self.reduction).to(device)
 
-        loss = criterion(pred, target)
+        loss = criterion(pred, target.unsqueeze(1))
 
         return loss
 

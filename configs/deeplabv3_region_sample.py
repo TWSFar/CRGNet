@@ -1,16 +1,16 @@
 import os
 import time
 from pprint import pprint
-from utils.devices import select_device
+from utils import select_device
 user_dir = os.path.expanduser('~')
 
 
 class Config:
     # data
     dataset = "visdrone"
-    root_dir = user_dir + "/work/CRGNet/data/Visdrone_Region"
+    # root_dir = user_dir + "/work/CRGNet/data/Visdrone_Region"
+    root_dir = "E:\CV\\code\\CRGNet\\data\\Visdrone_Region"
     input_size = (640, 480)
-    nclass = 2
     mean = [0.382, 0.383, 0.367]
     std = [0.164, 0.156, 0.164]
     resume = False
@@ -19,11 +19,12 @@ class Config:
     # model
     backbone = 'mobilenetv2'
     output_stride = 16
+    output_channels = 2
     sync_bn = False
     hrnet_cfg = user_dir + '/work/RetinaNet/lib/hrnet_config/hrnet_w48.yaml'
 
     # train
-    batch_size = 1
+    batch_size = 2  # assert bs > 2
     start_epoch = 0
     epochs = 3
     freeze_bn = False

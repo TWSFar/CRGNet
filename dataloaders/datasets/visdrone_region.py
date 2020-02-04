@@ -5,8 +5,8 @@ import os.path as osp
 import torch
 from torchvision import transforms
 from torch.utils.data import Dataset
-# import sys
-# sys.path.insert(0, osp.join(osp.dirname(osp.abspath(__file__)), '../../'))
+import sys
+sys.path.insert(0, osp.join(osp.dirname(osp.abspath(__file__)), '../../'))
 from dataloaders import deeplab_transforms as dtf
 IMG_ROOT = "JPEGImages"
 REGION_ROOT = "SegmentationClass"
@@ -16,6 +16,7 @@ class VisDroneRegion(Dataset):
     """
     Visdrone dataset
     """
+    nclass = 2
 
     def __init__(self, opt, mode="train"):
         super().__init__()
@@ -27,7 +28,6 @@ class VisDroneRegion(Dataset):
         self.img_ids = self._load_image_set_index()
 
         self.img_number = len(self.img_ids)
-        self.nclass = opt.nclass
 
         # transform
         if self.mode == "train":
@@ -84,11 +84,11 @@ class VisDroneRegion(Dataset):
 
 
 if __name__ == "__main__":
-    from torch.utils.data import DataLoader
-    from configs.visdrone_deeplabv3 import opt
+    # from torch.utils.data import DataLoader
+    # from configs.deeplabv3_region_sample import opt
     dataset = VisDroneRegion(opt, mode="train")
     data = dataset.__getitem__(0)
-    dataloader = DataLoader(dataset, batch_size=20)
+    dataloader = DataLoader(dataset, batch_size=20, num_workers=2, shuffle=True)
     for sample in dataloader:
         pass
     pass
