@@ -1,11 +1,11 @@
-from .datasets import VisDroneRegion
+from dataloaders.datasets import visdrone_region
 from torch.utils.data import DataLoader
 
 
 def make_data_loader(opt, mode="train"):
 
     if opt.dataset in ['visdrone', 'VisDrone', 'Visdrone']:
-        dataset = VisDroneRegion(opt, mode)
+        dataset = visdrone_region.VisDroneRegion(opt, mode)
         dataloader = DataLoader(dataset,
                                 batch_size=opt.batch_size,
                                 num_workers=opt.workers,

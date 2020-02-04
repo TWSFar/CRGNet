@@ -1,7 +1,7 @@
 import os
 import time
 from pprint import pprint
-from utils.devices import select_device
+from utils import select_device
 user_dir = os.path.expanduser('~')
 
 
@@ -20,6 +20,7 @@ class Config:
     # model
     backbone = 'mobilenetv2'
     output_stride = 16
+    output_channels = 2
     sync_bn = False
     hrnet_cfg = user_dir + '/work/RetinaNet/lib/hrnet_config/hrnet_w48.yaml'
 

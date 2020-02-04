@@ -21,7 +21,7 @@ def parse_args():
     parser.add_argument('--dataset', type=str, default='VisDrone',
                         choices=['VisDrone'], help='dataset name')
     parser.add_argument('--db_root', type=str,
-                        default="G:\\CV\\Dataset\\Detection\\Visdrone",
+                        default="E:\\CV\\data\\visdrone",
                         help="dataset's root path")
     parser.add_argument('--imgsets', type=str, default=['train', 'val'],
                         nargs='+', help='for train or test')

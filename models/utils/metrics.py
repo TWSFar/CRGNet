@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
-import utils.dataset_utils as utils
+from .dataset_utils import (get_label_box, generate_box_from_mask,
+                            enlarge_box, resize_box, overlap)
 
 
 class Evaluator(object):
@@ -43,7 +44,8 @@ class Evaluator(object):
         return np.mean(self.mask_object)
 
     def _generate_matrix(self, gt_image, pre_image):
-        mask = (gt_image >= 0) & (gt_image < self.num_class)
+        # mask = (gt_image >= 0) & (gt_image < self.num_class)
+        mask = gt_image >= 0
         label = self.num_class * gt_image[mask].astype('int') + pre_image[mask]
         count = np.bincount(label, minlength=self.num_class**2)
         confusion_matrix = count.reshape(self.num_class, self.num_class)
@@ -54,19 +56,19 @@ class Evaluator(object):
             img = cv2.imread(img_path)
             height, width = img.shape[:2]
 
-            label_box = utils.get_label_box(img_path, dataset)
+            label_box = get_label_box(img_path, dataset)
 
             mask_h, mask_w = mask_img.shape[:2]
-            mask_box = utils.generate_box_from_mask(mask_img.astype(np.uint8))
-            mask_box = list(map(utils.resize_box, mask_box,
+            mask_box = generate_box_from_mask(mask_img.astype(np.uint8))
+            mask_box = list(map(resize_box, mask_box,
                             [(mask_w, mask_h)] * len(mask_box),
                             [(width, height)] * len(mask_box)))
-            mask_box = utils.enlarge_box(mask_box, (width, height), ratio=1.1)
+            mask_box = enlarge_box(mask_box, (width, height), ratio=1.1)
 
             count = 0
             for box1 in label_box:
                 for box2 in mask_box:
-                    if utils.overlap(box2, box1):
+                    if overlap(box2, box1):
                         count += 1
                         break
             self.label_object.append(len(label_box))

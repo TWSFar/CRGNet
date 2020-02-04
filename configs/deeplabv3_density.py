@@ -8,8 +8,7 @@ user_dir = os.path.expanduser('~')
 class Config:
     # data
     dataset = "visdrone"
-    # root_dir = user_dir + "/work/CRGNet/data/Visdrone_Density"
-    root_dir = "E:\\CV\\data\\visdrone\\density_voc"
+    root_dir = user_dir + "/data/Visdrone/density_voc"
     input_size = (640, 480)
     mean = [0.382, 0.383, 0.367]
     std = [0.164, 0.156, 0.164]
@@ -24,9 +23,9 @@ class Config:
     hrnet_cfg = user_dir + '/work/RetinaNet/lib/hrnet_config/hrnet_w48.yaml'
 
     # train
-    batch_size = 2  # assert bs > 2
+    batch_size = 32  # assert bs > 2
     start_epoch = 0
-    epochs = 3
+    epochs = 200
     freeze_bn = False
 
     # loss
@@ -43,7 +42,7 @@ class Config:
     decay = 5e-4
     steps = [0.8, 0.9]
     scales = 0.3
-    workers = 2
+    workers = 16
 
     # eval
     # parameters
