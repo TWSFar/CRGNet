@@ -126,9 +126,9 @@ class Trainer(object):
                 global_step = iter_num + self.nbatch_train * epoch + 1
                 self.writer.add_scalar('train/loss', loss.cpu().item(), global_step)
                 if global_step % opt.plot_every == 0:
-                    pred = output.data.cpu().numpy()
+                    # pred = output.data.cpu().numpy()
                     if opt.output_channels > 1:
-                        pred = np.argmax(pred, axis=1)
+                        pred = torch.argmax(pred, dim=1)
                     else:
                         pred = pred > opt.region_thd
                     self.summary.visualize_image(self.writer,
