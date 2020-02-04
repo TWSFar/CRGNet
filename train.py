@@ -126,8 +126,8 @@ class Trainer(object):
                 global_step = iter_num + self.nbatch_train * epoch + 1
                 self.writer.add_scalar('train/loss', loss.cpu().item(), global_step)
                 if global_step % opt.plot_every == 0:
-                    pred = output.data.cup().numpy()
-                    if self.nclass > 1:
+                    pred = output.data.cpu().numpy()
+                    if opt.output_channels > 1:
                         pred = np.argmax(pred, axis=1)
                     else:
                         pred = pred > opt.region_thd
@@ -178,8 +178,8 @@ class Trainer(object):
                 tbar.set_description('Test loss: %.4f' % (test_loss / (i + 1)))
 
                 pred = output.data.cpu().numpy()
-                target = labels.cpu().numpy() > 0
-                if self.nclass > 1:
+                target = labels.cpu().numpy()
+                if opt.output_channels > 1:
                     pred = np.argmax(pred, axis=1)
                 else:
                     pred = (pred > opt.region_thd).reshape(target.shape)
