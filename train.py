@@ -105,7 +105,7 @@ class Trainer(object):
             self.model.module.freeze_bn() if len(opt.gpu_id) > 1 \
                 else self.model.freeze_bn()
         for iter_num, sample in enumerate(self.train_loader):
-            if iter_num >= 1: break
+            # if iter_num >= 1: break
             try:
                 temp_time = time.time()
                 imgs = sample["image"].to(opt.device)
