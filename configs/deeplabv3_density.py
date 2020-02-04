@@ -42,15 +42,15 @@ class Config:
     decay = 5e-4
     steps = [0.8, 0.9]
     scales = 0.3
-    workers = 16
+    workers = 12
 
     # eval
     # parameters
     region_thd = 0.5
 
     # visual
-    print_freq = 1
-    plot_every = 1  # every n batch plot
+    print_freq = 50
+    plot_every = 100  # every n batch plot
     saver_freq = 1
 
     seed = time.time()
