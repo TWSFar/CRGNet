@@ -71,7 +71,7 @@ class Evaluator(object):
                     if overlap(box2, box1):
                         count += 1
                         break
-            print(count, " ", len(label_box))
+            print(count, " ", len(label_box), " ", len(mask_box))
             self.label_object.append(len(label_box))
             self.detect_object.append(count)
             self.mask_object.append(len(mask_box))
