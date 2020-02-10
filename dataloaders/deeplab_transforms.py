@@ -19,7 +19,8 @@ class Normalize(object):
 
     def __call__(self, sample):
         sample['image'] = sample['image'].astype(np.float32)
-        sample['label'] = sample['label'].astype(np.float32)
+        if sample['label'] is not None:
+            sample['label'] = sample['label'].astype(np.float32)
         sample['image'] /= 255.0
         sample['image'] -= self.mean
         sample['image'] /= self.std
@@ -79,7 +80,8 @@ class ToTensor(object):
         # numpy image: H x W x C
         # torch image: C X H X W
         sample['image'] = torch.from_numpy(sample['image']).permute(2, 0, 1)
-        sample['label'] = torch.from_numpy(sample['label'])
+        if sample['label'] is not None:
+            sample['label'] = torch.from_numpy(sample['label'])
 
         return sample
 
