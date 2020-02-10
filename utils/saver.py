@@ -1,7 +1,8 @@
 import os
 import time
-import os.path as osp
 import shutil
+import os.path as osp
+
 import torch
 
 

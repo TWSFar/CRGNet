@@ -38,7 +38,6 @@ class Trainer(object):
 
         # Dataset dataloader
         self.train_dataset, self.train_loader = make_data_loader(opt)
-        sample = self.train_dataset.__getitem__(0)
         self.nbatch_train = len(self.train_loader)
         self.nclass = self.train_dataset.nclass
         self.val_dataset, self.val_loader = make_data_loader(opt, mode="val")
@@ -97,7 +96,6 @@ class Trainer(object):
         self.loss_hist = collections.deque(maxlen=500)
         self.timer = Timer(opt.epochs, self.nbatch_train, self.nbatch_val)
         self.step_time = collections.deque(maxlen=opt.print_freq)
-
 
     def train(self, epoch):
         self.model.train()
