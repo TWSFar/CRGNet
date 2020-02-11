@@ -116,8 +116,8 @@ if __name__ == "__main__":
             print('generate {} masks...'.format(split))
             for sample in tqdm(samples):
                 density_mask = _generate_mask(sample, args.mask_size)
-                maskname = osp.join(mask_dir, osp.basename(sample['image']).
-                                    replace('jpg', 'png'))
+                basename = osp.basename(sample['image'])
+                maskname = osp.join(mask_dir, osp.splitext(basename)[0]+".png")
                 cv2.imwrite(maskname, density_mask)
 
                 if args.show:

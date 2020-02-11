@@ -64,10 +64,8 @@ def test(**kwargs):
             pred = torch.round(output.cpu().data).numpy()
             pred = pred.reshape(pred.shape[-2:]).astype(np.uint8)
 
-            if show:
-                plt
-
-            file_name = osp.join(result_path, img_name.replace('jpg', 'png'))
+            file_name = osp.join(
+                result_path, osp.splitext(img_name)[0] + ".png")
             cv2.imwrite(file_name, pred)
 
             if show:
