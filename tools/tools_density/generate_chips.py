@@ -46,6 +46,7 @@ class MakeDataset(object):
         self.image_dir = self.dest_datadir + '/JPEGImages'
         self.anno_dir = self.dest_datadir + '/Annotations'
         self.list_dir = self.dest_datadir + '/ImageSets/Main'
+        self.loc_dir = self.dest_datadir + '/Locations'
         self._init_path()
 
     def _init_path(self):
@@ -54,6 +55,7 @@ class MakeDataset(object):
             os.makedirs(self.image_dir)
             os.makedirs(self.anno_dir)
             os.makedirs(self.list_dir)
+            os.makedirs(self.loc_dir)
 
     def __call__(self):
         for imgset in args.imgsets:
@@ -75,7 +77,7 @@ class MakeDataset(object):
             self.generate_imgset(chip_ids, imgset)
 
             # wirte chip loc json
-            with open(osp.join(self.anno_dir, imgset+'_chip.json'), 'w') as f:
+            with open(osp.join(self.loc_dir, imgset+'_chip.json'), 'w') as f:
                 json.dump(chip_loc, f)
                 print('write loc json')
 
