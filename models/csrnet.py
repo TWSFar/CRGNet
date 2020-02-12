@@ -32,8 +32,7 @@ class CSRNet(nn.Module):
         modules = [self.frontend_feat]
         for i in range(len(modules)):
             for m in modules[i].named_modules():
-                if isinstance(m[1], nn.Conv2d) or isinstance(m[1], SynchronizedBatchNorm2d) \
-                        or isinstance(m[1], nn.BatchNorm2d):
+                if isinstance(m[1], nn.Conv2d) or isinstance(m[1], nn.BatchNorm2d):
                     for p in m[1].parameters():
                         if p.requires_grad:
                             yield p
@@ -42,8 +41,7 @@ class CSRNet(nn.Module):
         modules = [self.backend, self.output_layer]
         for i in range(len(modules)):
             for m in modules[i].named_modules():
-                if isinstance(m[1], nn.Conv2d) or isinstance(m[1], SynchronizedBatchNorm2d) \
-                        or isinstance(m[1], nn.BatchNorm2d):
+                if isinstance(m[1], nn.Conv2d) or isinstance(m[1], nn.BatchNorm2d):
                     for p in m[1].parameters():
                         if p.requires_grad:
                             yield p
