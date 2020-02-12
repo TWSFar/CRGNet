@@ -17,7 +17,7 @@ class Config:
     pre = None
 
     # model
-    backbone = 'mobilenetv2'
+    backbone = 'mobilenetv3'
     output_stride = 16
     output_channels = 1
     sync_bn = False
