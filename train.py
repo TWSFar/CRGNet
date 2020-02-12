@@ -10,7 +10,7 @@ from tqdm import tqdm
 # from configs.deeplabv3_density_sample import opt
 from configs.deeplabv3_density import opt
 
-from models import DeepLab
+from models import DeepLab, CSRNet
 # from models import CSRNet
 from models.utils import Evaluator, LR_Scheduler
 from models.losses import build_loss
@@ -48,7 +48,8 @@ class Trainer(object):
             opt.sync_bn = True
         else:
             opt.sync_bn = False
-        model = DeepLab(opt)
+        # model = DeepLab(opt)
+        model = CSRNet()
         self.model = model.to(opt.device)
 
         # Define Optimizer
