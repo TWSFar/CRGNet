@@ -14,7 +14,7 @@ class CSRNet(nn.Module):
                                         in_channels=512,
                                         batch_norm=True,
                                         dilation=True)
-        self.output_layer = nn.Conv2d(64, 1, kernel_size=1)
+        self.output_layer = nn.Sequential(nn.Conv2d(64, 1, kernel_size=1))
 
         if not load_weights:
             mod = models.vgg16(pretrained=True)
@@ -27,6 +27,24 @@ class CSRNet(nn.Module):
                         new_dict[k2] = v1
             model_dict.update(new_dict)
             self.frontend.load_state_dict(model_dict)
+
+    def get_1x_lr_params(self):
+        modules = [self.frontend_feat]
+        for i in range(len(modules)):
+            for m in modules[i].named_modules():
+                if isinstance(m[1], nn.Conv2d) or isinstance(m[1], nn.BatchNorm2d):
+                    for p in m[1].parameters():
+                        if p.requires_grad:
+                            yield p
+
+    def get_10x_lr_params(self):
+        modules = [self.backend, self.output_layer]
+        for i in range(len(modules)):
+            for m in modules[i].named_modules():
+                if isinstance(m[1], nn.Conv2d) or isinstance(m[1], nn.BatchNorm2d):
+                    for p in m[1].parameters():
+                        if p.requires_grad:
+                            yield p
 
     def forward(self, x):
         x = self.frontend(x)
