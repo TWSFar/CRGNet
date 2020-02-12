@@ -29,7 +29,7 @@ class CSRNet(nn.Module):
             self.frontend.load_state_dict(model_dict)
 
     def get_1x_lr_params(self):
-        modules = [self.frontend_feat]
+        modules = [self.frontend]
         for i in range(len(modules)):
             for m in modules[i].named_modules():
                 if isinstance(m[1], nn.Conv2d) or isinstance(m[1], nn.BatchNorm2d):
