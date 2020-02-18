@@ -28,6 +28,7 @@ def parse_args():
     parser.add_argument('--padding', type=str, default=[],
                         nargs='+', help='random padding neglect box')
     args = parser.parse_args()
+    assert "test" not in args.padding
     return args
 
 
@@ -98,23 +99,23 @@ class MakeDataset(object):
                 for i, box in enumerate(gt_bboxes):
                     if utils.overlap(chip, box, 0.75):
                         box = [max(box[0], chip[0]), max(box[1], chip[1]),
-                            min(box[2], chip[2]), min(box[3], chip[3])]
+                               min(box[2], chip[2]), min(box[3], chip[3])]
                         new_box = [box[0] - chip[0], box[1] - chip[1],
-                                box[2] - chip[0], box[3] - chip[1]]
+                                   box[2] - chip[0], box[3] - chip[1]]
                         chip_gt.append(np.array(new_box))
                         chip_label.append(labels[i])
                     elif utils.overlap(chip, box, 0.001):
                         box = [max(box[0], chip[0]), max(box[1], chip[1]),
-                            min(box[2], chip[2]), min(box[3], chip[3])]
+                               min(box[2], chip[2]), min(box[3], chip[3])]
                         new_box = [box[0] - chip[0], box[1] - chip[1],
-                                box[2] - chip[0], box[3] - chip[1]]
+                                   box[2] - chip[0], box[3] - chip[1]]
                         neglect_gt.append(np.array(new_box, dtype=np.int))
 
                 chip_gt_list.append(chip_gt)
                 chip_label_list.append(chip_label)
-            chip_neglect_list.append(neglect_gt)
+                chip_neglect_list.append(neglect_gt)
 
-        return chip_list, chip_gt_list, chip_label_list, chip_neglect_list
+        return chip_gt_list, chip_label_list, chip_neglect_list
 
     def generate_imgset(self, img_list, imgset):
         with open(os.path.join(self.list_dir, imgset+'.txt'), 'w') as f:
@@ -200,12 +201,12 @@ class MakeDataset(object):
         else:
             gt_bboxes, gt_cls = sample['bboxes'], sample['cls']
 
-        chip_list, chip_gt_list, chip_label_list, neglect_list = self.generate_region_gt(
+        chip_gt_list, chip_label_list, neglect_list = self.generate_region_gt(
             region_box, gt_bboxes, gt_cls)
         chip_loc = self.write_chip_and_anno(
-            image, img_id, chip_list, chip_gt_list, chip_label_list, neglect_list, imgset)
+            image, img_id, region_box, chip_gt_list, chip_label_list, neglect_list, imgset)
 
-        return len(chip_list), chip_loc
+        return len(region_box), chip_loc
 
     def write_chip_and_anno(self, image, img_id,
                             chip_list, chip_gt_list,
@@ -218,9 +219,9 @@ class MakeDataset(object):
             xml_name = '{}_{}.xml'.format(img_id, i)
             chip_loc[img_name] = [int(x) for x in chip]
             chip_size = (chip[2] - chip[0], chip[3] - chip[1])  #w, h
-
             chip_img = image[chip[1]:chip[3], chip[0]:chip[2], :].copy()
             assert len(chip_img.shape) == 3
+
             if imgset in args.padding and neglect_list is not None:
                 for neg_box in neglect_list[i]:
                     neg_w = neg_box[2] - neg_box[0]
@@ -239,6 +240,7 @@ class MakeDataset(object):
                 f.write(dom.toprettyxml(indent='\t', encoding='utf-8').decode('utf-8')) 
 
             cv2.imwrite(os.path.join(self.image_dir, img_name), chip_img)
+
         return chip_loc
 
 

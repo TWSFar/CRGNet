@@ -1,5 +1,4 @@
 import os
-import cv2
 import glob
 import pickle
 import numpy as np
@@ -69,17 +68,16 @@ class VisDrone(object):
             return samples
 
         img_list = self._get_imglist(split)
-        anno_path = [img.replace('images', 'annotations').replace('jpg', 'txt')
-                     for img in img_list]
 
         # load information of image and save to cache
         sizes = [Image.open(img).size for img in img_list]
 
         if "test" in split:
-            sample = [{} for _ in img_list]
+            samples = [{} for _ in img_list]
         else:
+            anno_path = [img.replace('images', 'annotations').replace('jpg', 'txt')
+                         for img in img_list]
             samples = [self._get_gtbox(ann) for ann in anno_path]
-
 
         for i, img in enumerate(img_list):
             samples[i]['image'] = img  # image path

@@ -9,7 +9,6 @@ class Config:
     # data
     dataset = "visdrone"
     root_dir = user_dir + "/data/Visdrone/density_voc"
-    test_dir = user_dir + "/data/Visdrone/density_voc/test_img"
     input_size = (640, 480)
     mean = [0.382, 0.383, 0.367]
     std = [0.164, 0.156, 0.164]

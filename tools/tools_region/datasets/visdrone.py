@@ -12,9 +12,9 @@ class VisDrone(object):
     def __init__(self, db_root):
         self.src_traindir = db_root + '/VisDrone2019-DET-train'
         self.src_valdir = db_root + '/VisDrone2019-DET-val'
-        self.src_testdir = db_root + '/VisDrone2019-DET-test-challenge'
-        self.region_voc_dir = db_root + '/region_voc'
-        self.detect_voc_dir = db_root + '/detect_voc'
+        self.src_testdir = db_root + '/VisDrone2019-DET-val'
+        self.region_voc_dir = db_root + '/region_seg'
+        self.detect_voc_dir = db_root + '/detect_chip'
         self.cache_dir = osp.join(db_root, 'cache')
         self._init_path()
 
@@ -68,13 +68,14 @@ class VisDrone(object):
             return samples
 
         img_list = self._get_imglist(split)
-        anno_path = [img_path.replace(IMG_ROOT, ANNO_ROOT).replace('jpg', 'txt')
-                     for img_path in img_list]
-
-        # load information of image and save to cache
         sizes = [Image.open(img).size for img in img_list]
-
-        samples = [self._get_gtbox(ann) for ann in anno_path]
+        if "test" in split:
+            samples = [{} for _ in img_list]
+        else:
+            anno_path = [img_path.replace(IMG_ROOT, ANNO_ROOT).replace('jpg', 'txt')
+                         for img_path in img_list]
+            # load information of image and save to cache
+            samples = [self._get_gtbox(ann) for ann in anno_path]
 
         for i, img_path in enumerate(img_list):
             samples[i]['image'] = img_path  # image path
