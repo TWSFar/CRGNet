@@ -21,7 +21,6 @@ class Config:
     output_stride = 16
     output_channels = 1
     sync_bn = False
-    hrnet_cfg = user_dir + '/work/RetinaNet/lib/hrnet_config/hrnet_w48.yaml'
 
     # train
     batch_size = 2  # assert bs > 2

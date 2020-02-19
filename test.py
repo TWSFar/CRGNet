@@ -7,9 +7,9 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 
 # from configs.deeplabv3_region_sample import opt
-from configs.deeplabv3_region import opt
+# from configs.deeplabv3_region import opt
 # from configs.deeplabv3_density_sample import opt
-# from configs.deeplabv3_density import opt
+from configs.deeplabv3_density import opt
 
 from models import DeepLab
 # from models import CSRNet
@@ -23,7 +23,7 @@ import multiprocessing
 multiprocessing.set_start_method('spawn', True)
 
 show = False
-results_dir = "/home/twsf/work/CRGNet/data/Visdrone_Region/SegmentationClass/"
+results_dir = "/home/twsf/data/Visdrone/density_seg/SegmentationClass/"
 images_dir = "/home/twsf/data/Visdrone/VisDrone2019-DET-val/images"
 
 

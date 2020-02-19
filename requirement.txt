@@ -1,2 +1,7 @@
 fire
+tqdm
+pillow==1.6
+matplotlib
 tensorboard
+tensorboardX
+opencv-python

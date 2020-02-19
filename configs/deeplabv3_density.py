@@ -8,19 +8,18 @@ user_dir = os.path.expanduser('~')
 class Config:
     # data
     dataset = "visdrone"
-    root_dir = user_dir + "/data/Visdrone/density_voc"
+    root_dir = user_dir + "/data/Visdrone/density_seg"
     input_size = (640, 480)
     mean = [0.382, 0.383, 0.367]
     std = [0.164, 0.156, 0.164]
     resume = False
-    pre = ""
+    pre = "/home/twsf/work/CRGNet/run/20200210_225056_train/model_best.pth.tar"
 
     # model
-    backbone = 'resnet50'
+    backbone = 'mobilenetv2'
     output_stride = 16
     output_channels = 1
     sync_bn = False
-    hrnet_cfg = user_dir + '/work/RetinaNet/lib/hrnet_config/hrnet_w48.yaml'
 
     # train
     batch_size = 32  # assert bs > 2
