@@ -79,7 +79,8 @@ class MobileNetV3_Large(nn.Module):
         self.conv1 = nn.Conv2d(3, 16, kernel_size=3, stride=2, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(16)
         self.hs1 = hswish()
-
+        low_outplanes = 80
+        high_outplanes = 160
         self.bneck = nn.Sequential(
             Block(3, 16, 16, 16, nn.ReLU(inplace=True), None, 1, 1),
             Block(3, 16, 64, 24, nn.ReLU(inplace=True), None, 2, 1),
@@ -127,7 +128,7 @@ class MobileNetV3_Large(nn.Module):
         return out, low_level_feat
 
     def _load_pretrained_model(self):
-        pretrain_dict = torch.load("modeling/backbone/mbv3_large.old.pth.tar", map_location='cpu')['state_dict']
+        pretrain_dict = torch.load("/home/twsf/.cache/torch/checkpoints/mbv3_large.old.pth.tar", map_location='cpu')['state_dict']
         model_dict = {}
         state_dict = self.state_dict()
         for k, v in pretrain_dict.items():
@@ -143,6 +144,8 @@ class MobileNetV3_Small(nn.Module):
         self.conv1 = nn.Conv2d(3, 16, kernel_size=3, stride=2, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(16)
         self.hs1 = hswish()
+        low_outplanes = 40
+        high_outplanes = 96
 
         self.bneck = nn.Sequential(
             Block(3, 16, 16, 16, nn.ReLU(inplace=True), SeModule(16), 2, 1),
@@ -186,7 +189,7 @@ class MobileNetV3_Small(nn.Module):
         return out, low_level_feat
 
     def _load_pretrained_model(self):
-        pretrain_dict = torch.load("modeling/backbone/mbv3_small.old.pth.tar", map_location='cpu')['state_dict']
+        pretrain_dict = torch.load("/home/twsf/.cache/torch/checkpoints/mbv3_small.old.pth.tar", map_location='cpu')['state_dict']
         model_dict = {}
         state_dict = self.state_dict()
         for k, v in pretrain_dict.items():
@@ -204,8 +207,8 @@ def test():
 
 
 if __name__ == "__main__":
-    input = torch.rand(1, 3, 224, 224)
-    model = MobileNetV3_Small()
+    input = torch.rand(1, 3, 480, 640)
+    model = MobileNetV3_Large(False)
     model.eval()
     out, low = model(input)
     print(out.size())
