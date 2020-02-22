@@ -144,8 +144,8 @@ class MobileNetV3_Small(nn.Module):
         self.conv1 = nn.Conv2d(3, 16, kernel_size=3, stride=2, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(16)
         self.hs1 = hswish()
-        low_outplanes = 40
-        high_outplanes = 96
+        self.low_outplanes = 40
+        self.high_outplanes = 96
 
         self.bneck = nn.Sequential(
             Block(3, 16, 16, 16, nn.ReLU(inplace=True), SeModule(16), 2, 1),
