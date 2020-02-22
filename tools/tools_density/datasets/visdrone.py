@@ -75,7 +75,7 @@ class VisDrone(object):
         if "test" in split:
             samples = [{} for _ in img_list]
         else:
-            anno_path = [img.replace('images', 'annotations').replace('jpg', 'txt')
+            anno_path = [img.replace(IMG_ROOT, ANNO_ROOT).replace('jpg', 'txt')
                          for img in img_list]
             samples = [self._get_gtbox(ann) for ann in anno_path]
 
