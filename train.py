@@ -48,8 +48,8 @@ class Trainer(object):
             opt.sync_bn = True
         else:
             opt.sync_bn = False
-        # model = DeepLab(opt)
-        model = CSRNet()
+        model = DeepLab(opt)
+        # model = CSRNet()
         self.model = model.to(opt.device)
 
         # Define Optimizer
