@@ -113,7 +113,7 @@ class Trainer(object):
                 output = self.model(imgs)
 
                 loss = self.loss(output, labels)
-                # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 3)
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(), 3)
                 loss.backward()
                 self.loss_hist.append(float(loss))
 
