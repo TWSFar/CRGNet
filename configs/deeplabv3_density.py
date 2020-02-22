@@ -16,13 +16,13 @@ class Config:
     pre = "/home/twsf/work/CRGNet/run/20200210_225056_train/model_best.pth.tar"
 
     # model
-    backbone = 'mobilenetv3_l'
+    backbone = 'mobilenetv2'
     output_stride = 16
     output_channels = 1
     sync_bn = False
 
     # train
-    batch_size = 32  # assert bs > 2
+    batch_size = 16  # assert bs > 2
     start_epoch = 0
     epochs = 200
     freeze_bn = False

@@ -73,15 +73,15 @@ class MobileNetV2(nn.Module):
         input_channel = 32
         current_stride = 1
         rate = 1
-        self.low_outplanes = 96
+        self.low_outplanes = 64
         self.high_outplanes = 320
         interverted_residual_setting = [
             # t, c, n, s
             [1, 16, 1, 1],
             [6, 24, 2, 2],
             [6, 32, 3, 2],
-            [6, 64, 4, 2],
-            [6, self.low_outplanes, 3, 1],
+            [6, self.low_outplanes, 4, 2],
+            [6, 96, 3, 1],
             [6, 160, 3, 2],
             [6, self.high_outplanes, 1, 1],
         ]
