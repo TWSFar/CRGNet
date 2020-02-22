@@ -124,7 +124,7 @@ class Trainer(object):
                 # Visualize
                 global_step = iter_num + self.nbatch_train * epoch + 1
                 self.writer.add_scalar('train/loss', loss.cpu().item(), global_step)
-                if global_step % opt.plot_every == -1:
+                if global_step % opt.plot_every == 0:
                     # pred = output.data.cpu().numpy()
                     if opt.output_channels > 1:
                         pred = torch.argmax(output, dim=1)
