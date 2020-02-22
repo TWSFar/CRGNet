@@ -177,7 +177,7 @@ class Trainer(object):
                 tbar.set_description('Test loss: %.4f' % (test_loss / (i + 1)))
 
                 pred = output.data.cpu().numpy()
-                target = labels.cpu().numpy()
+                target = (labels.cpu().numpy() > 1).astype(np.float)
                 if opt.output_channels > 1:
                     pred = np.argmax(pred, axis=1)
                 else:
