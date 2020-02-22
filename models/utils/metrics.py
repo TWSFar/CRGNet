@@ -38,7 +38,7 @@ class Evaluator(object):
         return FWIoU
 
     def Region_Recall(self):
-        return np.sum(self.detect_object)/np.sum(self.label_object)
+        return max(np.sum(self.detect_object)/np.sum(self.label_object), 1e-5)
 
     def Region_Num(self):
         return np.mean(self.mask_object)
