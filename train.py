@@ -103,17 +103,17 @@ class Trainer(object):
         if opt.freeze_bn:
             self.model.module.freeze_bn() if len(opt.gpu_id) > 1 \
                 else self.model.freeze_bn()
+        last_time = time.time()
         for iter_num, sample in enumerate(self.train_loader):
             # if iter_num >= 1: break
             try:
-                temp_time = time.time()
                 imgs = sample["image"].to(opt.device)
                 labels = sample["label"].to(opt.device)
 
                 output = self.model(imgs)
 
                 loss = self.loss(output, labels)
-                torch.nn.utils.clip_grad_norm_(self.model.parameters(), 3)
+                # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 3)
                 loss.backward()
                 self.loss_hist.append(float(loss))
 
@@ -124,7 +124,7 @@ class Trainer(object):
                 # Visualize
                 global_step = iter_num + self.nbatch_train * epoch + 1
                 self.writer.add_scalar('train/loss', loss.cpu().item(), global_step)
-                if global_step % opt.plot_every == 0:
+                if global_step % opt.plot_every == -1:
                     # pred = output.data.cpu().numpy()
                     if opt.output_channels > 1:
                         pred = torch.argmax(output, dim=1)
@@ -137,7 +137,8 @@ class Trainer(object):
                                                  pred,
                                                  global_step)
 
-                batch_time = time.time() - temp_time
+                batch_time = time.time() - last_time
+                last_time = time.time()
                 eta = self.timer.eta(global_step, batch_time)
                 self.step_time.append(batch_time)
                 if global_step % opt.print_freq == 0:
@@ -152,6 +153,7 @@ class Trainer(object):
                                     np.mean(self.loss_hist)))
                     print(printline)
                     self.saver.save_experiment_log(printline)
+                    last_time = time.time()
 
                 del loss
 

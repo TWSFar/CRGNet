@@ -1,5 +1,4 @@
 import os
-import time
 from pprint import pprint
 from utils import select_device
 user_dir = os.path.expanduser('~')
