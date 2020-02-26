@@ -1,24 +1,16 @@
-import torch
-import torch.nn as nn
+import h5py
+import numpy as np
+
+m = np.zeros(20)
+
+def fz(x, y):
+    return x*y
 
 
-class DeepLab(nn.Module):
-    def __init__(self, num_classes=21):
-        super(DeepLab, self).__init__()
+a = np.arange(1, 3)
+b = np.arange(4, 6)
 
-        self.last_conv = nn.Sequential(nn.BatchNorm2d(128))
+z = np.zeros(3, 3)
 
-        self.freeze_bn()
 
-    def freeze_bn(self):
-        for m in self.modules():
-            if isinstance(m, nn.BatchNorm2d):
-                m.eval()
-
-if __name__ == "__main__":
-    model = DeepLab()
-    model.eval()
-    model.train()
-    model.eval()
-    model.train()
-    pass
+pass

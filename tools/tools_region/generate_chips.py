@@ -13,7 +13,7 @@ from xml.dom.minidom import parseString
 
 import utils
 from datasets import get_dataset
-user_dir = os.path.expanduser('~')
+user_dir = osp.expanduser('~')
 
 
 def parse_args():
@@ -64,7 +64,7 @@ class MakeDataset(object):
             chip_ids = []
             chip_loc = dict()
             for i, sample in enumerate(samples):
-                img_id = osp.basename(sample['image'])[:-4]
+                img_id = osp.splitext(osp.basename(sample['image']))[0]
                 sys.stdout.write('\rcomplete: {:d}/{:d} {:s}'
                                  .format(i + 1, len(samples), img_id))
                 sys.stdout.flush()
@@ -117,11 +117,11 @@ class MakeDataset(object):
         return chip_gt_list, chip_label_list, chip_neglect_list
 
     def generate_imgset(self, img_list, imgset):
-        with open(os.path.join(self.list_dir, imgset+'.txt'), 'w') as f:
+        with open(osp.join(self.list_dir, imgset+'.txt'), 'w') as f:
             f.writelines([x + '\n' for x in img_list])
         print('\n%d images in %s set.' % (len(img_list), imgset))
         if imgset != "test":
-            with open(os.path.join(self.list_dir, 'trainval.txt'), 'a') as f:
+            with open(osp.join(self.list_dir, 'trainval.txt'), 'a') as f:
                 f.writelines([x + '\n' for x in img_list])
             print('\n%d images in trainval set.' % len(img_list))
 
@@ -181,7 +181,7 @@ class MakeDataset(object):
     def make_chip(self, sample, imgset):
         image = cv2.imread(sample['image'])
         height, width = sample['height'], sample['width']
-        img_id = osp.basename(sample['image'])[:-4]
+        img_id = osp.splitext(osp.basename(sample['image']))[0]
 
         mask_path = osp.join(self.segmentation_dir, '{}.png'.format(img_id))
         mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
@@ -237,10 +237,10 @@ class MakeDataset(object):
                 bbox = np.array()
                 label = np.array()
             dom = self.make_xml(chip, bbox, label, img_name, chip_size)
-            with open(os.path.join(self.anno_dir, xml_name), 'w') as f:
+            with open(osp.join(self.anno_dir, xml_name), 'w') as f:
                 f.write(dom.toprettyxml(indent='\t', encoding='utf-8').decode('utf-8'))
 
-            cv2.imwrite(os.path.join(self.image_dir, img_name), chip_img)
+            cv2.imwrite(osp.join(self.image_dir, img_name), chip_img)
 
         return chip_loc
 

@@ -6,6 +6,7 @@
 
 import os
 import cv2
+import h5py
 import shutil
 import argparse
 import numpy as np
@@ -25,6 +26,7 @@ def parse_args():
                         nargs='+', help='for train or test')
     parser.add_argument('--db_root', type=str,
                         default=user_dir+"/data/Visdrone",
+                        # default="E:\CV\data\\visdrone",
                         help="dataset's root path")
     parser.add_argument('--mask_size', type=list, default=[30, 40],
                         help="Size of production target mask")
@@ -42,6 +44,7 @@ def show_image(img, labels, mask):
     plt.subplot(2, 1, 2).imshow(mask)
     # plt.savefig('test_0.jpg')
     plt.show()
+    pass
 
 
 # copy train and test images
@@ -61,20 +64,35 @@ def _myaround_down(value):
     return max(0, tmp - 1 if tmp - value > 0.2 else tmp)
 
 
+def _centerness(x, y, xmin, xmax, ymin, ymax):
+    left = x - xmin
+    right = xmax - x
+    top = y - ymin
+    bottom = ymax - y
+    min_tb = min(top, bottom) if min(top, bottom) else 1
+    max_tb = max(top, bottom) if max(top, bottom) else 1
+    min_lr = min(left, right) if min(left, right) else 1
+    max_lr = max(left, right) if max(left, right) else 1
+    centerness = np.sqrt(1.0 * min_lr * min_tb / (max_lr * max_tb))
+    return centerness
+
+
 def _generate_mask(sample, mask_scale=(30, 40)):
     try:
         height, width = sample["height"], sample["width"]
 
         # Chip mask 40 * 30, model input size 640x480
         mask_h, mask_w = mask_scale
-        density_mask = np.zeros((mask_h, mask_w), dtype=np.uint8)
+        density_mask = np.zeros((mask_h, mask_w), dtype=np.float32)
 
         for box in sample["bboxes"]:
             xmin = _myaround_down(1.0 * box[0] / width * mask_w)
             ymin = _myaround_down(1.0 * box[1] / height * mask_h)
             xmax = _myaround_up(1.0 * box[2] / width * mask_w, mask_w-1)
             ymax = _myaround_up(1.0 * box[3] / height * mask_h, mask_h-1)
-            density_mask[ymin:ymax+1, xmin:xmax+1] += 1
+            yv, xv = np.meshgrid(np.arange(ymin, ymax+1), np.arange(xmin, xmax+1))
+            for yi, xi in zip(yv.ravel(), xv.ravel()):
+                density_mask[yi, xi] += _centerness(xi, yi, xmin, xmax, ymin, ymax)
 
         return density_mask
 
@@ -117,8 +135,9 @@ if __name__ == "__main__":
             for sample in tqdm(samples):
                 density_mask = _generate_mask(sample, args.mask_size)
                 basename = osp.basename(sample['image'])
-                maskname = osp.join(mask_dir, osp.splitext(basename)[0]+".png")
-                cv2.imwrite(maskname, density_mask)
+                maskname = osp.join(mask_dir, osp.splitext(basename)[0]+'.hdf5')
+                with h5py.File('maskname', 'w') as hf:
+                    hf["density"] = density_mask
 
                 if args.show:
                     img = cv2.imread(sample['image'])

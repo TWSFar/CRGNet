@@ -42,7 +42,7 @@ def test(**kwargs):
     model = DeepLab(opt).to(opt.device)
 
     # resume
-    if os.path.isfile(opt.pre):
+    if osp.isfile(opt.pre):
         print("=> loading checkpoint '{}'".format(opt.pre))
         checkpoint = torch.load(opt.pre)
         model.load_state_dict(checkpoint['state_dict'])

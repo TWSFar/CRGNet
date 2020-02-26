@@ -1,4 +1,5 @@
 fire
+h5py
 tqdm
 pillow==1.6
 matplotlib

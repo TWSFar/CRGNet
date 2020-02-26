@@ -119,7 +119,7 @@ def make_json():
         img_id = id
 
         # anno info
-        anno_xml = os.path.join(hyp['xml_dir'], file_name + '.xml')
+        anno_xml = osp.join(hyp['xml_dir'], file_name + '.xml')
         box_all, gt_cls = getGTBox(anno_xml)
         for ii in range(len(box_all)):
             annotations.append(
@@ -141,7 +141,7 @@ def make_json():
     # saver
     if not osp.exists(hyp['json_dir']):
         os.makedirs(hyp['json_dir'])
-    save_file = os.path.join(hyp['json_dir'], 'instances_{}.json'.format(hyp['mode']))
+    save_file = osp.join(hyp['json_dir'], 'instances_{}.json'.format(hyp['mode']))
     print('Saving annotations to {}'.format(save_file))
     json.dump(ann, open(save_file, 'w'), indent=4)
     print('done!')

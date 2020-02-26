@@ -14,16 +14,18 @@ import concurrent.futures
 from tqdm import tqdm
 
 from datasets import get_dataset
-user_dir = os.path.expanduser('~')
+user_dir = osp.expanduser('~')
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description="convert to voc dataset")
     parser.add_argument('--dataset', type=str, default='VisDrone',
                         choices=['VisDrone'], help='dataset name')
-    parser.add_argument('--mode', type=str, default=['train', 'val'],
+    parser.add_argument('--mode', type=str, default=['train','val'],
                         nargs='+', help='for train or test')
-    parser.add_argument('--db_root', type=str, default=user_dir+"/data/Visdrone",
+    parser.add_argument('--db_root', type=str,
+                        default=user_dir+"/data/Visdrone",
+                        # default="E:\CV\data\\visdrone",
                         help="dataset's root path")
     parser.add_argument('--mask_size', type=list, default=[30, 40],
                         help="Size of production target mask")
@@ -55,14 +57,14 @@ def _resize(src_image, dest_path):
     size = (int(width), int(height))
 
     img = cv2.resize(img, size, interpolation=cv2.INTER_AREA)
-    name = os.path.basename(src_image)
-    cv2.imwrite(os.path.join(dest_path, name), img)
+    name = osp.basename(src_image)
+    cv2.imwrite(osp.join(dest_path, name), img)
 
 
-def _myaround_up(value):
-    """0.05 * stride = 0.8"""
+def _myaround_up(value, maxv):
+    """0.2 * stride = 3.2"""
     tmp = np.floor(value).astype(np.int32)
-    return tmp + 1 if value - tmp > 0.05 else tmp
+    return min(maxv, tmp + 1 if value - tmp > 0.2 else tmp)
 
 
 def _myaround_down(value):
@@ -82,9 +84,9 @@ def _generate_mask(sample, mask_scale=(30, 40)):
         for box in sample["bboxes"]:
             xmin = _myaround_down(1.0 * box[0] / width * mask_w)
             ymin = _myaround_down(1.0 * box[1] / height * mask_h)
-            xmax = _myaround_up(1.0 * box[2] / width * mask_w)
-            ymax = _myaround_up(1.0 * box[3] / height * mask_h)
-            region_mask[ymin:ymax, xmin:xmax] = 1
+            xmax = _myaround_up(1.0 * box[2] / width * mask_w, mask_w-1)
+            ymax = _myaround_up(1.0 * box[3] / height * mask_h, mask_h-1)
+            region_mask[ymin:ymax+1, xmin:xmax+1] = 1
 
         return region_mask
 
@@ -103,7 +105,7 @@ if __name__ == "__main__":
     annotation_dir = dest_datadir + '/Annotations'
     list_folder = dest_datadir + '/ImageSets'
 
-    if not os.path.exists(dest_datadir):
+    if not osp.exists(dest_datadir):
         os.mkdir(dest_datadir)
         os.mkdir(image_dir)
         os.mkdir(mask_dir)
@@ -115,8 +117,8 @@ if __name__ == "__main__":
         samples = dataset._load_samples(split)
 
         # create data set
-        with open(os.path.join(list_folder, split + '.txt'), 'w') as f:
-            temp = [os.path.basename(x)[:-4]+'\n' for x in img_list]
+        with open(osp.join(list_folder, split + '.txt'), 'w') as f:
+            temp = [osp.splitext(osp.basename(x))[0]+'\n' for x in img_list]
             f.writelines(temp)
 
         print('copy {} images....'.format(split))
@@ -127,8 +129,8 @@ if __name__ == "__main__":
             print('generate {} masks...'.format(split))
             for sample in tqdm(samples):
                 region_mask = _generate_mask(sample, args.mask_size)
-                maskname = osp.join(mask_dir, osp.basename(sample['image']).
-                                    replace('jpg', 'png'))
+                basename = osp.basename(sample['image'])
+                maskname = osp.join(mask_dir, osp.splitext(basename)[0]+'.png')
                 cv2.imwrite(maskname, region_mask)
 
                 if args.show:
