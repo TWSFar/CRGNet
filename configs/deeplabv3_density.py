@@ -45,7 +45,7 @@ class Config:
 
     # eval
     # parameters
-    region_thd = 0.5
+    region_thd = 1.0/1200
 
     # visual
     print_freq = 50

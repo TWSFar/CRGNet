@@ -136,7 +136,7 @@ if __name__ == "__main__":
                 density_mask = _generate_mask(sample, args.mask_size)
                 basename = osp.basename(sample['image'])
                 maskname = osp.join(mask_dir, osp.splitext(basename)[0]+'.hdf5')
-                with h5py.File('maskname', 'w') as hf:
+                with h5py.File(maskname, 'w') as hf:
                     hf["label"] = density_mask
 
                 if args.show:
