@@ -1,6 +1,8 @@
 import os
 import cv2
+import h5py
 import os.path as osp
+import numpy as np
 
 import torch
 from torchvision import transforms
@@ -22,9 +24,10 @@ class VisDroneRegion(Dataset):
         super().__init__()
         self.data_dir = opt.root_dir
         self.mode = mode
+        self.suffix = opt.mask_suffix
 
         self.img_dir = osp.join(self.data_dir, IMG_ROOT, '{}.jpg')
-        self.label_dir = osp.join(self.data_dir, REGION_ROOT, '{}.png')
+        self.label_dir = osp.join(self.data_dir, REGION_ROOT, '{}'+self.suffix)
         self.img_ids = self._load_image_set_index()
 
         self.img_number = len(self.img_ids)
@@ -66,7 +69,12 @@ class VisDroneRegion(Dataset):
         assert osp.isfile(label_path), '{} not exist'.format(label_path)
 
         img = cv2.imread(img_path)[:, :, ::-1]  # BGR2RGB
-        label = cv2.imread(label_path, cv2.IMREAD_GRAYSCALE)
+        if self.suffix in ['.png', '.jpg', 'JPEG']:
+            label = cv2.imread(label_path, cv2.IMREAD_GRAYSCALE)
+        elif self.suffix in ['.hdf5', '.f5', '.h5py']:
+            label = np.array(h5py.File(label_path)['label'])
+        else:
+            raise NotImplementedError
         o_h, o_w = img.shape[:2]
 
         sample = {"image": img, "label": label}

@@ -137,7 +137,7 @@ if __name__ == "__main__":
                 basename = osp.basename(sample['image'])
                 maskname = osp.join(mask_dir, osp.splitext(basename)[0]+'.hdf5')
                 with h5py.File('maskname', 'w') as hf:
-                    hf["density"] = density_mask
+                    hf["label"] = density_mask
 
                 if args.show:
                     img = cv2.imread(sample['image'])
