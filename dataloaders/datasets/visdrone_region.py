@@ -72,7 +72,7 @@ class VisDroneRegion(Dataset):
         if self.suffix in ['.png', '.jpg', 'JPEG']:
             label = cv2.imread(label_path, cv2.IMREAD_GRAYSCALE)
         elif self.suffix in ['.hdf5', '.f5', '.h5py']:
-            label = np.array(h5py.File(label_path)['label'])
+            label = np.array(h5py.File(label_path, 'r')['label'])
         else:
             raise NotImplementedError
         o_h, o_w = img.shape[:2]
