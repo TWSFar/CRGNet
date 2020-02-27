@@ -7,7 +7,7 @@ user_dir = os.path.expanduser('~')
 class Config:
     # data
     dataset = "visdrone"
-    mask_suffix = ".png"
+    mask_suffix = ".hdf5"
     root_dir = user_dir + "/data/Visdrone/density_mask"
     input_size = (640, 480)
     mean = [0.382, 0.383, 0.367]
