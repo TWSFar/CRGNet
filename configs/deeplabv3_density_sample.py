@@ -7,9 +7,9 @@ user_dir = os.path.expanduser('~')
 class Config:
     # data
     dataset = "visdrone"
-    mask_suffix = ".png"
+    mask_suffix = ".hdf5"
     # root_dir = user_dir + "/work/CRGNet/data/Visdrone_Density"
-    root_dir = "E:\\CV\\data\\visdrone\\density_voc"
+    root_dir = "E:\\CV\\data\\density_mask"
     input_size = (640, 480)
     mean = [0.382, 0.383, 0.367]
     std = [0.164, 0.156, 0.164]
@@ -17,7 +17,7 @@ class Config:
     pre = None
 
     # model
-    backbone = 'mobilenetv3'
+    backbone = 'mobilenetv2'
     output_stride = 16
     output_channels = 1
     sync_bn = False
@@ -46,7 +46,7 @@ class Config:
 
     # eval
     # parameters
-    region_thd = 0.5
+    region_thd = 1.0/1200
 
     # visual
     print_freq = 1

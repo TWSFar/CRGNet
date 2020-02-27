@@ -9,7 +9,7 @@ class Config:
     dataset = "visdrone"
     mask_suffix = ".png"
     # root_dir = user_dir + "/work/CRGNet/data/Visdrone_Region"
-    root_dir = "E:\CV\\code\\CRGNet\\data\\Visdrone_Region"
+    root_dir = "data/density_mask"
     input_size = (640, 480)
     mean = [0.382, 0.383, 0.367]
     std = [0.164, 0.156, 0.164]

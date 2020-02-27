@@ -38,7 +38,7 @@ class DeepLab(nn.Module):
         low_level_feat = self.link_conv(low_level_feat)
         x = torch.cat((x, low_level_feat), dim=1)
         x = self.aspp(x)
-        x = torch.exp(self.last_conv(x))
+        x = self.last_conv(x)
 
         return x
 

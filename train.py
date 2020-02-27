@@ -7,8 +7,8 @@ from tqdm import tqdm
 
 # from configs.deeplabv3_region_sample import opt
 # from configs.deeplabv3_region import opt
-# from configs.deeplabv3_density_sample import opt
-from configs.deeplabv3_density import opt
+from configs.deeplabv3_density_sample import opt
+# from configs.deeplabv3_density import opt
 
 from models import DeepLab, CSRNet
 # from models import CSRNet
@@ -129,7 +129,7 @@ class Trainer(object):
                     if opt.output_channels > 1:
                         pred = torch.argmax(output, dim=1)
                     else:
-                        pred = output > opt.region_thd
+                        pred = output
                     self.summary.visualize_image(self.writer,
                                                  opt.dataset,
                                                  imgs,

@@ -23,7 +23,7 @@ import multiprocessing
 multiprocessing.set_start_method('spawn', True)
 
 show = False
-results_dir = "/home/twsf/data/Visdrone/density_seg/SegmentationClass/"
+results_dir = "/home/twsf/data/Visdrone/density_mask/SegmentationClass/"
 images_dir = "/home/twsf/data/Visdrone/VisDrone2019-DET-val/images"
 
 

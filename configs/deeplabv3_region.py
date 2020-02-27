@@ -8,7 +8,7 @@ class Config:
     # data
     dataset = "visdrone"
     mask_suffix = ".png"
-    root_dir = user_dir + "/data/Visdrone/region_seg"
+    root_dir = user_dir + "/data/Visdrone/region_mask"
     input_size = (640, 480)
     # mean = [0.382, 0.383, 0.367]
     # std = [0.164, 0.156, 0.164]
