@@ -63,6 +63,7 @@ class Config:
             setattr(self, k, v)
 
         self.device, self.gpu_id = select_device()
+        self.gpu_id = [0]
 
         print('======user config========')
         pprint(self._state_dict())
