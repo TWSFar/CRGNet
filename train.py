@@ -12,13 +12,11 @@ from configs.deeplabv3_density import opt
 
 from models import DeepLab, CSRNet
 # from models import CSRNet
-from models.utils import Evaluator, LR_Scheduler
 from models.losses import build_loss
 from dataloaders import make_data_loader
+from models.utils import Evaluator, LR_Scheduler
 
-from utils import (Saver, Timer, TensorboardSummary,
-                   calculate_weights_labels)
-
+from utils import (Saver, Timer, TensorboardSummary)
 import torch
 
 import multiprocessing
@@ -57,6 +55,9 @@ class Trainer(object):
                         {'params': model.get_10x_lr_params(), 'lr': opt.lr * 10}]
         self.optimizer = torch.optim.SGD(train_params, momentum=opt.momentum,
                                          weight_decay=opt.decay)
+
+        # loss
+        self.loss = build_loss(opt.loss)
 
         # Define Evaluator
         self.evaluator = Evaluator(self.nclass)
@@ -99,13 +100,14 @@ class Trainer(object):
                 else self.model.freeze_bn()
         last_time = time.time()
         for iter_num, sample in enumerate(self.train_loader):
-            # if iter_num >= 1: break
+            if iter_num >= 1: break
             try:
                 imgs = sample["image"].to(opt.device)
                 labels = sample["label"].to(opt.device)
 
-                output, loss = self.model(imgs)
+                output = self.model(imgs)
 
+                loss = self.loss(output, labels)
                 # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 3)
                 loss.backward()
                 self.loss_hist.append(float(loss))
@@ -152,7 +154,7 @@ class Trainer(object):
                 labels = sample['label'].to(opt.device)
                 path = sample["path"]
 
-                output, loss = self.model(imgs, labels)
+                output = self.model(imgs)
 
                 loss = self.loss(output, labels)
                 test_loss += loss.item()
@@ -162,7 +164,7 @@ class Trainer(object):
                 global_step = i + self.nbatch_val * epoch + 1
                 if global_step % opt.plot_every == 0:
                     # pred = output.data.cpu().numpy()
-                    if opt.output_channels > 1:
+                    if output.shape[1] > 1:
                         pred = torch.argmax(output, dim=1)
                     else:
                         pred = torch.clamp(output, min=0)
@@ -176,7 +178,7 @@ class Trainer(object):
                 # metrics
                 pred = output.data.cpu().numpy()
                 target = labels.cpu().numpy() > 0
-                if opt.output_channels > 1:
+                if pred.shape[1] > 1:
                     pred = np.argmax(pred, axis=1)
                 else:
                     pred = (pred > opt.region_thd).reshape(target.shape)

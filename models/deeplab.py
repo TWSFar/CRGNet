@@ -6,7 +6,6 @@ import torch.nn as nn
 from .necks import ASPP
 from .backbones import build_backbone
 from .sync_batchnorm import SynchronizedBatchNorm2d
-from .losses import build_loss
 
 
 class DeepLab(nn.Module):
@@ -30,22 +29,18 @@ class DeepLab(nn.Module):
                                        nn.ReLU(),
                                        nn.Conv2d(128, opt.output_channels, kernel_size=1, stride=1))
 
-        self.loss = build_loss(opt.loss)
-
         self._init_weight()
         if opt.freeze_bn:
             self.freeze_bn()
 
-    def forward(self, input, target):
+    def forward(self, input):
         x, low_level_feat = self.backbone(input)
         low_level_feat = self.link_conv(low_level_feat)
         x = torch.cat((x, low_level_feat), dim=1)
         x = self.aspp(x)
         x = self.last_conv(x)
 
-        loss = self.loss(x, target)
-
-        return x, loss
+        return x
 
     def freeze_bn(self):
         for m in self.modules():
