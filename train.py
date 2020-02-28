@@ -100,7 +100,7 @@ class Trainer(object):
                 else self.model.freeze_bn()
         last_time = time.time()
         for iter_num, sample in enumerate(self.train_loader):
-            if iter_num >= 1: break
+            # if iter_num >= 1: break
             try:
                 imgs = sample["image"].to(opt.device)
                 labels = sample["label"].to(opt.device)

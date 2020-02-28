@@ -189,6 +189,7 @@ def generate_box_from_mask(mask):
         mask: 0/1 array
     """
     regions = []
+    mask = (mask > 0).astype(np.uint8)
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     for i in range(len(contours)):
         x, y, w, h = cv2.boundingRect(contours[i])

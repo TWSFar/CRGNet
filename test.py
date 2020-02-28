@@ -1,6 +1,7 @@
 import os
 import cv2
 import fire
+import h5py
 import numpy as np
 import os.path as osp
 from tqdm import tqdm
@@ -62,15 +63,16 @@ def test(**kwargs):
             # predict
             output = model(sample['image'].unsqueeze(0).to(opt.device))
 
-            if opt.output_channels > 1:
+            if output.shape[1] > 1:
                 pred = np.argmax(output.cpu().numpy(), axis=1)
             else:
-                pred = torch.round(output.cpu().data).numpy()
-            pred = pred.reshape(pred.shape[-2:]).astype(np.uint8)
+                pred = torch.clamp(output.cpu(), min=0).numpy()
+            pred = pred.reshape(pred.shape[-2:])
 
             file_name = osp.join(
-                results_dir, osp.splitext(img_name)[0] + ".png")
-            cv2.imwrite(file_name, pred)
+                results_dir, osp.splitext(img_name)[0] + ".hdf5")
+            with h5py.File(file_name, 'r') as hf:
+                hf['label'] = pred
 
             if show:
                 plt.figure(figsize=(10, 10))
