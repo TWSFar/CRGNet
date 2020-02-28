@@ -24,7 +24,7 @@ import multiprocessing
 multiprocessing.set_start_method('spawn', True)
 
 show = False
-results_dir = "/home/twsf/data/Visdrone/density_mask/SegmentationClass/"
+results_dir = osp.join(opt.root_dir, "SegmentationClass")
 images_dir = "/home/twsf/data/Visdrone/VisDrone2019-DET-val/images"
 
 
@@ -71,7 +71,7 @@ def test(**kwargs):
 
             file_name = osp.join(
                 results_dir, osp.splitext(img_name)[0] + ".hdf5")
-            with h5py.File(file_name, 'r') as hf:
+            with h5py.File(file_name, 'w') as hf:
                 hf['label'] = pred
 
             if show:
