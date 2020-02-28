@@ -5,5 +5,5 @@ from .dataset_utils import (get_label_box, generate_box_from_mask,
 
 __all__ = (
     "Evaluator", "LR_Scheduler", "get_label_box", "generate_box_from_mask",
-    "enlarge_box", "resize_box", "overlap"
+    "enlarge_box", "resize_box", "overlap",
 )

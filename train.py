@@ -58,12 +58,6 @@ class Trainer(object):
         self.optimizer = torch.optim.SGD(train_params, momentum=opt.momentum,
                                          weight_decay=opt.decay)
 
-        # Loss
-        if opt.use_balanced_weights:
-            opt.loss["weight"] = calculate_weights_labels(
-                opt.dataset, self.train_loader, self.nclass,)
-        self.loss = build_loss(opt.loss)
-
         # Define Evaluator
         self.evaluator = Evaluator(self.nclass)
 
@@ -110,9 +104,8 @@ class Trainer(object):
                 imgs = sample["image"].to(opt.device)
                 labels = sample["label"].to(opt.device)
 
-                output = self.model(imgs)
+                output, loss = self.model(imgs)
 
-                loss = self.loss(output, labels)
                 # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 3)
                 loss.backward()
                 self.loss_hist.append(float(loss))
@@ -123,20 +116,7 @@ class Trainer(object):
 
                 # Visualize
                 global_step = iter_num + self.nbatch_train * epoch + 1
-                self.writer.add_scalar('train/loss', loss.cpu().item(), global_step)
-                if global_step % opt.plot_every == 0:
-                    # pred = output.data.cpu().numpy()
-                    if opt.output_channels > 1:
-                        pred = torch.argmax(output, dim=1)
-                    else:
-                        pred = torch.clamp(output, min=0)
-                    self.summary.visualize_image(self.writer,
-                                                 opt.dataset,
-                                                 imgs,
-                                                 labels,
-                                                 pred,
-                                                 global_step)
-
+                self.writer.add_scalar('train/loss', loss.cpu().item(), global_step) 
                 batch_time = time.time() - last_time
                 last_time = time.time()
                 eta = self.timer.eta(global_step, batch_time)
@@ -172,12 +152,28 @@ class Trainer(object):
                 labels = sample['label'].to(opt.device)
                 path = sample["path"]
 
-                output = self.model(imgs)
+                output, loss = self.model(imgs, labels)
 
                 loss = self.loss(output, labels)
                 test_loss += loss.item()
                 tbar.set_description('Test loss: %.4f' % (test_loss / (i + 1)))
 
+                # Visualize
+                global_step = i + self.nbatch_val * epoch + 1
+                if global_step % opt.plot_every == 0:
+                    # pred = output.data.cpu().numpy()
+                    if opt.output_channels > 1:
+                        pred = torch.argmax(output, dim=1)
+                    else:
+                        pred = torch.clamp(output, min=0)
+                    self.summary.visualize_image(self.writer,
+                                                 opt.dataset,
+                                                 imgs,
+                                                 labels,
+                                                 pred,
+                                                 global_step)
+
+                # metrics
                 pred = output.data.cpu().numpy()
                 target = labels.cpu().numpy() > 0
                 if opt.output_channels > 1:

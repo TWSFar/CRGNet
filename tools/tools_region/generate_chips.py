@@ -4,6 +4,7 @@ use rondom array replace objce witch was neglected
 import os
 import cv2
 import sys
+import h5py
 import json
 import argparse
 import numpy as np
@@ -183,8 +184,9 @@ class MakeDataset(object):
         height, width = sample['height'], sample['width']
         img_id = osp.splitext(osp.basename(sample['image']))[0]
 
-        mask_path = osp.join(self.segmentation_dir, '{}.png'.format(img_id))
-        mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
+        mask_path = osp.join(self.segmentation_dir, '{}.hdf5'.format(img_id))
+        with h5py.File(mask_path, 'r') as hf:
+            mask = np.array(hf['label'])
         mask_h, mask_w = mask.shape[:2]
 
         # make chip

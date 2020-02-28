@@ -7,7 +7,6 @@ user_dir = os.path.expanduser('~')
 class Config:
     # data
     dataset = "visdrone"
-    mask_suffix = ".hdf5"
     # root_dir = user_dir + "/work/CRGNet/data/Visdrone_Density"
     root_dir = "data/density_mask"
     input_size = (640, 480)

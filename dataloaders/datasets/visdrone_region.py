@@ -69,13 +69,9 @@ class VisDroneRegion(Dataset):
         assert osp.isfile(label_path), '{} not exist'.format(label_path)
 
         img = cv2.imread(img_path)[:, :, ::-1]  # BGR2RGB
-        if self.suffix in ['.png', '.jpg', 'JPEG']:
-            label = cv2.imread(label_path, cv2.IMREAD_GRAYSCALE)
-        elif self.suffix in ['.hdf5', '.f5', '.h5py']:
-            with h5py.File(label_path, 'r') as hf:
-                label = np.array(hf['label'])
-        else:
-            raise NotImplementedError
+        with h5py.File(label_path, 'r') as hf:
+            label = np.array(hf['label'])
+
         o_h, o_w = img.shape[:2]
 
         sample = {"image": img, "label": label}

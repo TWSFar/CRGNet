@@ -6,6 +6,7 @@
 
 import os
 import cv2
+import h5py
 import shutil
 import argparse
 import numpy as np
@@ -117,8 +118,10 @@ if __name__ == "__main__":
             for sample in tqdm(samples):
                 density_mask = _generate_mask(sample, args.mask_size)
                 basename = osp.basename(sample['image'])
-                maskname = osp.join(mask_dir, osp.splitext(basename)[0]+".png")
-                cv2.imwrite(maskname, density_mask)
+                maskname = osp.join(mask_dir, osp.splitext(basename)[0]+'.hdf5')
+                with h5py.File(maskname, 'w') as hf:
+                    hf['label'] = density_mask
+
 
                 if args.show:
                     img = cv2.imread(sample['image'])
