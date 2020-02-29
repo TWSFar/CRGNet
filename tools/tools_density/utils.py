@@ -75,7 +75,7 @@ def generate_crop_region(regions, mask, mask_size):
         chip_area = np.where(mask_chip > 0, 1, 0).sum()
         chip_nobj = mask_chip.sum()
         if chip_nobj == 0:
-             break
+            continue
         # weight = np.exp(0.5 * chip_area/chip_nobj)
         weight = np.log(1 + chip_area ** 1.5 / (chip_nobj * 35)) + 1
 
