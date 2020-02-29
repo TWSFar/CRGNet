@@ -80,7 +80,7 @@ def _generate_mask(sample, mask_scale=(30, 40)):
 
         # Chip mask 40 * 30, model input size 640x480
         mask_h, mask_w = mask_scale
-        region_mask = np.zeros((mask_h, mask_w), dtype=np.uint8)
+        region_mask = np.zeros((mask_h, mask_w), dtype=np.float32)
 
         for box in sample["bboxes"]:
             xmin = _myaround_down(1.0 * box[0] / width * mask_w)

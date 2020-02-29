@@ -71,9 +71,11 @@ def generate_crop_region(regions, mask, mask_size):
         box_w, box_h = box[2] - box[0], box[3] - box[1]
         center_x, center_y = box[0] + box_w / 2.0, box[1] + box_h / 2.0
 
-        mask_chip = mask[box[1]:box[3]+1, box[0]:box[2]+1]
+        mask_chip = mask[box[1]:box[3], box[0]:box[2]]
         chip_area = np.where(mask_chip > 0, 1, 0).sum()
         chip_nobj = mask_chip.sum()
+        if chip_nobj == 0:
+             break
         # weight = np.exp(0.5 * chip_area/chip_nobj)
         weight = np.log(1 + chip_area ** 1.5 / (chip_nobj * 35)) + 1
 
@@ -88,9 +90,9 @@ def generate_crop_region(regions, mask, mask_size):
         center_y = height - crop_size_h - 1 if center_y > height - crop_size_h - 1 else center_y
 
         new_box = [center_x - crop_size_w if center_x - crop_size_w > 0 else 0,
-                    center_y - crop_size_h if center_y - crop_size_h > 0 else 0,
-                    center_x + crop_size_w if center_x + crop_size_w < width else width-1,
-                    center_y + crop_size_h if center_y + crop_size_h < height else height-1]
+                   center_y - crop_size_h if center_y - crop_size_h > 0 else 0,
+                   center_x + crop_size_w if center_x + crop_size_w < width else width-1,
+                   center_y + crop_size_h if center_y + crop_size_h < height else height-1]
         for x in new_box:
             if x < 0:
                 pdb.set_trace()
@@ -159,7 +161,7 @@ def region_morphology(contours, mask_shape):
     binary = np.zeros((mask_h, mask_w)).astype(np.uint8)
     cv2.drawContours(binary, contours, -1, 1, cv2.FILLED)
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-    binary_open = cv2.morphologyEx(binary, cv2.MORPH_OPEN, kernel) # 开操作
+    binary_open = cv2.morphologyEx(binary, cv2.MORPH_OPEN, kernel)  # 开操作
     region_open, _ = generate_box_from_mask(binary_open)
 
     binary_rest = binary ^ binary_open

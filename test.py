@@ -66,7 +66,7 @@ def test(**kwargs):
             if output.shape[1] > 1:
                 pred = np.argmax(output.cpu().numpy(), axis=1)
             else:
-                pred = torch.clamp(output.cpu(), min=0).numpy()
+                pred = torch.round(output.cpu()).numpy()
             pred = pred.reshape(pred.shape[-2:])
 
             file_name = osp.join(

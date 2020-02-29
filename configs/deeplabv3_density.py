@@ -12,7 +12,7 @@ class Config:
     mean = [0.382, 0.383, 0.367]
     std = [0.164, 0.156, 0.164]
     resume = False
-    pre = "/home/twsf/work/CRGNet/run/20200210_225056_train/model_best.pth.tar"
+    pre = "/home/twsf/work/CRGNet/run/visdrone/20200227_235050_train/model_best.pth.tar"
 
     # model
     backbone = 'mobilenetv2'
@@ -44,7 +44,7 @@ class Config:
 
     # eval
     # parameters
-    region_thd = 1.0/1200
+    region_thd = 0.5
 
     # visual
     print_freq = 50

@@ -68,7 +68,7 @@ def _generate_mask(sample, mask_scale=(30, 40)):
 
         # Chip mask 40 * 30, model input size 640x480
         mask_h, mask_w = mask_scale
-        density_mask = np.zeros((mask_h, mask_w), dtype=np.uint8)
+        density_mask = np.zeros((mask_h, mask_w), dtype=np.float32)
 
         for box in sample["bboxes"]:
             xmin = _myaround_down(1.0 * box[0] / width * mask_w)
@@ -121,7 +121,6 @@ if __name__ == "__main__":
                 maskname = osp.join(mask_dir, osp.splitext(basename)[0]+'.hdf5')
                 with h5py.File(maskname, 'w') as hf:
                     hf['label'] = density_mask
-
 
                 if args.show:
                     img = cv2.imread(sample['image'])
