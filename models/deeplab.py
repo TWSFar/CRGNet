@@ -39,7 +39,8 @@ class DeepLab(nn.Module):
         x = torch.cat((x, low_level_feat), dim=1)
         x = self.aspp(x)
         x = self.last_conv(x)
-
+        if x.shape[1] > 1:
+            return x.sigmoid()
         return x
 
     def freeze_bn(self):

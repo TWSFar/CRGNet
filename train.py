@@ -6,9 +6,9 @@ import numpy as np
 from tqdm import tqdm
 
 # from configs.deeplabv3_region_sample import opt
-# from configs.deeplabv3_region import opt
+from configs.deeplabv3_region import opt
 # from configs.deeplabv3_density_sample import opt
-from configs.deeplabv3_density import opt
+# from configs.deeplabv3_density import opt
 
 from models import DeepLab, CSRNet
 # from models import CSRNet

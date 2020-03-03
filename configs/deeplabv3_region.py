@@ -9,10 +9,10 @@ class Config:
     dataset = "visdrone"
     root_dir = user_dir + "/data/Visdrone/region_mask"
     input_size = (640, 480)
-    # mean = [0.382, 0.383, 0.367]
-    # std = [0.164, 0.156, 0.164]
-    mean = (0.485, 0.456, 0.406)
-    std = (0.229, 0.224, 0.225)
+    mean = [0.382, 0.383, 0.367]
+    std = [0.164, 0.156, 0.164]
+    # mean = (0.485, 0.456, 0.406)
+    # std = (0.229, 0.224, 0.225)
     resume = False
     pre = "/home/twsf/work/CRGNet/run/visdrone/20200102_230256_train/model_best.pth.tar"
 

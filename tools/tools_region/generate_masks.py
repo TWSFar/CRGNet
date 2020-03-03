@@ -87,6 +87,8 @@ def _generate_mask(sample, mask_scale=(30, 40)):
             ymin = _myaround_down(1.0 * box[1] / height * mask_h)
             xmax = _myaround_up(1.0 * box[2] / width * mask_w, mask_w-1)
             ymax = _myaround_up(1.0 * box[3] / height * mask_h, mask_h-1)
+            if xmin == xmax or ymin == ymax:
+                continue
             region_mask[ymin:ymax+1, xmin:xmax+1] = 1
 
         return region_mask

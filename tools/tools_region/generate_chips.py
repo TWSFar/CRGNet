@@ -27,6 +27,8 @@ def parse_args():
                         nargs='+', help='for train, val or test')
     parser.add_argument('--padding', type=str, default=[],
                         nargs='+', help='random padding neglect box')
+    parser.add_argument('--show', type=bool, default=False,
+                        help="show image and chip box")
     args = parser.parse_args()
     assert "test" not in args.padding
     return args
@@ -195,6 +197,8 @@ class MakeDataset(object):
         region_box = utils.resize_box(region_box, (mask_w, mask_h), (width, height))
         region_box = utils.generate_crop_region(region_box, (width, height))
 
+        if args.show:
+            utils.show_image(image, region_box)
         # if imgset == 'train':
         #     region_box = np.vstack((region_box, np.array([0, 0, width-1, height-1])))
 

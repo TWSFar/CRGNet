@@ -22,12 +22,15 @@ def parse_args():
     parser.add_argument('--dataset', type=str, default='VisDrone',
                         choices=['VisDrone'], help='dataset name')
     parser.add_argument('--db_root', type=str,
-                        default=user_dir+"/data/Visdrone",
+                        # default=user_dir+"/data/Visdrone",
+                        default="E:\\CV\\data\\visdrone",
                         help="dataset's root path")
-    parser.add_argument('--imgsets', type=str, default=['train', 'val'],
+    parser.add_argument('--imgsets', type=str, default=['val'],
                         nargs='+', help='for train or test')
     parser.add_argument('--padding', type=str, default=[],
                         nargs='+', help='random padding neglect box')
+    parser.add_argument('--show', type=bool, default=True,
+                        help="show image and chip box")
     args = parser.parse_args()
     assert "test" not in args.padding
     return args
@@ -192,10 +195,15 @@ class MakeDataset(object):
 
         # make chip
         region_box, contours = utils.generate_box_from_mask(mask)
+        utils.show_image(mask, np.array(region_box))
         region_box = utils.region_postprocess(region_box, contours, (mask_w, mask_h))
+        utils.show_image(mask, np.array(region_box))
         region_box = utils.generate_crop_region(region_box, mask, (mask_w, mask_h))
+        utils.show_image(mask, np.array(region_box))
         region_box = utils.resize_box(region_box, (mask_w, mask_h), (width, height))
 
+        if args.show:
+            utils.show_image(image, np.array(region_box))
         # if imgset == 'train':
         #     region_box = np.vstack((region_box, np.array([0, 0, width-1, height-1])))
 

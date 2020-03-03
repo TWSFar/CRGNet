@@ -74,8 +74,6 @@ def generate_crop_region(regions, mask, mask_size):
         mask_chip = mask[box[1]:box[3], box[0]:box[2]]
         chip_area = np.where(mask_chip > 0, 1, 0).sum()
         chip_nobj = mask_chip.sum()
-        if chip_nobj == 0:
-            continue
         # weight = np.exp(0.5 * chip_area/chip_nobj)
         weight = np.log(1 + chip_area ** 1.5 / (chip_nobj * 35)) + 1
 
@@ -86,13 +84,13 @@ def generate_crop_region(regions, mask, mask_size):
 
         center_x = crop_size_w if center_x < crop_size_w else center_x
         center_y = crop_size_h if center_y < crop_size_h else center_y
-        center_x = width - crop_size_w - 1 if center_x > width - crop_size_w - 1 else center_x
-        center_y = height - crop_size_h - 1 if center_y > height - crop_size_h - 1 else center_y
+        center_x = width - crop_size_w if center_x > width - crop_size_w else center_x
+        center_y = height - crop_size_h if center_y > height - crop_size_h else center_y
 
         new_box = [center_x - crop_size_w if center_x - crop_size_w > 0 else 0,
                    center_y - crop_size_h if center_y - crop_size_h > 0 else 0,
-                   center_x + crop_size_w if center_x + crop_size_w < width else width-1,
-                   center_y + crop_size_h if center_y + crop_size_h < height else height-1]
+                   center_x + crop_size_w if center_x + crop_size_w < width else width,
+                   center_y + crop_size_h if center_y + crop_size_h < height else height]
         for x in new_box:
             if x < 0:
                 pdb.set_trace()

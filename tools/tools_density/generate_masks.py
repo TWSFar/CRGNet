@@ -22,10 +22,11 @@ def parse_args():
     parser = argparse.ArgumentParser(description="convert to voc dataset")
     parser.add_argument('--dataset', type=str, default='VisDrone',
                         choices=['VisDrone'], help='dataset name')
-    parser.add_argument('--mode', type=str, default=['train', 'val'],
+    parser.add_argument('--mode', type=str, default=['val'],
                         nargs='+', help='for train or test')
     parser.add_argument('--db_root', type=str,
-                        default=user_dir+"/data/Visdrone",
+                        # default=user_dir+"/data/Visdrone",
+                        default="E:\\CV\\data\\visdrone",
                         help="dataset's root path")
     parser.add_argument('--mask_size', type=list, default=[30, 40],
                         help="Size of production target mask")
@@ -75,6 +76,8 @@ def _generate_mask(sample, mask_scale=(30, 40)):
             ymin = _myaround_down(1.0 * box[1] / height * mask_h)
             xmax = _myaround_up(1.0 * box[2] / width * mask_w, mask_w-1)
             ymax = _myaround_up(1.0 * box[3] / height * mask_h, mask_h-1)
+            if xmin == xmax or ymin == ymax:
+                continue
             density_mask[ymin:ymax+1, xmin:xmax+1] += 1
 
         return density_mask
