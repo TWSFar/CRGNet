@@ -55,7 +55,7 @@ class VisDroneRegion(Dataset):
 
         assert os.path.exists(image_set_file), \
             'Path does not exist: {}'.format(image_set_file)
-        with open(image_set_file) as f:
+        with open(image_set_file, 'r') as f:
             for line in f.readlines():
                 image_index.append(line.strip())
         return image_index
