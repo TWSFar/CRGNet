@@ -71,7 +71,7 @@ class Trainer(object):
         self.loss = build_loss(opt.loss)
 
         # Define Evaluator
-        self.evaluator = Evaluator(opt.num_classes)
+        self.evaluator = Evaluator()  # use region to eval: class_num is 2
 
         # Define lr scheduler
         self.scheduler = LR_Scheduler(mode=opt.lr_scheduler,
@@ -192,8 +192,7 @@ class Trainer(object):
                 target = labels.cpu().numpy() > 0
                 if pred.shape[1] > 1:
                     pred = np.argmax(pred, axis=1)
-                else:
-                    pred = (pred > opt.region_thd).reshape(target.shape)
+                pred = (pred > opt.region_thd).reshape(target.shape)
                 self.evaluator.add_batch(target, pred, path, opt.dataset)
 
             # Fast test during the training
