@@ -12,7 +12,7 @@ def calculate_weigths_labels(dataloader, root_dir, num_classes):
     for sample in tqdm_batch:
         y = sample['label']
         y = y.detach().cpu().numpy()
-        mask = (y >= 0) and (y < num_classes)
+        mask = (y >= 0) & (y < num_classes)
         labels = y[mask].astype(np.uint8)
         count_l = np.bincount(labels, minlength=num_classes)
         z += count_l

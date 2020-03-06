@@ -7,9 +7,9 @@ import os.path as osp
 from tqdm import tqdm
 
 # from configs.deeplabv3_region_sample import opt
-from configs.deeplabv3_region import opt
+# from configs.deeplabv3_region import opt
 # from configs.deeplabv3_density_sample import opt
-# from configs.deeplabv3_density import opt
+from configs.deeplabv3_density_2 import opt
 
 from models import DeepLab, CSRNet
 # from models import CSRNet
@@ -68,9 +68,7 @@ class Trainer(object):
                     self.train_loader, opt.root_dir, opt.output_channels)
             weight = torch.from_numpy(weight.astype(np.float32))
             print(weight)
-        else:
-            weight = torch.tensor([1, 40]).float()
-
+        opt.loss['weight'] = weight
         self.loss = build_loss(opt.loss)
 
         # Define Evaluator
@@ -140,7 +138,7 @@ class Trainer(object):
                 if global_step % opt.print_freq == 0:
                     printline = ('Epoch: [{}][{}/{}] '
                                  'lr: (1x:{:1.5f}, 10x:{:1.5f}), '
-                                 'eta: {}, time: {:1.3f}, '
+                                 'eta: {}, time: {:1.1f}, '
                                  'Loss: {:1.4f} '.format(
                                     epoch, iter_num+1, self.nbatch_train,
                                     self.optimizer.param_groups[0]['lr'],
