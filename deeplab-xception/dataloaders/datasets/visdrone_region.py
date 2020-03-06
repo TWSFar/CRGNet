@@ -18,8 +18,6 @@ class VisDroneRegion(Dataset):
     """
     Visdrone dataset
     """
-    nclass = 2
-
     def __init__(self, opt, mode="train"):
         super().__init__()
         self.data_dir = opt.root_dir

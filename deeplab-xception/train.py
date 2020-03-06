@@ -65,14 +65,14 @@ class Trainer(object):
                 weight = np.load(classes_weights_file)
             else:
                 weight = calculate_weigths_labels(
-                    self.train_loader, opt.root_dir, opt.output_channels)
+                    self.train_loader, opt.root_dir, opt.num_classes)
             weight = torch.from_numpy(weight.astype(np.float32))
             print(weight)
         opt.loss['weight'] = weight
         self.loss = build_loss(opt.loss)
 
         # Define Evaluator
-        self.evaluator = Evaluator(self.nclass)
+        self.evaluator = Evaluator(opt.num_classes)
 
         # Define lr scheduler
         self.scheduler = LR_Scheduler(mode=opt.lr_scheduler,

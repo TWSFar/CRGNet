@@ -14,6 +14,7 @@ class Config:
     std = [0.164, 0.156, 0.164]
     # mean = (0.485, 0.456, 0.406)
     # std = (0.229, 0.224, 0.225)
+    num_classes = 2
     resume = False
     pre = "/home/twsf/work/CRGNet/run/visdrone/20200102_230256_train/model_best.pth.tar"
 
