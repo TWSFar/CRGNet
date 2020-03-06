@@ -39,7 +39,6 @@ class Trainer(object):
         # Dataset dataloader
         self.train_dataset, self.train_loader = make_data_loader(opt)
         self.nbatch_train = len(self.train_loader)
-        self.nclass = self.train_dataset.nclass
         self.val_dataset, self.val_loader = make_data_loader(opt, mode="val")
         self.nbatch_val = len(self.val_loader)
 
@@ -162,6 +161,7 @@ class Trainer(object):
         with torch.no_grad():
             tbar = tqdm(self.val_loader, desc='\r')
             for i, sample in enumerate(tbar):
+                # if i > 3: break
                 imgs = sample['image'].to(opt.device)
                 labels = sample['label'].to(opt.device)
                 path = sample["path"]
