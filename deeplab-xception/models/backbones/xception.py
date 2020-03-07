@@ -175,6 +175,9 @@ class AlignedXception(nn.Module):
         self.conv5 = SeparableConv2d(1536, 2048, 3, stride=1, dilation=exit_block_dilations[1], BatchNorm=BatchNorm)
         self.bn5 = BatchNorm(2048)
 
+        self.low_outc = 128
+        self.high_outc = 2048
+
         # Init weights
         self._init_weight()
 

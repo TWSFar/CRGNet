@@ -80,6 +80,10 @@ class ResNet(nn.Module):
         self.layer3 = self._make_layer(block, 256, layers[2], stride=strides[2], dilation=dilations[2], BatchNorm=BatchNorm)
         self.layer4 = self._make_MG_unit(block, 512, blocks=blocks, stride=strides[3], dilation=dilations[3], BatchNorm=BatchNorm)
         # self.layer4 = self._make_layer(block, 512, layers[3], stride=strides[3], dilation=dilations[3], BatchNorm=BatchNorm)
+
+        self.low_outc = 64
+        self.high_outc = 512
+
         self._init_weight()
 
     def _make_layer(self, block, planes, blocks, stride=1, dilation=1, BatchNorm=None):
