@@ -2,6 +2,7 @@ from .resnet import resnet50, resnet101
 from .xception import AlignedXception
 from .mobilenetv2 import MobileNetV2
 from .mobilenetv3 import MobileNetV3_Small, MobileNetV3_Large
+from .ghostnet import ghostnet
 
 
 def build_backbone(backbone, output_stride, BatchNorm):
@@ -22,6 +23,9 @@ def build_backbone(backbone, output_stride, BatchNorm):
 
     elif backbone == 'mobilenetv3_l':
         return MobileNetV3_Large()
+
+    elif backbone == "ghostnet":
+        return ghostnet(output_stride=output_stride)
 
     else:
         raise NotImplementedError

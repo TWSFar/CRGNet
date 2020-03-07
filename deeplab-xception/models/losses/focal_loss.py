@@ -7,7 +7,7 @@ class FocalLoss(object):
         self.alpha = alpha
         self.gamma = gamma
         self.ignore_index = ignore_index
-        self.weight = weight
+        self.weight = torch.tensor(weight, dtype=torch.float32)
 
     def __call__(self, logit, target):
         device = logit.device

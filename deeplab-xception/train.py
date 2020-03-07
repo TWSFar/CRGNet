@@ -7,9 +7,9 @@ import os.path as osp
 from tqdm import tqdm
 
 # from configs.deeplabv3_region_sample import opt
-# from configs.deeplabv3_region import opt
 # from configs.deeplabv3_density_sample import opt
-from configs.deeplabv3_density_2 import opt
+from configs.deeplabv3_region import opt
+# from configs.deeplabv3_density_2 import opt
 
 from models import DeepLab, CSRNet
 # from models import CSRNet
@@ -65,9 +65,8 @@ class Trainer(object):
             else:
                 weight = calculate_weigths_labels(
                     self.train_loader, opt.root_dir, opt.num_classes)
-            weight = torch.from_numpy(weight.astype(np.float32))
             print(weight)
-        opt.loss['weight'] = weight
+            opt.loss['weight'] = weight
         self.loss = build_loss(opt.loss)
 
         # Define Evaluator

@@ -52,15 +52,23 @@ def depthwise_conv(inp, oup, kernel_size=3, stride=1, relu=False):
         nn.ReLU(inplace=True) if relu else nn.Sequential(),
     )
 
+
+def fixed_padding(kernel_size, dilation):
+    kernel_size_effective = kernel_size + (kernel_size - 1) * (dilation - 1)
+    pad_total = kernel_size_effective - 1
+    return pad_total
+
+
 class GhostModule(nn.Module):
-    def __init__(self, inp, oup, kernel_size=1, ratio=2, dw_size=3, stride=1, relu=True):
+    def __init__(self, inp, oup, kernel_size=1, ratio=2, dw_size=3, stride=1, dilation=1, relu=True):
         super(GhostModule, self).__init__()
         self.oup = oup
         init_channels = math.ceil(oup / ratio)
         new_channels = init_channels*(ratio-1)
 
+        padding = fixed_padding(kernel_size, dilation) // 2
         self.primary_conv = nn.Sequential(
-            nn.Conv2d(inp, init_channels, kernel_size, stride, kernel_size//2, bias=False),
+            nn.Conv2d(inp, init_channels, kernel_size, stride, padding, bias=False),
             nn.BatchNorm2d(init_channels),
             nn.ReLU(inplace=True) if relu else nn.Sequential(),
         )
@@ -74,24 +82,24 @@ class GhostModule(nn.Module):
     def forward(self, x):
         x1 = self.primary_conv(x)
         x2 = self.cheap_operation(x1)
-        out = torch.cat([x1,x2], dim=1)
-        return out[:,:self.oup,:,:]
+        out = torch.cat([x1, x2], dim=1)
+        return out[:, :self.oup, :, :]
 
 
 class GhostBottleneck(nn.Module):
-    def __init__(self, inp, hidden_dim, oup, kernel_size, stride, use_se):
+    def __init__(self, inp, hidden_dim, oup, kernel_size, stride, dilation, use_se):
         super(GhostBottleneck, self).__init__()
         assert stride in [1, 2]
 
         self.conv = nn.Sequential(
             # pw
-            GhostModule(inp, hidden_dim, kernel_size=1, relu=True),
+            GhostModule(inp, hidden_dim, kernel_size=1, dilation=dilation, relu=True),
             # dw
             depthwise_conv(hidden_dim, hidden_dim, kernel_size, stride, relu=False) if stride==2 else nn.Sequential(),
             # Squeeze-and-Excite
             SELayer(hidden_dim) if use_se else nn.Sequential(),
             # pw-linear
-            GhostModule(hidden_dim, oup, kernel_size=1, relu=False),
+            GhostModule(hidden_dim, oup, kernel_size=1, dilation=dilation, relu=False),
         )
 
         if stride == 1 and inp == oup:
@@ -108,7 +116,7 @@ class GhostBottleneck(nn.Module):
 
 
 class GhostNet(nn.Module):
-    def __init__(self, cfgs, num_classes=1000, width_mult=1.):
+    def __init__(self, cfgs, num_classes=1000, width_mult=1., output_stride=16):
         super(GhostNet, self).__init__()
         # setting of inverted residual blocks
         self.cfgs = cfgs
@@ -124,24 +132,38 @@ class GhostNet(nn.Module):
 
         # building inverted residual blocks
         block = GhostBottleneck
+        current_stride = 2
+        rate = 1
         for k, exp_size, c, use_se, s in self.cfgs:
+            if current_stride == output_stride:
+                stride = 1
+                dilation = rate
+                rate *= s
+            else:
+                stride = s
+                dilation = 1
+                current_stride *= s
             output_channel = _make_divisible(c * width_mult, 4)
             hidden_channel = _make_divisible(exp_size * width_mult, 4)
-            layers.append(block(input_channel, hidden_channel, output_channel, k, s, use_se))
+            layers.append(block(input_channel, hidden_channel, output_channel, k, stride, dilation, use_se))
             input_channel = output_channel
         self.features = nn.Sequential(*layers)
+        self.low_level_features = self.features[0:12]
+        self.high_level_features = self.features[12:]
+        self.low_outc = 112
+        self.high_outc = output_channel
 
         # building last several layers
-        output_channel = _make_divisible(exp_size * width_mult, 4)
-        self.squeeze = nn.Sequential(
-            nn.Conv2d(input_channel, output_channel, 1, 1, 0, bias=False),
-            nn.BatchNorm2d(output_channel),
-            nn.ReLU(inplace=True),
-            nn.AdaptiveAvgPool2d((1, 1)),
-        )
-        input_channel = output_channel
+        # output_channel = _make_divisible(exp_size * width_mult, 4)
+        # self.squeeze = nn.Sequential(
+        #     nn.Conv2d(input_channel, output_channel, 1, 1, 0, bias=False),
+        #     nn.BatchNorm2d(output_channel),
+        #     nn.ReLU(inplace=True),
+        #     nn.AdaptiveAvgPool2d((1, 1)),
+        # )
+        # input_channel = output_channel
 
-        output_channel = 1280
+        # output_channel = 1280
         # self.classifier = nn.Sequential(
         #     nn.Linear(input_channel, output_channel, bias=False),
         #     nn.BatchNorm1d(output_channel),
@@ -153,11 +175,13 @@ class GhostNet(nn.Module):
         self._initialize_weights()
 
     def forward(self, x):
-        x = self.features(x)
-        x = self.squeeze(x)
-        x = x.view(x.size(0), -1)
+        low_level_feat = self.low_level_features(x)
+        x = self.high_level_features(low_level_feat)
+        return x, low_level_feat
+        # x = self.squeeze(x)
+        # x = x.view(x.size(0), -1)
         # x = self.classifier(x)
-        return x
+        # return x
 
     def _initialize_weights(self):
         for m in self.modules():
@@ -168,12 +192,12 @@ class GhostNet(nn.Module):
                 m.bias.data.zero_()
 
 
-def ghost_net(**kwargs):
+def ghostnet(**kwargs):
     """
     Constructs a MobileNetV3-Large model
     """
     cfgs = [
-        # k, t, c, SE, s 
+        # k, t, c, SE, s
         [3,  16,  16, 0, 1],
         [3,  48,  24, 0, 2],
         [3,  72,  24, 0, 1],
@@ -195,9 +219,9 @@ def ghost_net(**kwargs):
 
 
 if __name__=='__main__':
-    model = ghost_net()
+    model = ghostnet(output_stride=16)
     model.eval()
-    print(model)
-    input = torch.randn(32,3,480,640)
+    # print(model)
+    input = torch.randn(32, 3, 480, 640)
     y = model(input)
     print(y)

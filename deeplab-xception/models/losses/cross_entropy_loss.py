@@ -5,7 +5,7 @@ import torch.nn as nn
 class CrossEntropyLoss(object):
     def __init__(self, weight=None, ignore_index=-1):
         self.ignore_index = ignore_index
-        self.weight = weight
+        self.weight = torch.tensor(weight, dtype=torch.float32)
 
     def __call__(self, logit, target):
         n, c, h, w = logit.size()
@@ -17,7 +17,6 @@ class CrossEntropyLoss(object):
         loss = criterion(logit, target.long())
 
         return loss
-
 
 if __name__ == "__main__":
     torch.manual_seed(1)
