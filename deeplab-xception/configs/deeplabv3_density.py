@@ -24,7 +24,6 @@ class Config:
 
     # train
     batch_size = 16  # assert bs > 2
-    start_epoch = 0
     epochs = 200
     freeze_bn = False
 

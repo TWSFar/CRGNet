@@ -116,10 +116,27 @@ class GhostBottleneck(nn.Module):
 
 
 class GhostNet(nn.Module):
-    def __init__(self, cfgs, num_classes=1000, width_mult=1., output_stride=16):
+    def __init__(self, num_classes=1000, width_mult=1., output_stride=16):
         super(GhostNet, self).__init__()
         # setting of inverted residual blocks
-        self.cfgs = cfgs
+        self.cfgs = [
+            # k, t, c, SE, s
+            [3,  16,  16, 0, 1],
+            [3,  48,  24, 0, 2],
+            [3,  72,  24, 0, 1],
+            [5,  72,  40, 1, 1],
+            [5, 120,  40, 1, 1],
+            [3, 240,  80, 0, 2],
+            [3, 200,  80, 0, 1],
+            [3, 184,  80, 0, 1],
+            [3, 184,  80, 0, 1],
+            [3, 480, 112, 1, 2],
+            [3, 672, 112, 1, 1],
+            [5, 672, 160, 1, 2],
+            [5, 960, 160, 0, 1],
+            [5, 960, 160, 1, 1],
+            [5, 960, 160, 0, 1],
+            [5, 960, 160, 1, 1]] 
 
         # building first layer
         output_channel = _make_divisible(16 * width_mult, 4)
@@ -148,9 +165,9 @@ class GhostNet(nn.Module):
             layers.append(block(input_channel, hidden_channel, output_channel, k, stride, dilation, use_se))
             input_channel = output_channel
         self.features = nn.Sequential(*layers)
-        self.low_level_features = self.features[0:12]
-        self.high_level_features = self.features[12:]
-        self.low_outc = 112
+        self.low_level_features = self.features[0:10]
+        self.high_level_features = self.features[10:]
+        self.low_outc = 80
         self.high_outc = output_channel
 
         # building last several layers
@@ -196,26 +213,44 @@ def ghostnet(**kwargs):
     """
     Constructs a MobileNetV3-Large model
     """
+    # cfgs = [
+    #     # k, t, c, SE, s
+    #     [3,  16,  16, 0, 1],
+    #     [3,  48,  24, 0, 2],
+    #     [3,  72,  24, 0, 1],
+    #     [5,  72,  40, 1, 2],
+    #     [5, 120,  40, 1, 1],
+    #     [3, 240,  80, 0, 2],
+    #     [3, 200,  80, 0, 1],
+    #     [3, 184,  80, 0, 1],
+    #     [3, 184,  80, 0, 1],
+    #     [3, 480, 112, 1, 1],
+    #     [3, 672, 112, 1, 1],
+    #     [5, 672, 160, 1, 2],
+    #     [5, 960, 160, 0, 1],
+    #     [5, 960, 160, 1, 1],
+    #     [5, 960, 160, 0, 1],
+    #     [5, 960, 160, 1, 1]
+    # ]
     cfgs = [
         # k, t, c, SE, s
         [3,  16,  16, 0, 1],
         [3,  48,  24, 0, 2],
         [3,  72,  24, 0, 1],
-        [5,  72,  40, 1, 2],
+        [5,  72,  40, 1, 1],
         [5, 120,  40, 1, 1],
         [3, 240,  80, 0, 2],
         [3, 200,  80, 0, 1],
         [3, 184,  80, 0, 1],
         [3, 184,  80, 0, 1],
-        [3, 480, 112, 1, 1],
+        [3, 480, 112, 1, 2],
         [3, 672, 112, 1, 1],
         [5, 672, 160, 1, 2],
         [5, 960, 160, 0, 1],
         [5, 960, 160, 1, 1],
         [5, 960, 160, 0, 1],
-        [5, 960, 160, 1, 1]
-    ]
-    return GhostNet(cfgs, **kwargs)
+        [5, 960, 160, 1, 1]]  
+    return GhostNet(**kwargs)
 
 
 if __name__=='__main__':

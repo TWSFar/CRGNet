@@ -11,7 +11,7 @@ from tqdm import tqdm
 from configs.deeplabv3_region import opt
 # from configs.deeplabv3_density_2 import opt
 
-from models import DeepLab, CSRNet
+from models import DeepLab, CSRNet, CRGNet
 # from models import CSRNet
 from models.losses import build_loss
 from dataloaders import make_data_loader
@@ -20,7 +20,7 @@ from models.utils import Evaluator, LR_Scheduler
 from utils import (Saver, Timer, TensorboardSummary,
                    calculate_weigths_labels)
 import torch
-
+import torch.optim as optim
 import multiprocessing
 multiprocessing.set_start_method('spawn', True)
 torch.manual_seed(opt.seed)
@@ -47,15 +47,10 @@ class Trainer(object):
             opt.sync_bn = True
         else:
             opt.sync_bn = False
-        model = DeepLab(opt)
+        # model = DeepLab(opt)
         # model = CSRNet()
+        model = CRGNet(opt)
         self.model = model.to(opt.device)
-
-        # Define Optimizer
-        train_params = [{'params': model.get_1x_lr_params(), 'lr': opt.lr},
-                        {'params': model.get_10x_lr_params(), 'lr': opt.lr * 10}]
-        self.optimizer = torch.optim.SGD(train_params, momentum=opt.momentum,
-                                         weight_decay=opt.decay)
 
         # loss
         if opt.use_balanced_weights:
@@ -72,21 +67,14 @@ class Trainer(object):
         # Define Evaluator
         self.evaluator = Evaluator()  # use region to eval: class_num is 2
 
-        # Define lr scheduler
-        self.scheduler = LR_Scheduler(mode=opt.lr_scheduler,
-                                      base_lr=opt.lr,
-                                      num_epochs=opt.epochs,
-                                      iters_per_epoch=self.nbatch_train,
-                                      lr_step=140)
-
         # Resuming Checkpoint
         self.best_pred = 0.0
-        self.start_epoch = opt.start_epoch
+        self.start_epoch = 0
         if opt.resume:
             if os.path.isfile(opt.pre):
                 print("=> loading checkpoint '{}'".format(opt.pre))
                 checkpoint = torch.load(opt.pre)
-                opt.start_epoch = checkpoint['epoch']
+                self.start_epoch = checkpoint['epoch']
                 self.best_pred = checkpoint['best_pred']
                 self.model.load_state_dict(checkpoint['state_dict'])
                 print("=> loaded checkpoint '{}' (epoch {})"
@@ -99,6 +87,25 @@ class Trainer(object):
             self.model = torch.nn.DataParallel(self.model,
                                                device_ids=opt.gpu_id)
 
+        # Define Optimizer
+        # train_params = [{'params': model.get_1x_lr_params(), 'lr': opt.lr},
+        #                 {'params': model.get_10x_lr_params(), 'lr': opt.lr * 10}]
+        # self.optimizer = torch.optim.SGD(train_params, momentum=opt.momentum,
+        #                                  weight_decay=opt.decay)
+        self.optimizer = torch.optim.SGD(self.model.parameters(),
+                                         lr=opt.lr,
+                                         momentum=opt.momentum,
+                                         weight_decay=opt.decay)
+
+        # Define lr scheduler
+        # self.scheduler = LR_Scheduler(mode=opt.lr_scheduler,
+        #                               base_lr=opt.lr,
+        #                               num_epochs=opt.epochs,
+        #                               iters_per_epoch=self.nbatch_train,
+        #                               lr_step=140)
+        self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+            self.optimizer, patience=3, verbose=True)
+
         self.loss_hist = collections.deque(maxlen=500)
         self.timer = Timer(opt.epochs, self.nbatch_train, self.nbatch_val)
         self.step_time = collections.deque(maxlen=opt.print_freq)
@@ -109,6 +116,7 @@ class Trainer(object):
             self.model.module.freeze_bn() if len(opt.gpu_id) > 1 \
                 else self.model.freeze_bn()
         last_time = time.time()
+        epoch_loss = []
         for iter_num, sample in enumerate(self.train_loader):
             # if iter_num >= 1: break
             try:
@@ -121,10 +129,11 @@ class Trainer(object):
                 # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 3)
                 loss.backward()
                 self.loss_hist.append(float(loss))
+                epoch_loss.append(float(loss.cpu().item()))
 
                 self.optimizer.step()
                 self.optimizer.zero_grad()
-                self.scheduler(self.optimizer, iter_num, epoch)
+                # self.scheduler(self.optimizer, iter_num, epoch)
 
                 # Visualize
                 global_step = iter_num + self.nbatch_train * epoch + 1
@@ -135,12 +144,12 @@ class Trainer(object):
                 self.step_time.append(batch_time)
                 if global_step % opt.print_freq == 0:
                     printline = ('Epoch: [{}][{}/{}] '
-                                 'lr: (1x:{:1.5f}, 10x:{:1.5f}), '
+                                 'lr: (1x:{:1.5f}, '  # 10x:{:1.5f}), '
                                  'eta: {}, time: {:1.1f}, '
                                  'Loss: {:1.4f} '.format(
                                     epoch, iter_num+1, self.nbatch_train,
                                     self.optimizer.param_groups[0]['lr'],
-                                    self.optimizer.param_groups[1]['lr'],
+                                    # self.optimizer.param_groups[1]['lr'],
                                     eta, np.sum(self.step_time),
                                     np.mean(self.loss_hist)))
                     print(printline)
@@ -152,6 +161,8 @@ class Trainer(object):
             except Exception as e:
                 print(e)
                 continue
+
+        self.scheduler.step(np.mean(epoch_loss))
 
     def validate(self, epoch):
         self.model.eval()
@@ -231,7 +242,7 @@ def train(**kwargs):
 
     print('Num training images: {}'.format(len(trainer.train_dataset)))
 
-    for epoch in range(opt.start_epoch, opt.epochs):
+    for epoch in range(trainer.start_epoch, opt.epochs):
         # train
         trainer.train(epoch)
 

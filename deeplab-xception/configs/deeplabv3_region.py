@@ -26,7 +26,6 @@ class Config:
 
     # train
     batch_size = 16
-    start_epoch = 0
     epochs = 200
     freeze_bn = False
 
@@ -38,7 +37,7 @@ class Config:
     )
 
     # param for optimizer
-    use_balanced_weights = True
+    use_balanced_weights = False
     lr_scheduler = 'step'  # choices = 'poly', 'step', 'cos'
     lr = 0.0005
     momentum = 0.9
