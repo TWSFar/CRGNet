@@ -7,7 +7,7 @@ import torch.nn as nn
 class CONV(nn.Module):
     def __init__(self):
         super(CONV, self).__init__()
-        self.conv1 = nn.Conv2d(192, 64, 1, bias=False)
+        self.conv1 = nn.Conv2d(3, 64, 1, bias=False)
         self.s = nn.Sequential(
             nn.Conv2d(192, 64, 1, bias=False),
             nn.Conv2d(64, 64, 1, bias=False)
@@ -18,6 +18,9 @@ class CONV(nn.Module):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 torch.nn.init.kaiming_normal_(m.weight)
+
+    def forward(self, x):
+        return self.conv1(x)
 
 class test(nn.Module):
     def __init__(self):
@@ -31,19 +34,10 @@ class test(nn.Module):
                 torch.nn.init.kaiming_normal_(m.weight)
 
 if __name__=='__main__':
-    model = test()
-
-
-m = np.zeros(20)
-
-def fz(x, y):
-    return x*y
-
-
-a = np.arange(1, 3)
-b = np.arange(4, 6)
-
-z = np.zeros(3, 3)
-
-
-pass
+    model = CONV()
+    input = torch.rand(2, 3, 2, 2)
+    
+    m = model(input)
+    m.sum().backward()
+    torch.nn.utils.clip_grad_norm_(model.parameters(), 0.3)
+    pass

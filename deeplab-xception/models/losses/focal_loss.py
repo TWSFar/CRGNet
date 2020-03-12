@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from .utils import MyEncoder
 
 
 class FocalLoss(object):
@@ -7,7 +8,7 @@ class FocalLoss(object):
         self.alpha = alpha
         self.gamma = gamma
         self.ignore_index = ignore_index
-        self.weight = torch.tensor(weight, dtype=torch.float32)
+        self.weight = MyEncoder(weight)
 
     def __call__(self, logit, target):
         device = logit.device

@@ -2,6 +2,7 @@ from .focal_loss import FocalLoss
 from .cross_entropy_loss import CrossEntropyLoss
 from .mse_loss import MSELoss
 
+
 def build_loss(args):
     obj_type = args.pop('type')
 

@@ -20,7 +20,7 @@ class Saver(object):
             line = key + ': ' + str(val)
             self.save_experiment_log(line)
 
-    def save_checkpoint(self, state, is_best, filename='checkpoint.path.tar'):
+    def save_checkpoint(self, state, is_best, filename='last.pth.tar'):
         ''' Saver checkpoint to disk '''
         filename = os.path.join(self.experiment_dir, filename)
         torch.save(state, filename)

@@ -6,13 +6,9 @@ import numpy as np
 import os.path as osp
 from tqdm import tqdm
 
-# from configs.deeplabv3_region_sample import opt
-# from configs.deeplabv3_density_sample import opt
-# from configs.deeplabv3_region import opt
-from configs.deeplabv3_density_2 import opt
+from configs.crgnet_double_head import opt
 
-from models import DeepLab, CSRNet, CRGNet
-# from models import CSRNet
+from models import CRG2Net
 from models.losses import build_loss
 from dataloaders import make_data_loader
 from models.utils import Evaluator, LR_Scheduler
@@ -32,7 +28,7 @@ class Trainer(object):
         # Define Saver
         self.saver = Saver(opt, mode)
 
-        # Visualize
+        # visualize
         self.summary = TensorboardSummary(self.saver.experiment_dir)
         self.writer = self.summary.create_summary()
 
@@ -42,14 +38,14 @@ class Trainer(object):
         self.val_dataset, self.val_loader = make_data_loader(opt, mode="val")
         self.nbatch_val = len(self.val_loader)
 
-        # Model
+        # model
         if opt.sync_bn is None and len(opt.gpu_id) > 1:
             opt.sync_bn = True
         else:
             opt.sync_bn = False
         # model = DeepLab(opt)
         # model = CSRNet()
-        model = CRGNet(opt)
+        model = CRG2Net(opt)
         self.model = model.to(opt.device)
 
         # Loss
@@ -61,8 +57,9 @@ class Trainer(object):
                 weight = calculate_weigths_labels(
                     self.train_loader, opt.root_dir, opt.num_classes)
             print(weight)
-            opt.loss['weight'] = weight
-        self.loss = build_loss(opt.loss)
+            opt.loss_density['weight'] = weight
+        self.loss_region = build_loss(opt.loss_region)
+        self.loss_density = build_loss(opt.loss_density)
 
         # Define Evaluator
         self.evaluator = Evaluator()  # use region to eval: class_num is 2
@@ -87,23 +84,11 @@ class Trainer(object):
             self.model = torch.nn.DataParallel(self.model,
                                                device_ids=opt.gpu_id)
 
-        # Define Optimizer
-        # train_params = [{'params': model.get_1x_lr_params(), 'lr': opt.lr},
-        #                 {'params': model.get_10x_lr_params(), 'lr': opt.lr * 10}]
-        # self.optimizer = torch.optim.SGD(train_params,
-        #                                  momentum=opt.momentum,
-        #                                  weight_decay=opt.decay)
+        # Define Optimizer and Lr Scheduler
         self.optimizer = torch.optim.SGD(self.model.parameters(),
                                          lr=opt.lr,
                                          momentum=opt.momentum,
                                          weight_decay=opt.decay)
-
-        # Define lr scheduler
-        # self.scheduler = LR_Scheduler(mode=opt.lr_scheduler,
-        #                               base_lr=opt.lr,
-        #                               num_epochs=opt.epochs,
-        #                               iters_per_epoch=self.nbatch_train,
-        #                               lr_step=140)
         self.scheduler = optim.lr_scheduler.MultiStepLR(
             self.optimizer,
             milestones=[round(opt.epochs * x) for x in opt.steps],
@@ -125,13 +110,16 @@ class Trainer(object):
             # if iter_num >= 1: break
             try:
                 imgs = sample["image"].to(opt.device)
-                labels = sample["label"].to(opt.device)
+                density_gt = sample["label"].to(opt.device)
+                region_gt = (sample["label"] > 0).float().to(opt.device)
 
-                output = self.model(imgs)
+                region_pred, density_pred = self.model(imgs)
 
-                loss = self.loss(output, labels)
-                loss.backward()
+                region_loss = self.loss_region(region_pred, region_gt)
+                density_loss = self.loss_density(density_pred, density_gt)
+                loss = region_loss + density_loss
                 # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 3)
+                loss.backward()
                 self.loss_hist.append(float(loss))
                 epoch_loss.append(float(loss.cpu().item()))
 
@@ -150,17 +138,20 @@ class Trainer(object):
                     printline = ('Epoch: [{}][{}/{}] '
                                  'lr: (1x:{:1.5f}, '  # 10x:{:1.5f}), '
                                  'eta: {}, time: {:1.1f}, '
-                                 'Loss: {:1.4f} '.format(
+                                 'region loss: {:1.4f}, '
+                                 'density loss: {:1.4f}, '
+                                 'loss: {:1.4f}').format(
                                     epoch, iter_num+1, self.nbatch_train,
                                     self.optimizer.param_groups[0]['lr'],
                                     # self.optimizer.param_groups[1]['lr'],
                                     eta, np.sum(self.step_time),
-                                    np.mean(self.loss_hist)))
+                                    region_loss, density_loss,
+                                    np.mean(self.loss_hist))
                     print(printline)
                     self.saver.save_experiment_log(printline)
                     last_time = time.time()
 
-                del loss
+                del loss, region_loss, density_loss
 
             except Exception as e:
                 print(e)
@@ -171,42 +162,33 @@ class Trainer(object):
     def validate(self, epoch):
         self.model.eval()
         self.evaluator.reset()
-        test_loss = 0.0
         with torch.no_grad():
             tbar = tqdm(self.val_loader, desc='\r')
             for i, sample in enumerate(tbar):
                 # if i > 3: break
                 imgs = sample['image'].to(opt.device)
-                labels = sample['label'].to(opt.device)
+                density_gt = sample["label"].to(opt.device)
+                region_gt = (sample["label"] > 0).float().to(opt.device)
                 path = sample["path"]
 
-                output = self.model(imgs)
-
-                loss = self.loss(output, labels)
-                test_loss += loss.item()
-                tbar.set_description('Test loss: %.4f' % (test_loss / (i + 1)))
+                region_pred, density_pred = self.model(imgs)
 
                 # Visualize
                 global_step = i + self.nbatch_val * epoch + 1
                 if global_step % opt.plot_every == 0:
                     # pred = output.data.cpu().numpy()
-                    if output.shape[1] > 1:
-                        pred = torch.argmax(output, dim=1)
-                    else:
-                        pred = torch.clamp(output, min=0)
+                    pred = torch.argmax(region_pred, dim=1)
                     self.summary.visualize_image(self.writer,
                                                  opt.dataset,
                                                  imgs,
-                                                 labels,
+                                                 density_gt,
                                                  pred,
                                                  global_step)
 
                 # metrics
-                pred = output.data.cpu().numpy()
-                target = labels.cpu().numpy() > 0
-                if pred.shape[1] > 1:
-                    pred = np.argmax(pred, axis=1)
-                pred = (pred > opt.region_thd).reshape(target.shape)
+                target = region_gt.cpu().numpy()
+                pred = region_pred.data.cpu().numpy()
+                pred = np.argmax(pred, axis=1).reshape(target.shape)
                 self.evaluator.add_batch(target, pred, path, opt.dataset)
 
             # Fast test during the training
@@ -216,9 +198,7 @@ class Trainer(object):
             FWIoU = self.evaluator.Frequency_Weighted_Intersection_over_Union()
             RRecall = self.evaluator.Region_Recall()
             RNum = self.evaluator.Region_Num()
-            mean_loss = test_loss / self.nbatch_val
             result = 2 / (1 / mIoU + 1 / RRecall)
-            self.writer.add_scalar('val/mean_loss_epoch', mean_loss, epoch)
             self.writer.add_scalar('val/mIoU', mIoU, epoch)
             self.writer.add_scalar('val/Acc', Acc, epoch)
             self.writer.add_scalar('val/Acc_class', Acc_class, epoch)
@@ -227,10 +207,10 @@ class Trainer(object):
             self.writer.add_scalar('val/RNum', RNum, epoch)
             self.writer.add_scalar('val/Result', result, epoch)
 
-            printline = ("Val[Epoch: [{}], mean_loss: {:.4f}, mIoU: {:.4f}, "
+            printline = ("Val[Epoch: [{}], mIoU: {:.4f}, "
                          "Acc: {:.4f}, Acc_class: {:.4f}, fwIoU: {:.4f}, "
                          "RRecall: {:.4f}, RNum: {:.1f}]").format(
-                             epoch, mean_loss, mIoU,
+                             epoch, mIoU,
                              Acc, Acc_class, FWIoU,
                              RRecall, RNum)
             print(printline)
