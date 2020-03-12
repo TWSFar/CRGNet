@@ -90,7 +90,8 @@ class Trainer(object):
         # Define Optimizer
         # train_params = [{'params': model.get_1x_lr_params(), 'lr': opt.lr},
         #                 {'params': model.get_10x_lr_params(), 'lr': opt.lr * 10}]
-        # self.optimizer = torch.optim.SGD(train_params, momentum=opt.momentum,
+        # self.optimizer = torch.optim.SGD(train_params,
+        #                                  momentum=opt.momentum,
         #                                  weight_decay=opt.decay)
         self.optimizer = torch.optim.SGD(self.model.parameters(),
                                          lr=opt.lr,
@@ -103,8 +104,10 @@ class Trainer(object):
         #                               num_epochs=opt.epochs,
         #                               iters_per_epoch=self.nbatch_train,
         #                               lr_step=140)
-        self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-            self.optimizer, patience=3, verbose=True)
+        self.scheduler = optim.lr_scheduler.MultiStepLR(
+            self.optimizer,
+            milestones=[round(opt.epochs * x) for x in opt.steps],
+            gamma=opt.gamma)
 
         self.loss_hist = collections.deque(maxlen=500)
         self.timer = Timer(opt.epochs, self.nbatch_train, self.nbatch_val)
@@ -162,7 +165,7 @@ class Trainer(object):
                 print(e)
                 continue
 
-        self.scheduler.step(np.mean(epoch_loss))
+        self.scheduler.step()
 
     def validate(self, epoch):
         self.model.eval()

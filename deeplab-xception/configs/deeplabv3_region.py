@@ -43,7 +43,7 @@ class Config:
     momentum = 0.9
     decay = 5e-4
     steps = [0.8, 0.9]
-    scales = 0.3
+    gamma = 0.3
     workers = 12
 
     # eval
