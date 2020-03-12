@@ -27,11 +27,6 @@ class Config:
     epochs = 200
     freeze_bn = False
 
-    # loss
-    # loss = dict(
-    #     type="MSELoss",
-    #     reduction="mean"
-    # )
     loss = dict(
         type="CrossEntropyLoss",
         ignore_index=-1,
