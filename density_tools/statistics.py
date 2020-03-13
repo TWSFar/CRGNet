@@ -24,7 +24,8 @@ def parse_args():
     parser.add_argument('--dataset', type=str, default='VisDrone',
                         choices=['VisDrone'], help='dataset name')
     parser.add_argument('--db_root', type=str,
-                        default="E:\\CV\\data\\visdrone",
+                        # default="E:\\CV\\data\\visdrone",
+                        default="/home/twsf/data/Visdrone",
                         help="dataset's root path")
     parser.add_argument('--imgsets', type=str, default=['train',],
                         nargs='+', help='for train or val')
@@ -36,7 +37,7 @@ def parse_args():
 
 args = parse_args()
 print(args)
-result_dir = "E:\\CV\\code\\CRGNet\\density_tools\\result"
+result_dir = "density_tools/result"
 if not osp.exists(result_dir):
     os.mkdir(result_dir)
 
@@ -46,7 +47,7 @@ class Statistics(object):
         self.dataset = get_dataset(args.dataset, args.db_root)
 
         self.density_dir = self.dataset.density_voc_dir
-        self.segmentation_dir = self.density_dir + '/SegmentationClass'
+        self.segmentation_dir = osp.join(self.density_dir, 'SegmentationClass')
 
     def __call__(self):
         for imgset in args.imgsets:
@@ -192,9 +193,9 @@ class Statistics(object):
             with h5py.File(filepath, 'r') as hf:
                 mask = np.array(hf['label']).astype(np.uint8)
                 contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
-                region_num.append(contours)
+                region_num.append(len(contours))
         print(np.mean(region_num))
 
 if __name__ == "__main__":
     statistics = Statistics()
-    statistics.density_distribution()
+    statistics.region_number()
