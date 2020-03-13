@@ -184,6 +184,16 @@ class Statistics(object):
         plt.savefig(osp.join(result_dir, "density_distribution.png"))
         plt.close()
 
+    def region_number(self):
+        print("statistics trainval datasets mean region number")
+        region_num = []
+        for filename in tqdm(os.listdir(self.segmentation_dir)):
+            filepath = osp.join(self.segmentation_dir, filename) 
+            with h5py.File(filepath, 'r') as hf:
+                mask = np.array(hf['label']).astype(np.uint8)
+                contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+                region_num.append(contours)
+        print(np.mean(region_num))
 
 if __name__ == "__main__":
     statistics = Statistics()
