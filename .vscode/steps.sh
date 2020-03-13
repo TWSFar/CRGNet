@@ -1,3 +1,0 @@
-python generate_region_dataset.py
-python generate_detect_dataset.py
-python xml2json_chip.py
