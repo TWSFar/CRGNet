@@ -19,7 +19,7 @@ class Config:
     pre = "/home/twsf/work/CRGNet/run/visdrone/20200102_230256_train/model_best.pth.tar"
 
     # model
-    backbone = 'ghostnet'
+    backbone = 'mobilenetv2'
     output_stride = 16
     output_channels = 2
     sync_bn = False
@@ -37,7 +37,7 @@ class Config:
     )
 
     # param for optimizer
-    use_balanced_weights = False
+    use_balanced_weights = True
     lr_scheduler = 'step'  # choices = 'poly', 'step', 'cos'
     lr = 0.0005
     momentum = 0.9

@@ -35,8 +35,8 @@ class CRGNet(nn.Module):
 
     def forward(self, input):
         x, low_level_feat = self.backbone(input)
-        # low_level_feat = self.link_conv(low_level_feat)
-        # x = torch.cat((x, low_level_feat), dim=1)
+        low_level_feat = self.link_conv(low_level_feat)
+        x = torch.cat((x, low_level_feat), dim=1)
         x = self.aspp(x)
         x = self.last_conv(x)
         return x
