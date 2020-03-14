@@ -6,7 +6,7 @@ import numpy as np
 import os.path as osp
 from tqdm import tqdm
 
-from configs.crgnet_double_head import opt
+from configs.crgnet_double_float import opt
 
 from models import CRG2Net
 from models.losses import build_loss

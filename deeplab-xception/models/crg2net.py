@@ -32,7 +32,7 @@ class CRG2Net(nn.Module):
         self.density = nn.Sequential(nn.Conv2d(self.backbone.high_outc, 128, kernel_size=3, stride=1, padding=1, bias=False),
                                      nn.BatchNorm2d(128),
                                      nn.ReLU(),
-                                     nn.Conv2d(128, 5, kernel_size=1, stride=1))
+                                     nn.Conv2d(128, 1, kernel_size=1, stride=1))
 
         self._init_weight()
         if opt.freeze_bn:
