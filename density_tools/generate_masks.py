@@ -56,13 +56,13 @@ def _copy(src_image, dest_path):
 def _myaround_up(value, maxv):
     """0.05 * stride = 0.8"""
     tmp = np.floor(value).astype(np.int32)
-    return min(maxv, tmp + 1 if value - tmp > 0.2 else tmp)
+    return min(maxv, tmp + 1 if value - tmp > 0.05 else tmp)
 
 
 def _myaround_down(value):
     """0.05 * stride = 0.8"""
     tmp = np.ceil(value).astype(np.int32)
-    return max(0, tmp - 1 if tmp - value > 0.2 else tmp)
+    return max(0, tmp - 1 if tmp - value > 0.05 else tmp)
 
 
 def _generate_mask(sample, mask_scale=(30, 40)):
