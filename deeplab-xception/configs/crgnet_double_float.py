@@ -32,7 +32,7 @@ class Config:
     )
 
     loss_density = dict(
-        type="MSELoss",
+        type="SASCLoss",
         reduction="mean"
     )
 
