@@ -6,12 +6,10 @@ import numpy as np
 import os.path as osp
 from tqdm import tqdm
 
-# from configs.deeplabv3_region_sample import opt
-# from configs.deeplabv3_density_sample import opt
-from configs.deeplabv3_region import opt
-# from configs.deeplabv3_density_2 import opt
+# from configs.deeplabv3_region import opt
+from configs.deeplabv3_density_2 import opt
 
-from models import DeepLab, CSRNet, CRGNet
+from models import DeepLab, CRGNet
 # from models import CSRNet
 from models.losses import build_loss
 from dataloaders import make_data_loader

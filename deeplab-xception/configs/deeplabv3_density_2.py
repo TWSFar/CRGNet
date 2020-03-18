@@ -29,11 +29,11 @@ class Config:
     loss = dict(
         type="CrossEntropyLoss",
         ignore_index=-1,
-        weight=None
+        weight=[1, 2, 4, 8, 16]
     )
 
     # optimizer
-    use_balanced_weights = True
+    use_balanced_weights = False
     lr_scheduler = 'poly'  # choices = 'poly', 'step', 'cos'
     lr = 0.0005
     momentum = 0.9
