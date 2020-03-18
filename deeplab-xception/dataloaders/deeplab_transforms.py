@@ -12,9 +12,14 @@ class Normalize(object):
         mean (tuple): means for each channel.
         std (tuple): standard deviations for each channel.
     """
-    def __init__(self, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), para=1):
+    def __init__(self,
+                 mean=(0.485, 0.456, 0.406),
+                 std=(0.229, 0.224, 0.225),
+                 para=1,
+                 maximum=None):
         assert max(mean) <= 1 and max(std) <= 1, "mean or std value error!"
         self.mean = mean
+        self.maximum = maximum
         self.std = std
         self.para = para
 
@@ -22,6 +27,8 @@ class Normalize(object):
         sample['image'] = sample['image'].astype(np.float32)
         if sample['label'] is not None:
             sample['label'] = (sample['label'] * self.para).astype(np.float32)
+            if self.maximum is not None:
+                sample['label'] = torch.clamp(sample['label'], max=self.maximum)
         sample['image'] /= 255.0
         sample['image'] -= self.mean
         sample['image'] /= self.std

@@ -34,7 +34,7 @@ class Config:
     )
 
     # param for optimizer
-    use_balanced_weights = True
+    use_balanced_weights = False
     lr_scheduler = 'step'  # choices = 'poly', 'step', 'cos'
     lr = 0.0005
     momentum = 0.9
