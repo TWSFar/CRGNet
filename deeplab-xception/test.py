@@ -67,7 +67,7 @@ def test(**kwargs):
                 pred = np.argmax(output.cpu().numpy(), axis=1)
             else:
                 pred = torch.round(output.cpu()).numpy()
-            pred = pred.reshape(pred.shape[-2:])
+            pred = pred.reshape(pred.shape[-2:]) * opt.norm_cfg['para']
 
             file_name = osp.join(
                 results_dir, osp.splitext(img_name)[0] + ".hdf5")

@@ -8,6 +8,23 @@ from .backbones import build_backbone
 from .sync_batchnorm import SynchronizedBatchNorm2d
 
 
+class SELayer(nn.Module):
+    def __init__(self, channel, reduction=4):
+        super(SELayer, self).__init__()
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.fc = nn.Sequential(
+                nn.Linear(channel, channel // reduction),
+                nn.ReLU(inplace=True),
+                nn.Linear(channel // reduction, channel),)
+
+    def forward(self, x):
+        b, c, _, _ = x.size()
+        y = self.avg_pool(x).view(b, c)
+        y = self.fc(y).view(b, c, 1, 1)
+        y = torch.clamp(y, 0, 1)
+        return x * y
+
+
 class CRG2Net(nn.Module):
     def __init__(self, opt):
         super(CRG2Net, self).__init__()
@@ -25,11 +42,13 @@ class CRG2Net(nn.Module):
         # self.link_conv = nn.Sequential(nn.Conv2d(
         #     self.backbone.low_outc, 128, kernel_size=1, stride=2, padding=0, bias=False))
         self.region = nn.Sequential(nn.Conv2d(self.backbone.high_outc, 128, kernel_size=3, stride=1, padding=1, bias=False),
+                                    SELayer(128),
                                     nn.BatchNorm2d(128),
                                     nn.ReLU(),
                                     nn.Conv2d(128, 2, kernel_size=1, stride=1))
 
         self.density = nn.Sequential(nn.Conv2d(self.backbone.high_outc, 128, kernel_size=3, stride=1, padding=1, bias=False),
+                                     SELayer(128),
                                      nn.BatchNorm2d(128),
                                      nn.ReLU(),
                                      nn.Conv2d(128, 1, kernel_size=1, stride=1))
@@ -46,6 +65,18 @@ class CRG2Net(nn.Module):
         region = self.region(x)
         density = self.density(x)
         return region, density
+
+    def _init_weight(self):
+        for module in [self.density, self.region]:
+            for m in module.modules():
+                if isinstance(m, nn.Conv2d):
+                    torch.nn.init.kaiming_normal_(m.weight)
+                elif isinstance(m, SynchronizedBatchNorm2d):
+                    m.weight.data.fill_(1)
+                    m.bias.data.zero_()
+                elif isinstance(m, nn.BatchNorm2d):
+                    m.weight.data.fill_(1)
+                    m.bias.data.zero_()
 
     def freeze_bn(self):
         for m in self.modules():
@@ -65,7 +96,7 @@ class CRG2Net(nn.Module):
                             yield p
 
     def get_10x_lr_params(self):
-        modules = [self.last_conv, self.link_conv]
+        modules = [self.link_conv, self.density, self.region]
         for i in range(len(modules)):
             for m in modules[i].named_modules():
                 if isinstance(m[1], nn.Conv2d) or isinstance(m[1], SynchronizedBatchNorm2d) \
@@ -73,18 +104,6 @@ class CRG2Net(nn.Module):
                     for p in m[1].parameters():
                         if p.requires_grad:
                             yield p
-
-    def _init_weight(self):
-        for module in [self.density, self.region]:
-            for m in module.modules():
-                if isinstance(m, nn.Conv2d):
-                    torch.nn.init.kaiming_normal_(m.weight)
-                elif isinstance(m, SynchronizedBatchNorm2d):
-                    m.weight.data.fill_(1)
-                    m.bias.data.zero_()
-                elif isinstance(m, nn.BatchNorm2d):
-                    m.weight.data.fill_(1)
-                    m.bias.data.zero_()
 
 
 if __name__ == "__main__":

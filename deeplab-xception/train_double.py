@@ -43,8 +43,6 @@ class Trainer(object):
             opt.sync_bn = True
         else:
             opt.sync_bn = False
-        # model = DeepLab(opt)
-        # model = CSRNet()
         model = CRG2Net(opt)
         self.model = model.to(opt.device)
 
@@ -162,16 +160,20 @@ class Trainer(object):
     def validate(self, epoch):
         self.model.eval()
         self.evaluator.reset()
+        smae = 0
         with torch.no_grad():
             tbar = tqdm(self.val_loader, desc='\r')
             for i, sample in enumerate(tbar):
                 # if i > 3: break
                 imgs = sample['image'].to(opt.device)
-                density_gt = sample["label"].to(opt.device)
-                region_gt = (sample["label"] > 0).float().to(opt.device)
+                density_gt = sample["label"]
+                region_gt = (sample["label"] > 0).float()
                 path = sample["path"]
 
                 region_pred, density_pred = self.model(imgs)
+                pred_count = np.sum(density_pred.cpu().numpy())
+                gt_count = np.sum(density_gt.numpy())
+                smae += np.abs(pred_count - gt_count)
 
                 # Visualize
                 global_step = i + self.nbatch_val * epoch + 1
@@ -186,12 +188,13 @@ class Trainer(object):
                                                  global_step)
 
                 # metrics
-                target = region_gt.cpu().numpy()
+                target = region_gt.numpy()
                 pred = region_pred.data.cpu().numpy()
                 pred = np.argmax(pred, axis=1).reshape(target.shape)
                 self.evaluator.add_batch(target, pred, path, opt.dataset)
 
             # Fast test during the training
+            MAE = smae / (len(self.val_dataset) * opt.norm_cfg['para'])
             Acc = self.evaluator.Pixel_Accuracy()
             Acc_class = self.evaluator.Pixel_Accuracy_Class()
             mIoU = self.evaluator.Mean_Intersection_over_Union()
@@ -199,20 +202,15 @@ class Trainer(object):
             RRecall = self.evaluator.Region_Recall()
             RNum = self.evaluator.Region_Num()
             result = 2 / (1 / mIoU + 1 / RRecall)
-            self.writer.add_scalar('val/mIoU', mIoU, epoch)
-            self.writer.add_scalar('val/Acc', Acc, epoch)
-            self.writer.add_scalar('val/Acc_class', Acc_class, epoch)
-            self.writer.add_scalar('val/fwIoU', FWIoU, epoch)
-            self.writer.add_scalar('val/RRecall', RRecall, epoch)
-            self.writer.add_scalar('val/RNum', RNum, epoch)
-            self.writer.add_scalar('val/Result', result, epoch)
+            titles = ["mIoU", "MAE", "Acc", "Acc_class", "fwIoU", "RRecall", "RNum", "Result"]
+            values = [mIoU, MAE, Acc, Acc_class, FWIoU, RRecall, RNum, result]
+            for title, value in zip(titles, values):
+                self.writer.add_scalar('val/'+title, value, epoch)
 
-            printline = ("Val[Epoch: [{}], mIoU: {:.4f}, "
+            printline = ("Val[Epoch: [{}], mIoU: {:.4f}, MAE: {:.4f}, "
                          "Acc: {:.4f}, Acc_class: {:.4f}, fwIoU: {:.4f}, "
-                         "RRecall: {:.4f}, RNum: {:.1f}]").format(
-                             epoch, mIoU,
-                             Acc, Acc_class, FWIoU,
-                             RRecall, RNum)
+                         "RRecall: {:.4f}, RNum: {:.1f}, Result: {:.4f}]").format(
+                             epoch, *values)
             print(printline)
             self.saver.save_eval_result(printline)
 

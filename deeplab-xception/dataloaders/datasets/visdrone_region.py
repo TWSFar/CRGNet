@@ -35,12 +35,12 @@ class VisDroneRegion(Dataset):
                 dtf.FixedNoMaskResize(size=opt.input_size),
                 dtf.RandomColorJeter(0.3, 0.3, 0.3, 0.3),
                 dtf.RandomHorizontalFlip(),
-                dtf.Normalize(opt.mean, opt.std),
+                dtf.Normalize(**opt.norm_cfg),
                 dtf.ToTensor()])
         else:
             self.transform = transforms.Compose([
                 dtf.FixedNoMaskResize(size=opt.input_size),  # 513
-                dtf.Normalize(opt.mean, opt.std),
+                dtf.Normalize(**opt.norm_cfg),
                 dtf.ToTensor()])
 
     def _load_image_set_index(self):

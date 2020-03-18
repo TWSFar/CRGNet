@@ -35,7 +35,7 @@ class SELayer(nn.Module):
         self.fc = nn.Sequential(
                 nn.Linear(channel, channel // reduction),
                 nn.ReLU(inplace=True),
-                nn.Linear(channel // reduction, channel),        )
+                nn.Linear(channel // reduction, channel),)
 
     def forward(self, x):
         b, c, _, _ = x.size()

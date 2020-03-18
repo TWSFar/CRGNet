@@ -10,8 +10,7 @@ class Config:
     root_dir = user_dir + "/data/Visdrone/density_mask"
     test_dir = ""
     input_size = (640, 480)
-    mean = [0.382, 0.383, 0.367]
-    std = [0.164, 0.156, 0.164]
+    norm_cfg = dict(mean=[0.382, 0.383, 0.367], std=[0.164, 0.156, 0.164])
     num_classes = 5
     resume = False
     pre = "/home/twsf/work/CRGNet/run/visdrone/20200227_235050_train/model_best.pth.tar"

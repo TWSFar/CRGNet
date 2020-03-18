@@ -218,21 +218,15 @@ class Trainer(object):
             RNum = self.evaluator.Region_Num()
             mean_loss = test_loss / self.nbatch_val
             result = 2 / (1 / mIoU + 1 / RRecall)
-            self.writer.add_scalar('val/mean_loss_epoch', mean_loss, epoch)
-            self.writer.add_scalar('val/mIoU', mIoU, epoch)
-            self.writer.add_scalar('val/Acc', Acc, epoch)
-            self.writer.add_scalar('val/Acc_class', Acc_class, epoch)
-            self.writer.add_scalar('val/fwIoU', FWIoU, epoch)
-            self.writer.add_scalar('val/RRecall', RRecall, epoch)
-            self.writer.add_scalar('val/RNum', RNum, epoch)
-            self.writer.add_scalar('val/Result', result, epoch)
+            titles = ["mean_loss", "mIoU", "Acc", "Acc_class", "fwIoU", "RRecall", "RNum", "Result"]
+            values = [mean_loss, mIoU, Acc, Acc_class, FWIoU, RRecall, RNum, result]
+            for title, value in zip(titles, values):
+                self.writer.add_scalar('val/'+title, value, epoch)
 
             printline = ("Val[Epoch: [{}], mean_loss: {:.4f}, mIoU: {:.4f}, "
                          "Acc: {:.4f}, Acc_class: {:.4f}, fwIoU: {:.4f}, "
                          "RRecall: {:.4f}, RNum: {:.1f}]").format(
-                             epoch, mean_loss, mIoU,
-                             Acc, Acc_class, FWIoU,
-                             RRecall, RNum)
+                             epoch, *values[:-1])
             print(printline)
             self.saver.save_eval_result(printline)
 

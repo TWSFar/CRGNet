@@ -97,7 +97,8 @@ def _generate_mask(sample, mask_scale=(30, 40)):
             for yi, xi in zip(yv.ravel(), xv.ravel()):
                 density_mask[yi, xi] += _centerness(xi, yi, xmin, xmax, ymin, ymax)
 
-        return density_mask.clip(min=0, max=args.maximum)
+        # return density_mask.clip(min=0, max=args.maximum)
+        return density_mask
 
     except Exception as e:
         print(e)
