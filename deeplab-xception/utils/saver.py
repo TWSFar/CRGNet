@@ -1,6 +1,7 @@
 import os
 import time
 import shutil
+import logging
 import os.path as osp
 
 import torch
@@ -13,12 +14,19 @@ class Saver(object):
         self.directory = osp.join('run', opt.dataset)
         self.experiment_name = time.strftime("%Y%m%d_%H%M%S") + '_' + mode
         self.experiment_dir = osp.join(self.directory, self.experiment_name)
-        self.logfile = osp.join(self.experiment_dir, 'experiment.log')
+        self.logfile = osp.join(self.experiment_dir, 'train.log')
         if not osp.exists(self.experiment_dir):
             os.makedirs(self.experiment_dir)
-        for key, val in self.opt._state_dict().items():
-            line = key + ': ' + str(val)
-            self.save_experiment_log(line)
+        logging.basicConfig(
+                    format='[%(asctime)s %(levelname)s] - %(message)s',
+                    datefmt='%Y/%m/%d %H:%M:%S',
+                    level=logging.DEBUG)
+        f_handler = logging.FileHandler(self.logfile, mode='a')
+        self.logger = logging.getLogger(__name__)
+        self.logger.addHandler(f_handler)
+        with open(self.logfile, 'a') as f:
+            for key, val in self.opt._state_dict().items():
+                f.write(key + ': ' + str(val) + '\n')
 
     def save_checkpoint(self, state, is_best, filename='last.pth.tar'):
         ''' Saver checkpoint to disk '''
@@ -29,14 +37,6 @@ class Saver(object):
             with open(osp.join(self.experiment_dir, 'best_pred.txt'), 'w') as f:
                 f.write('epoch {}: {}'.format(state['epoch'], best_pred))
             shutil.copyfile(filename, os.path.join(self.experiment_dir, 'model_best.pth.tar'))
-
-    def save_experiment_log(self, line):
-        with open(self.logfile, 'a') as f:
-            f.write(line + '\n')
-
-    def save_eval_result(self, stats):
-        with open(os.path.join(self.experiment_dir, 'result.txt'), 'a') as f:
-            f.writelines(stats + '\n')
 
     def backup_result(self):
         backup_root = osp.join(osp.expanduser('~'), "Cache")

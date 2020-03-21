@@ -6,11 +6,10 @@ import numpy as np
 import os.path as osp
 from tqdm import tqdm
 
-# from configs.deeplabv3_region import opt
-from configs.deeplabv3_density_2 import opt
+from configs.deeplabv3_region import opt
+# from configs.deeplabv3_density_2 import opt
 
 from models import DeepLab, CRGNet
-# from models import CSRNet
 from models.losses import build_loss
 from dataloaders import make_data_loader
 from models.utils import Evaluator, LR_Scheduler
@@ -29,6 +28,7 @@ class Trainer(object):
     def __init__(self, mode):
         # Define Saver
         self.saver = Saver(opt, mode)
+        self.logger = self.saver.logger
 
         # Visualize
         self.summary = TensorboardSummary(self.saver.experiment_dir)
@@ -120,7 +120,7 @@ class Trainer(object):
         last_time = time.time()
         epoch_loss = []
         for iter_num, sample in enumerate(self.train_loader):
-            # if iter_num >= 1: break
+            if iter_num >= 100: break
             try:
                 imgs = sample["image"].to(opt.device)
                 labels = sample["label"].to(opt.device)
@@ -146,7 +146,7 @@ class Trainer(object):
                 self.step_time.append(batch_time)
                 if global_step % opt.print_freq == 0:
                     printline = ('Epoch: [{}][{}/{}] '
-                                 'lr: (1x:{:1.5f}, '  # 10x:{:1.5f}), '
+                                 'lr: {:1.5f}, '  # 10x:{:1.5f}), '
                                  'eta: {}, time: {:1.1f}, '
                                  'Loss: {:1.4f} '.format(
                                     epoch, iter_num+1, self.nbatch_train,
@@ -154,9 +154,7 @@ class Trainer(object):
                                     # self.optimizer.param_groups[1]['lr'],
                                     eta, np.sum(self.step_time),
                                     np.mean(self.loss_hist)))
-                    print(printline)
-                    self.saver.save_experiment_log(printline)
-                    last_time = time.time()
+                    self.logger.info(printline)
 
                 del loss
 
@@ -225,8 +223,7 @@ class Trainer(object):
                          "Acc: {:.4f}, Acc_class: {:.4f}, fwIoU: {:.4f}, "
                          "RRecall: {:.4f}, RNum: {:.1f}]").format(
                              epoch, *values[:-1])
-            print(printline)
-            self.saver.save_eval_result(printline)
+            self.logger.info(printline)
 
         return result
 
@@ -236,7 +233,7 @@ def train(**kwargs):
     opt._parse(kwargs)
     trainer = Trainer(mode="train")
 
-    print('Num training images: {}'.format(len(trainer.train_dataset)))
+    trainer.logger.info('Num training images: {}'.format(len(trainer.train_dataset)))
 
     for epoch in range(trainer.start_epoch, opt.epochs):
         # train
@@ -247,7 +244,7 @@ def train(**kwargs):
         pred = trainer.validate(epoch)
         trainer.timer.set_val_eta(epoch, time.time() - val_time)
 
-        print("Val[New pred: {:1.4f}, previous best: {:1.4f}]".format(
+        trainer.logger.info("Val[New pred: {:1.4f}, previous best: {:1.4f}]".format(
             pred, trainer.best_pred
         ))
         is_best = pred > trainer.best_pred
@@ -262,7 +259,7 @@ def train(**kwargs):
             }, is_best)
 
     all_time = trainer.timer.second2hour(time.time() - start_time)
-    print("Train done!, Sum time: {}, Best result: {}".format(all_time, trainer.best_pred))
+    trainer.logger.info("Train done!, Sum time: {}, Best result: {}".format(all_time, trainer.best_pred))
 
     # cache result
     print("Backup result...")
