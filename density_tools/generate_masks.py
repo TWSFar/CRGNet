@@ -13,7 +13,7 @@ import numpy as np
 import os.path as osp
 import concurrent.futures
 from tqdm import tqdm
-
+from scipy.ndimage.filters import gaussian_filter
 from datasets import get_dataset
 user_dir = osp.expanduser('~')
 
@@ -22,14 +22,16 @@ def parse_args():
     parser = argparse.ArgumentParser(description="convert to voc dataset")
     parser.add_argument('--dataset', type=str, default='VisDrone',
                         choices=['VisDrone'], help='dataset name')
-    parser.add_argument('--mode', type=str, default=['train', 'val'],
+    parser.add_argument('--mode', type=str, default=['val'],
                         nargs='+', help='for train or val')
     parser.add_argument('--db_root', type=str,
-                        default=user_dir+"/data/Visdrone",
-                        # default="E:\\CV\\data\\visdrone",
+                        # default=user_dir+"/data/Visdrone",
+                        default="E:\\CV\\data\\visdrone",
                         help="dataset's root path")
     parser.add_argument('--mask_size', type=list, default=[30, 40],
                         help="Size of production target mask")
+    parser.add_argument('--method', type=str, default='gauss',
+                        choices=['centerness', 'gauss', 'default'])
     parser.add_argument('--maximum', type=int, default=4,
                         help="maximum of mask")
     parser.add_argument('--show', type=bool, default=False,
@@ -65,6 +67,41 @@ def _myaround_down(value):
     return max(0, tmp - 1 if tmp - value > 0.05 else tmp)
 
 
+def _centerness_pattern(xmin, xmax, ymin, ymax):
+    pattern = np.zeros((ymax-ymin+1, xmax-xmin+1), dtype=np.float32)
+    yv, xv = np.meshgrid(np.arange(ymin, ymax+1), np.arange(xmin, xmax+1))
+    for yi, xi in zip(yv.ravel(), xv.ravel()):
+        left = xi - xmin
+        right = xmax - xi
+        top = yi - ymin
+        bottom = ymax - yi
+        min_tb = min(top, bottom) if min(top, bottom) else 1
+        max_tb = max(top, bottom) if max(top, bottom) else 1
+        min_lr = min(left, right) if min(left, right) else 1
+        max_lr = max(left, right) if max(left, right) else 1
+        centerness = np.sqrt(1.0 * min_lr * min_tb / (max_lr * max_tb))
+        pattern[yi, xi] = centerness
+        
+    return pattern
+
+
+def gaussian_pattern(xmin, xmax, ymin, ymax):
+    """cx+0.05是希望中心点向右下偏移, 这样左上总值偏大
+    gamma_w = w * 0.5 * 0.3, 即半径的0.3倍,
+    最后在3倍的gamma距离内的和高斯的97%
+    """
+    cx = int(round((xmin+xmax+0.05)/2)) - xmin
+    cy = int(round((ymin+ymax+0.05)/2)) - ymin
+    h = ymax-ymin+1
+    w = xmax-xmin+1
+    pattern = np.zeros((h, w), dtype=np.float32)
+    pattern[cy, cx] = 1
+    gamma = [0.15*h, 0.15*w]
+    pattern = gaussian_filter(pattern, gamma)
+
+    return pattern
+
+
 def _generate_mask(sample, mask_scale=(30, 40)):
     try:
         height, width = sample["height"], sample["width"]
@@ -80,13 +117,18 @@ def _generate_mask(sample, mask_scale=(30, 40)):
             ymax = _myaround_up(1.0 * box[3] / height * mask_h, mask_h-1)
             if xmin == xmax or ymin == ymax:
                 continue
-            density_mask[ymin:ymax+1, xmin:xmax+1] += 1
+            if args.method == 'default':
+                density_mask[ymin:ymax+1, xmin:xmax+1] += 1
+            elif args.method == 'gauss':
+                density_mask[ymin:ymax+1, xmin:xmax+1] += gaussian_pattern(xmin, xmax, ymin, ymax)
+            elif args.method == 'centerness':
+                density_mask[ymin:ymax+1, xmin:xmax+1] += _centerness_pattern(xmin, xmax, ymin, ymax)
 
         return density_mask.clip(min=0, max=args.maximum)
 
     except Exception as e:
         print(e)
-        print(sample["images"])
+        print(sample["image"])
 
 
 if __name__ == "__main__":

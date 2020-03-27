@@ -1,5 +1,5 @@
 from .builder import build_dataset
-from .cityscapes import CityscapesDataset
+# from .cityscapes import CityscapesDataset
 from .coco import CocoDataset
 from .custom import CustomDataset
 from .dataset_wrappers import ConcatDataset, RepeatDataset
@@ -8,10 +8,11 @@ from .registry import DATASETS
 from .voc import VOCDataset
 from .wider_face import WIDERFaceDataset
 from .xml_style import XMLDataset
+from .visdronechip import VisdroneChipDataset
 
 __all__ = [
     'CustomDataset', 'XMLDataset', 'CocoDataset', 'VOCDataset',
-    'CityscapesDataset', 'GroupSampler', 'DistributedGroupSampler',
+    'GroupSampler', 'DistributedGroupSampler',
     'build_dataloader', 'ConcatDataset', 'RepeatDataset', 'WIDERFaceDataset',
-    'DATASETS', 'build_dataset'
+    'DATASETS', 'build_dataset', 'VisdroneChipDataset'
 ]

@@ -182,7 +182,7 @@ class MakeDataset(object):
         return dom
 
     def make_chip(self, sample, imgset):
-        image = cv2.imread(sample['image'])
+        image = cv2.imread(sample['image'])[:, :, ::-1]
         height, width = sample['height'], sample['width']
         img_id = osp.splitext(osp.basename(sample['image']))[0]
 
@@ -193,7 +193,6 @@ class MakeDataset(object):
 
         # make chip
         region_box, contours = utils.generate_box_from_mask(mask)
-        utils.show_image(mask, np.array(region_box))
         region_box = utils.region_postprocess(region_box, contours, (mask_w, mask_h))
         utils.show_image(mask, np.array(region_box))
         region_box = utils.generate_crop_region(region_box, mask, (mask_w, mask_h))
@@ -212,7 +211,7 @@ class MakeDataset(object):
         chip_loc = self.write_chip_and_anno(
             image, img_id, region_box, chip_gt_list, chip_label_list, neglect_list, imgset)
 
-        return len(region_box), chip_loc
+        return chip_loc
 
     def write_chip_and_anno(self, image, img_id,
                             chip_list, chip_gt_list,

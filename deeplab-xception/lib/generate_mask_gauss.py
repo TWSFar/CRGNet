@@ -11,8 +11,9 @@ import shutil
 import argparse
 import numpy as np
 import os.path as osp
-import concurrent.futures
 from tqdm import tqdm
+import concurrent.futures
+from scipy.ndimage.filters import gaussian_filter
 
 from datasets import get_dataset
 user_dir = osp.expanduser('~')
@@ -23,13 +24,15 @@ def parse_args():
     parser.add_argument('--dataset', type=str, default='VisDrone',
                         choices=['VisDrone'], help='dataset name')
     parser.add_argument('--mode', type=str, default=['train', 'val'],
-                        nargs='+', help='for train or test')
+                        nargs='+', help='for train or val')
     parser.add_argument('--db_root', type=str,
-                        # default=user_dir+"/data/Visdrone",
-                        default="E:\CV\data\\visdrone",
+                        default=user_dir+"/data/Visdrone",
+                        # default="E:\\CV\\data\\visdrone",
                         help="dataset's root path")
     parser.add_argument('--mask_size', type=list, default=[30, 40],
                         help="Size of production target mask")
+    parser.add_argument('--maximum', type=int, default=4,
+                        help="maximum of mask")
     parser.add_argument('--show', type=bool, default=False,
                         help="show image and region mask")
     args = parser.parse_args()
@@ -44,7 +47,6 @@ def show_image(img, labels, mask):
     plt.subplot(2, 1, 2).imshow(mask)
     # plt.savefig('test_0.jpg')
     plt.show()
-    pass
 
 
 # copy train and test images
@@ -53,30 +55,18 @@ def _copy(src_image, dest_path):
 
 
 def _myaround_up(value, maxv):
-    """0.2 * stride = 3.2"""
+    """0.05 * stride = 0.8"""
     tmp = np.floor(value).astype(np.int32)
-    return min(maxv, tmp + 1 if value - tmp > 0.2 else tmp)
+    return min(maxv, tmp + 1 if value - tmp > 0.05 else tmp)
 
 
 def _myaround_down(value):
-    """0.2 * stride = 3.2"""
+    """0.05 * stride = 0.8"""
     tmp = np.ceil(value).astype(np.int32)
-    return max(0, tmp - 1 if tmp - value > 0.2 else tmp)
+    return max(0, tmp - 1 if tmp - value > 0.05 else tmp)
 
-
-def _centerness(x, y, xmin, xmax, ymin, ymax):
-    left = x - xmin
-    right = xmax - x
-    top = y - ymin
-    bottom = ymax - y
-    min_tb = min(top, bottom) if min(top, bottom) else 1
-    max_tb = max(top, bottom) if max(top, bottom) else 1
-    min_lr = min(left, right) if min(left, right) else 1
-    max_lr = max(left, right) if max(left, right) else 1
-    centerness = np.sqrt(1.0 * min_lr * min_tb / (max_lr * max_tb))
-    return centerness
-
-
+def gaussian_filter_density():
+    pt2d = np.zeros((mask_h, mask_w), dtype=np.float32)
 def _generate_mask(sample, mask_scale=(30, 40)):
     try:
         height, width = sample["height"], sample["width"]
@@ -90,11 +80,15 @@ def _generate_mask(sample, mask_scale=(30, 40)):
             ymin = _myaround_down(1.0 * box[1] / height * mask_h)
             xmax = _myaround_up(1.0 * box[2] / width * mask_w, mask_w-1)
             ymax = _myaround_up(1.0 * box[3] / height * mask_h, mask_h-1)
-            yv, xv = np.meshgrid(np.arange(ymin, ymax+1), np.arange(xmin, xmax+1))
-            for yi, xi in zip(yv.ravel(), xv.ravel()):
-                density_mask[yi, xi] += _centerness(xi, yi, xmin, xmax, ymin, ymax)
+            if xmin == xmax or ymin == ymax:
+                continue
+            if args.mask_type = 
+            gaussian_filter_density()
+            pt2d = np.zeros((mask_h, mask_w), dtype=np.float32)
 
-        return density_mask
+            density_mask += pt2d[]
+
+        return density_mask.clip(min=0, max=args.maximum)
 
     except Exception as e:
         print(e)
@@ -130,22 +124,21 @@ if __name__ == "__main__":
         with concurrent.futures.ThreadPoolExecutor() as exector:
             exector.map(_copy, img_list, [image_dir]*len(img_list))
 
-        if split == "train" or split == 'val':
-            print('generate {} masks...'.format(split))
-            for sample in tqdm(samples):
-                density_mask = _generate_mask(sample, args.mask_size)
-                basename = osp.basename(sample['image'])
-                maskname = osp.join(mask_dir, osp.splitext(basename)[0]+'.hdf5')
-                with h5py.File(maskname, 'w') as hf:
-                    hf["label"] = density_mask
+        print('generate {} masks...'.format(split))
+        for sample in tqdm(samples):
+            density_mask = _generate_mask(sample, args.mask_size)
+            basename = osp.basename(sample['image'])
+            maskname = osp.join(mask_dir, osp.splitext(basename)[0]+'.hdf5')
+            with h5py.File(maskname, 'w') as hf:
+                hf['label'] = density_mask
 
-                if args.show:
-                    img = cv2.imread(sample['image'])
-                    show_image(img, sample['bboxes'], density_mask)
+            if args.show:
+                img = cv2.imread(sample['image'])
+                show_image(img, sample['bboxes'], density_mask)
 
-            print('copy {} box annos...'.format(split))
-            anno_list = dataset._get_annolist(split)
-            with concurrent.futures.ThreadPoolExecutor() as exector:
-                exector.map(_copy, anno_list, [annotation_dir]*len(anno_list))
+        print('copy {} box annos...'.format(split))
+        anno_list = dataset._get_annolist(split)
+        with concurrent.futures.ThreadPoolExecutor() as exector:
+            exector.map(_copy, anno_list, [annotation_dir]*len(anno_list))
 
         print('done.')

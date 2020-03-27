@@ -72,10 +72,14 @@ def generate_crop_region(regions, mask, mask_size):
         center_x, center_y = box[0] + box_w / 2.0, box[1] + box_h / 2.0
 
         mask_chip = mask[box[1]:box[3], box[0]:box[2]]
-        chip_area = np.where(mask_chip > 0, 1, 0).sum()
-        chip_nobj = mask_chip.sum()
+        chip_area = max(np.where(mask_chip > 0, 1, 0).sum(), 1)
+        obj_num = max(mask_chip.sum(), 1.0)
         # weight = np.exp(0.5 * chip_area/chip_nobj)
-        weight = np.log(1 + chip_area ** 1.5 / (chip_nobj * 35)) + 1
+        # weight = np.log(1 + chip_area ** 1.5 / (obj_num * 35)) + 1
+        if box_w < min(mask_size) * 0.4 and box_h < min(mask_size) * 0.4:
+            weight = 1 + 1 / (1 + np.exp(obj_num / chip_area))
+        else:
+            weight = 1
 
         crop_size_w = 0.5 * box_w * weight
         crop_size_h = 0.5 * box_h * weight
@@ -94,7 +98,7 @@ def generate_crop_region(regions, mask, mask_size):
         for x in new_box:
             if x < 0:
                 pdb.set_trace()
-        final_regions.append([int(x) for x in new_box])
+        final_regions.append(new_box)
         # show_image(mask, np.array(final_regions)[None, -1])
 
     regions = np.array(final_regions)
