@@ -11,7 +11,7 @@ class Config:
     test_dir = ""
     num_classes = 1
     input_size = (640, 480)
-    norm_cfg = dict(mean=[0.382, 0.383, 0.367], std=[0.164, 0.156, 0.164], para=10)
+    norm_cfg = dict(mean=[0.382, 0.383, 0.367], std=[0.164, 0.156, 0.164], para=1)
     resume = False
     pre = "/home/twsf/work/CRGNet/run/visdrone/20200227_235050_train/model_best.pth.tar"
 
@@ -32,7 +32,7 @@ class Config:
     )
 
     loss_density = dict(
-        type="SASCLoss",
+        type="SALoss",
         reduction="mean"
     )
 
