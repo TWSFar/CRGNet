@@ -120,7 +120,7 @@ class Trainer(object):
         last_time = time.time()
         epoch_loss = []
         for iter_num, sample in enumerate(self.train_loader):
-            if iter_num >= 100: break
+            # if iter_num >= 100: break
             try:
                 imgs = sample["image"].to(opt.device)
                 labels = sample["label"].to(opt.device)
@@ -219,10 +219,10 @@ class Trainer(object):
             for title, value in zip(titles, values):
                 self.writer.add_scalar('val/'+title, value, epoch)
 
-            printline = ("Val[Epoch: [{}], mean_loss: {:.4f}, mIoU: {:.4f}, "
+            printline = ("Val, mean_loss: {:.4f}, mIoU: {:.4f}, "
                          "Acc: {:.4f}, Acc_class: {:.4f}, fwIoU: {:.4f}, "
                          "RRecall: {:.4f}, RNum: {:.1f}]").format(
-                             epoch, *values[:-1])
+                            *values[:-1])
             self.logger.info(printline)
 
         return result

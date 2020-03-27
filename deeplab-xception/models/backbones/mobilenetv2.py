@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.model_zoo as model_zoo
+from models.necks import ContextBlock2d
 
 
 def conv_bn(inp, oup, stride, BatchNorm):
@@ -56,6 +57,10 @@ class InvertedResidual(nn.Module):
                 nn.Conv2d(hidden_dim, oup, 1, 1, 0, 1, bias=False),
                 BatchNorm(oup),
             )
+        if oup >= 64:
+            self.contextBlock = ContextBlock2d(oup)
+        else:
+            self.contextBlock = None
 
     def forward(self, x):
         x_pad = fixed_padding(x, self.kernel_size, dilation=self.dilation)
@@ -63,6 +68,10 @@ class InvertedResidual(nn.Module):
             x = x + self.conv(x_pad)
         else:
             x = self.conv(x_pad)
+
+        if self.contextBlock is not None:
+            x = self.contextBlock(x)
+
         return x
 
 

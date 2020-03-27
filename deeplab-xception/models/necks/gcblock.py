@@ -2,20 +2,19 @@
 # @Time    : 2019/5/29 15:30
 # @Author  : ljf
 from __future__ import absolute_import
-import math
 import torch
 from torch import nn
 
 
 class ContextBlock2d(nn.Module):
 
-    def __init__(self, inplanes, planes, pool, fusions):
+    def __init__(self, inplanes, planes=None, pool='att', fusions=["channel_add"]):
         super(ContextBlock2d, self).__init__()
         assert pool in ['avg', 'att']
         assert all([f in ['channel_add', 'channel_mul'] for f in fusions])
         assert len(fusions) > 0, 'at least one fusion should be used'
         self.inplanes = inplanes
-        self.planes = planes
+        self.planes = inplanes // 4 if planes is None else planes
         self.pool = pool
         self.fusions = fusions
         if 'att' in pool:
@@ -56,7 +55,6 @@ class ContextBlock2d(nn.Module):
                 nn.init.normal_(m.weight, std=0.001)
                 if m.bias is not None:
                     nn.init.constant_(m.bias, 0)
-
 
     def spatial_pool(self, x):
         batch, channel, height, width = x.size()
