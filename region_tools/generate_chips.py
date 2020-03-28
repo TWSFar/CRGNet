@@ -200,7 +200,6 @@ class MakeDataset(object):
         # if imgset == 'train':
         #     region_box = np.vstack((region_box, np.array([0, 0, width-1, height-1])))
 
-
         gt_bboxes, gt_cls = sample['bboxes'], sample['cls']
 
         chip_gt_list, chip_label_list, neglect_list = self.generate_region_gt(
@@ -209,7 +208,7 @@ class MakeDataset(object):
             image, img_id, imgset, region_box,
             chip_gt_list, chip_label_list, neglect_list)
 
-        return len(region_box), chip_loc
+        return chip_loc
 
     def write_chip_and_anno(self, image, img_id, imgset,
                             chip_list, chip_gt_list,
