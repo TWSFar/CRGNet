@@ -1,17 +1,16 @@
 import os
 import json
-import numpy as np
 import os.path as osp
 from tqdm import tqdm
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import xml.etree.ElementTree as ET
 from collections import OrderedDict
 
 hyp = {
     'dataset': 'VisDrone2019_detect_voc',
     'img_type': '.jpg',
-    'mode': 'train',  # for save instance_train.json
-    'data_dir': '/home/twsf/data/Visdrone/detect_voc/',
+    'mode': 'val',  # for save instance_train.json
+    'data_dir': '/home/twsf/data/Visdrone/region_chip/',
 }
 hyp['json_dir'] = osp.join(hyp['data_dir'], 'annotations_json')
 hyp['xml_dir'] = osp.join(hyp['data_dir'], 'Annotations')
@@ -86,12 +85,11 @@ def getGTBox(anno_xml, **kwargs):
 def getImgInfo(anno_xml):
     xml = ET.parse(anno_xml).getroot()
     img_name = xml.find('filename').text  # image name
-    img_path = osp.join(hyp['img_dir'], img_name)  # image path
     tsize = xml.find('size')
     size = {'height': int(tsize.find('height').text),
             'width': int(tsize.find('width').text)}
 
-    chip= []
+    chip = []
     location = []
     pts = ['xmin', 'ymin', 'xmax', 'ymax']
     lct = xml.find('location')
