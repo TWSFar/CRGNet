@@ -22,17 +22,17 @@ def parse_args():
     parser = argparse.ArgumentParser(description="convert to voc dataset")
     parser.add_argument('--dataset', type=str, default='VisDrone',
                         choices=['VisDrone'], help='dataset name')
-    parser.add_argument('--mode', type=str, default=['train', 'val'],
+    parser.add_argument('--mode', type=str, default=['val'],
                         nargs='+', help='for train or val')
     parser.add_argument('--db_root', type=str,
-                        default=user_dir+"/data/Visdrone",
-                        # default="E:\\CV\\data\\visdrone",
+                        # default=user_dir+"/data/Visdrone",
+                        default="E:\\CV\\data\\visdrone",
                         help="dataset's root path")
     parser.add_argument('--mask_size', type=list, default=[30, 40],
                         help="Size of production target mask")
     parser.add_argument('--method', type=str, default='gauss',
                         choices=['centerness', 'gauss', 'default'])
-    parser.add_argument('--maximum', type=int, default=4,
+    parser.add_argument('--maximum', type=int, default=10,
                         help="maximum of mask")
     parser.add_argument('--show', type=bool, default=False,
                         help="show image and region mask")
@@ -125,6 +125,7 @@ def _generate_mask(sample, mask_scale=(30, 40)):
                 density_mask[ymin:ymax+1, xmin:xmax+1] += _centerness_pattern(xmin, xmax, ymin, ymax)
 
         return density_mask.clip(min=0, max=args.maximum)
+        # return density_mask
 
     except Exception as e:
         print(e)

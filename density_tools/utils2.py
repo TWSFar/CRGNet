@@ -72,20 +72,19 @@ def generate_crop_region(regions, mask, mask_size):
         center_x, center_y = box[0] + box_w / 2.0, box[1] + box_h / 2.0
 
         mask_chip = mask[box[1]:box[3], box[0]:box[2]]
-        obj_area = max(np.where(mask_chip > 0, 1, 0).sum(), 1)
+        chip_area = max(np.where(mask_chip > 0, 1, 0).sum(), 1)
         obj_num = max(mask_chip.sum(), 1.0)
-        chip_area = box_w * box_h
         # weight = np.exp(0.5 * chip_area/chip_nobj)
         # weight = np.log(1 + chip_area ** 1.5 / (obj_num * 35)) + 1
         if box_w < min(mask_size) * 0.4 and box_h < min(mask_size) * 0.4:
-            weight = np.clip(np.sqrt(16.0*chip_area/(obj_num*chip_area)), 1, 2)
+            weight = 1 + 1 / (1 + np.exp(obj_num / chip_area))
         else:
             weight = 1
 
         crop_size_w = 0.5 * box_w * weight
         crop_size_h = 0.5 * box_h * weight
-        crop_size_w = np.clip(crop_size_w, max(box_w/2.0, 3), max(box_w/2.0, 24))
-        crop_size_h = np.clip(crop_size_h, max(box_h/2.0, 3), max(box_h/2.0, 24))
+        crop_size_w = np.clip(crop_size_w, max(box_w/2.0, 6), max(box_w/2.0, 24))
+        crop_size_h = np.clip(crop_size_h, max(box_h/2.0, 6), max(box_h/2.0, 24))
 
         center_x = crop_size_w if center_x < crop_size_w else center_x
         center_y = crop_size_h if center_y < crop_size_h else center_y
@@ -109,7 +108,7 @@ def generate_crop_region(regions, mask, mask_size):
             for j in range(len(regions)):
                 if i == j or idx[i] == 1 or idx[j] == 1:
                     continue
-                if overlap(regions[i], regions[j]):
+                if overlap(regions[i], regions[j], 0.8):
                     regions[i] = bbox_merge(regions[i], regions[j])
                     idx[j] = 1
         if sum(idx) == 0:
@@ -227,6 +226,9 @@ def region_postprocess(regions, contours, mask_shape):
 
 
 def region_split(regions, mask_shape):
+    '''
+    待改进: 目标平均面积/区域面积 > 1/2 不切割, 防止破坏大目标
+    '''
     alpha = 1
     mask_w, mask_h = mask_shape
     new_regions = []
@@ -258,10 +260,6 @@ def overlap(box1, box2, thresh=0.75):
         box1: [xmin, ymin, xmax, ymax]
         box2: [xmin, ymin, xmax, ymax]
     """
-    box1_area = np.product(box1[2:] - box1[:2])
-    box2_area = np.product(box2[2:] - box2[:2])
-    if box1_area < box2_area:
-        box1, box2 = box2, box1
     matric = np.array([box1, box2])
     u_xmin = max(matric[:,0])
     u_ymin = max(matric[:,1])
@@ -279,142 +277,11 @@ def overlap(box1, box2, thresh=0.75):
         return True
 
 
-def iou_calc1(boxes1, boxes2):
-    """
-    array
-    :param boxes1: boxes1和boxes2的shape可以不相同，但是需要满足广播机制
-    :param boxes2: 且需要保证最后一维为坐标维，以及坐标的存储结构为(xmin, ymin, xmax, ymax)
-    :return: 返回boxes1和boxes2的IOU，IOU的shape为boxes1和boxes2广播后的shape[:-1]
-    """
-    boxes1 = np.array(boxes1)
-    boxes2 = np.array(boxes2)
-
-    boxes1_area = (boxes1[..., 2] - boxes1[..., 0]) * (boxes1[..., 3] - boxes1[..., 1])
-    boxes2_area = (boxes2[..., 2] - boxes2[..., 0]) * (boxes2[..., 3] - boxes2[..., 1])
-
-    # 计算出boxes1和boxes2相交部分的左上角坐标、右下角坐标
-    left_up = np.maximum(boxes1[..., :2], boxes2[..., :2])
-    right_down = np.minimum(boxes1[..., 2:], boxes2[..., 2:])
-
-    # 计算出boxes1和boxes2相交部分的宽、高
-    # 因为两个boxes没有交集时，(right_down - left_up) < 0，所以maximum可以保证当两个boxes没有交集时，它们之间的iou为0
-    inter_section = np.maximum(right_down - left_up, 0.0)
-    inter_area = inter_section[..., 0] * inter_section[..., 1]
-    union_area = boxes1_area + 1e-16 + boxes2_area - inter_area
-    IOU = 1.0 * inter_area / union_area
-    return IOU
-
-
-def iou_calc2(boxes1, boxes2):
-    """
-    array
-    :param boxes1: boxes1和boxes2的shape可以不相同，但是需要满足广播机制
-    :param boxes2: 且需要保证最后一维为坐标维，以及坐标的存储结构为(xmin, ymin, xmax, ymax)
-    :return: 返回boxes1和boxes2的IOU，IOU的shape为boxes1和boxes2广播后的shape[:-1]
-    """
-    boxes1 = np.array(boxes1)
-    boxes2 = np.array(boxes2)
-
-    boxes1_area = (boxes1[..., 2] - boxes1[..., 0]) * (boxes1[..., 3] - boxes1[..., 1])
-    boxes2_area = (boxes2[..., 2] - boxes2[..., 0]) * (boxes2[..., 3] - boxes2[..., 1])
-
-    # 计算出boxes1和boxes2相交部分的左上角坐标、右下角坐标
-    left_up = np.maximum(boxes1[..., :2], boxes2[..., :2])
-    right_down = np.minimum(boxes1[..., 2:], boxes2[..., 2:])
-
-    # 计算出boxes1和boxes2相交部分的宽、高
-    # 因为两个boxes没有交集时，(right_down - left_up) < 0，所以maximum可以保证当两个boxes没有交集时，它们之间的iou为0
-    inter_section = np.maximum(right_down - left_up, 0.0)
-    inter_area = inter_section[..., 0] * inter_section[..., 1]
-    IOU = 1.0 * inter_area / boxes2_area
-    return IOU
-
-
-def nms(prediction, score_threshold=0.05, iou_threshold=0.5, overlap_threshold=0.95):
-    """
-    :param prediction:
-    (x, y, w, h, conf, cls)
-    :return: best_bboxes
-    """
-    prediction = np.array(prediction)
-    detections = prediction[(-prediction[:,4]).argsort()]
-    # Iterate through all predicted classes
-    unique_labels = np.unique(detections[:, -1])
-
-    best_bboxes = []
-    for cls in unique_labels:
-        cls_mask = (detections[:, 5] == cls)
-        cls_bboxes = detections[cls_mask]
-
-        # python code
-        while len(cls_bboxes) > 0:
-            best_bbox = cls_bboxes[0]
-            best_bboxes.append(best_bbox)
-            cls_bboxes = cls_bboxes[1:]
-            # iou
-            iou = iou_calc1(best_bbox[np.newaxis, :4], cls_bboxes[:, :4])
-            iou_mask = iou > iou_threshold
-            # overlap
-            overlap = iou_calc2(best_bbox[np.newaxis, :4], cls_bboxes[:, :4])
-            overlap_mask = overlap > overlap_threshold
-
-            weight = np.ones((len(iou),), dtype=np.float32)
-            weight[iou_mask] = 0.0
-            weight[overlap_mask] = 0.0
-
-            cls_bboxes[:, 4] = cls_bboxes[:, 4] * weight
-            score_mask = cls_bboxes[:, 4] > score_threshold
-            cls_bboxes = cls_bboxes[score_mask]
-    best_bboxes = np.array(best_bboxes)
-    return best_bboxes
-
-
 def show_image(img, labels=None):
     import matplotlib.pyplot as plt
-    # plt.figure(figsize=(10, 10))
-    plt.imshow(img)
+    plt.figure(figsize=(10, 10))
+    plt.subplot(1, 1, 1).imshow(img)
     if labels is not None:
-        if labels.shape[0] > 0:
-            plt.plot(labels[:, [0, 2, 2, 0, 0]].T, labels[:, [1, 1, 3, 3, 1]].T, '-')
+        plt.plot(labels[:, [0, 2, 2, 0, 0]].T, labels[:, [1, 1, 3, 3, 1]].T, '-')
     plt.show()
     pass
-
-
-def plot_img(img, bboxes, id2name):
-    box_colors = ((0, 0, 1), (0, 1, 0), (0, 1, 1), (1, 0, 0), (1, 0, 1),
-                  (0.541, 0.149, 0.341), (0.541, 0.169, 0.886),
-                  (0.753, 0.753, 0.753), (0.502, 0.165, 0.165),
-                  (0.031, 0.180, 0.329), (0.439, 0.502, 0.412),
-                  (0, 0, 0)) # others
-    img = img.astype(np.float64) / 255.0 if img.max() > 1.0 else img
-    for bbox in bboxes:
-        try:
-            if -1 in bbox:
-                continue
-            x1 = int(bbox[0])
-            y1 = int(bbox[1])
-            x2 = int(bbox[2])
-            y2 = int(bbox[3])
-            id = int(bbox[4])
-            label = id2name[id]
-
-            if len(bbox) >= 6:
-                # if bbox[5] < 0.5:
-                #     continue
-                label = label + '|{:.2}'.format(bbox[5])
-
-            # plot
-            box_color = box_colors[min(id, len(box_colors)-1)]
-            text_color = (1, 1, 1)
-            t_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_COMPLEX, 0.4, 1)[0]
-            c1 = (x1, y1 - t_size[1] - 4)
-            c2 = (x1 + t_size[0], y1)
-            cv2.rectangle(img, c1, c2, color=box_color, thickness=-1)
-            cv2.putText(img, label, (x1, y1-4), cv2.FONT_HERSHEY_COMPLEX, 0.4, text_color, 1)
-            cv2.rectangle(img, (x1, y1), (x2, y2), color=box_color, thickness=3)
-
-        except Exception as e:
-            print(e)
-            continue
-
-    return img
