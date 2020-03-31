@@ -1,11 +1,17 @@
-from scipy.ndimage.filters import gaussian_filter
-import numpy as np
+import json
+from pycocotools.cocoeval import COCOeval
+from pycocotools.coco import COCO
+gt_file = '/home/twsf/data/Visdrone/VisDrone2019-DET-val/annotations_json/instances_val.json'
+pred_file = "/home/twsf/work/CRGNet/results.json"
 
 
-pt2d = np.zeros((3, 5), dtype=np.float32)
-pt2d[1, 2] = 1
-
-temp = gaussian_filter(pt2d, [1.5, 0.9], mode="constant")
-# print(temp[])
-print(sum(sum(temp)))
-# print(temp)
+if __name__ == '__main__':
+    coco_true = COCO(gt_file)
+    tep = coco_true.loadCats(coco_true.getCatIds())
+    coco_pred = coco_true.loadRes(pred_file)
+    # coco_pred = json.load(open(pred_file))
+    coco_eval = COCOeval(coco_true, coco_pred, 'bbox')
+    coco_eval.params.imgIds = coco_true.getImgIds()
+    coco_eval.evaluate()
+    coco_eval.accumulate()
+    coco_eval.summarize()

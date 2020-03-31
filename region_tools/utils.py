@@ -296,7 +296,7 @@ def iou_calc2(boxes1, boxes2):
     boxes1 = np.array(boxes1)
     boxes2 = np.array(boxes2)
 
-    boxes1_area = (boxes1[..., 2] - boxes1[..., 0]) * (boxes1[..., 3] - boxes1[..., 1])
+    # boxes1_area = (boxes1[..., 2] - boxes1[..., 0]) * (boxes1[..., 3] - boxes1[..., 1])
     boxes2_area = (boxes2[..., 2] - boxes2[..., 0]) * (boxes2[..., 3] - boxes2[..., 1])
 
     # 计算出boxes1和boxes2相交部分的左上角坐标、右下角坐标
@@ -311,7 +311,7 @@ def iou_calc2(boxes1, boxes2):
     return IOU
 
 
-def nms(prediction, score_threshold=0.005, iou_threshold=0.5, overlap_threshold=0.95):
+def nms(prediction, score_threshold=0.05, iou_threshold=0.5, overlap_threshold=0.95):
     """
     :param prediction:
     (x, y, w, h, conf, cls)
@@ -339,13 +339,38 @@ def nms(prediction, score_threshold=0.005, iou_threshold=0.5, overlap_threshold=
             overlap = iou_calc2(best_bbox[np.newaxis, :4], cls_bboxes[:, :4])
             overlap_mask = overlap > overlap_threshold
 
-            weight = np.ones((len(iou),), dtype=np.float32)
-            weight[iou_mask] = 0.0
-            weight[overlap_mask] = 0.0
-
-            cls_bboxes[:, 4] = cls_bboxes[:, 4] * weight
+            mask = iou_mask | overlap_mask
+            cls_bboxes[mask, 4] = 0
             score_mask = cls_bboxes[:, 4] > score_threshold
             cls_bboxes = cls_bboxes[score_mask]
+    best_bboxes = np.array(best_bboxes)
+    return best_bboxes
+
+
+def nms2(prediction, score_threshold=0.05, iou_threshold=0.5):
+    """
+    :param prediction:
+    (x, y, w, h, conf, cls)
+    :return: best_bboxes
+    """
+    prediction = np.array(prediction)
+    detections = prediction[(-prediction[:, 4]).argsort()]
+    # Iterate through all predicted classes
+    best_bboxes = []
+    cls_bboxes = detections
+
+    # python code
+    while len(cls_bboxes) > 0:
+        best_bbox = cls_bboxes[0]
+        best_bboxes.append(best_bbox)
+        cls_bboxes = cls_bboxes[1:]
+        # iou
+        iou = iou_calc1(best_bbox[np.newaxis, :4], cls_bboxes[:, :4])
+        iou_mask = iou > iou_threshold
+
+        cls_bboxes[iou_mask, 4] = 0
+        score_mask = cls_bboxes[:, 4] > score_threshold
+        cls_bboxes = cls_bboxes[score_mask]
     best_bboxes = np.array(best_bboxes)
     return best_bboxes
 
@@ -382,6 +407,46 @@ class MyEncoder(json.JSONEncoder):
             return obj.tolist()
         else:
             return super(MyEncoder, self).default(obj)
+
+
+def plot_img(img, bboxes, id2name):
+    box_colors = ((0, 0, 1), (0, 1, 0), (0, 1, 1), (1, 0, 0), (1, 0, 1),
+                  (0.541, 0.149, 0.341), (0.541, 0.169, 0.886),
+                  (0.753, 0.753, 0.753), (0.502, 0.165, 0.165),
+                  (0.031, 0.180, 0.329), (0.439, 0.502, 0.412),
+                  (0, 0, 0))  # others
+    img = img.astype(np.float64) / 255.0 if img.max() > 1.0 else img
+    for bbox in bboxes:
+        try:
+            if -1 in bbox:
+                continue
+            x1 = int(bbox[0])
+            y1 = int(bbox[1])
+            x2 = int(bbox[2])
+            y2 = int(bbox[3])
+            id = int(bbox[4])
+            label = id2name[id]['name']
+
+            if len(bbox) >= 6:
+                # if bbox[5] < 0.5:
+                #     continue
+                label = label + '|{:.2}'.format(bbox[5])
+
+            # plot
+            box_color = box_colors[min(id, len(box_colors)-1)]
+            text_color = (1, 1, 1)
+            t_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_COMPLEX, 0.4, 1)[0]
+            c1 = (x1, y1 - t_size[1] - 4)
+            c2 = (x1 + t_size[0], y1)
+            cv2.rectangle(img, c1, c2, color=box_color, thickness=-1)
+            cv2.putText(img, label, (x1, y1-4), cv2.FONT_HERSHEY_COMPLEX, 0.4, text_color, 1)
+            cv2.rectangle(img, (x1, y1), (x2, y2), color=box_color, thickness=3)
+
+        except Exception as e:
+            print(e)
+            continue
+
+    return img
 
 
 if __name__ == "__main__":

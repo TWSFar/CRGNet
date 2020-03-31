@@ -10,8 +10,8 @@ from tqdm import tqdm
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Test chip')
-    parser.add_argument('checkpoint', help='model')
-    parser.add_argument('--config', default='mmdetection/tools_visdrone/ssd300_coco.py')
+    parser.add_argument('--checkpoint', default='/home/twsf/work/CRGNet/mmdetection/tools_visdrone/work_dirs/retinanet_r50_fpn_1x/epoch_29.pth', help='model')
+    parser.add_argument('--config', default='/home/twsf/work/CRGNet/mmdetection/tools_visdrone/retinanet_r50_fpn_1x.py')
     parser.add_argument('--test-dir', default='/home/twsf/data/Visdrone/region_chip')
     parser.add_argument('--result-path', default='./')
     args = parser.parse_args()
@@ -38,20 +38,26 @@ if __name__ == "__main__":
     # build the model from a config file and a checkpoint file
     model = init_detector(args.config, args.checkpoint, device='cuda:0')
 
-    img_list = os.listdir(args.test_dir)
-    results = []
+    img_list = []
+    set_file = osp.join(args.test_dir, 'ImageSets/Main/val.txt')
+    with open(set_file, 'r') as f:
+        for line in f.readlines():
+            img_list.append(line.strip())
 
+    # img_list = os.listdir(args.test_dir)
+
+    results = []
     for img_name in tqdm(img_list):
-        img_path = osp.join(args.test_dir, img_name)
+        img_path = osp.join(args.test_dir, 'JPEGImages', img_name+'.jpg')
         result = inference_detector(model, img_path)
         for i, boxes in enumerate(result):
             for box in boxes:
-                results.append({"image_id": img_name,
+                results.append({"image_id": img_name+'.jpg',
                                 "category_id": i,
                                 "bbox": np.round(box[:4]),
                                 "score": box[4]})
         # show_result(img_path, result, model.CLASSES)
 
-    with open(os.path.join(args.result_path, 'results.json'), "w") as f:
+    with open(os.path.join(args.result_path, 'chip_results.json'), "w") as f:
         json.dump(results, f, cls=MyEncoder)
         print("results json saved.")

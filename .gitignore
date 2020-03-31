@@ -13,3 +13,4 @@ run/
 debug/
 .debug.py
 results/
+*.json
