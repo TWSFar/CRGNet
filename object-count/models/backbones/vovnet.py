@@ -167,7 +167,8 @@ class VoVNet(nn.Module):
             x = getattr(self, name)(x)
         # x = F.adaptive_avg_pool2d(x, (1, 1)).view(x.size(0), -1)
         # x = self.classifier(x)
-        return x
+
+        return x, None
 
 
 def _vovnet(arch,
@@ -182,7 +183,15 @@ def _vovnet(arch,
                    block_per_stage, layer_per_block,
                    **kwargs)
     if pretrained:
-        model.load_state_dict(model_zoo.load_url(model_urls[arch]))
+        pretrain_dict = model_zoo.load_url(model_urls[arch])
+        model_dict = {}
+        state_dict = model.state_dict()
+        for k, v in pretrain_dict.items():
+            if k in state_dict:
+                model_dict[k] = v
+        state_dict.update(model_dict)
+        model.load_state_dict(state_dict)
+
     return model
 
 

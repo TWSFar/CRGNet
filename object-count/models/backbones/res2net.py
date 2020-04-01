@@ -163,7 +163,7 @@ class ImageNetRes2Net(nn.Module):
         # x = x.view(x.size(0), -1)
         # x = self.fc(x)
 
-        return x
+        return x, None
 
 
 class CifarRes2Net(nn.Module):
@@ -231,7 +231,7 @@ class CifarRes2Net(nn.Module):
         # x = x.view(x.size(0), -1)
         # x = self.fc(x)
 
-        return x
+        return x, None
 
 
 def res2net50(**kwargs):
