@@ -16,7 +16,7 @@ class Config:
     pre = "/home/twsf/work/CRGNet/run/visdrone/20200227_235050_train/model_best.pth.tar"
 
     # model
-    backbone = 'mobilenetv2'
+    backbone = 'res2next50_32x4d'
     output_stride = 16
     sync_bn = False
 
@@ -32,7 +32,7 @@ class Config:
     )
 
     loss_density = dict(
-        type="SALoss",
+        type="MSELoss",
         reduction="mean"
     )
 
