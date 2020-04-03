@@ -10,10 +10,10 @@ from tqdm import tqdm
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Test chip')
-    parser.add_argument('--checkpoint', default='/home/twsf/work/CRGNet/mmdetection/tools_visdrone/work_dirs/retinanet_r50_fpn_1x/epoch_29.pth', help='model')
-    parser.add_argument('--config', default='/home/twsf/work/CRGNet/mmdetection/tools_visdrone/retinanet_r50_fpn_1x.py')
-    parser.add_argument('--test-dir', default='/home/twsf/data/Visdrone/region_chip')
-    parser.add_argument('--result-path', default='./result')
+    parser.add_argument('--checkpoint', default='/home/twsf/work/CRGNet/mmdetection/tools_visdrone/work_dirs/retinanet_x101_32x4d_fpn_1x/epoch_26.pth', help='model')
+    parser.add_argument('--config', default='/home/twsf/work/CRGNet/mmdetection/tools_visdrone/configs/retinanet_x101_32x4d_fpn_1x.py')
+    parser.add_argument('--test-dir', default="/home/twsf/data/Visdrone/VisDrone2019-DET-test-dev/images")
+    parser.add_argument('--result-path', default='./results')
     args = parser.parse_args()
     return args
 
@@ -48,9 +48,9 @@ if __name__ == "__main__":
 
     results = []
     for img_id in tqdm(img_list):
-        img_path = osp.join(args.test_dir, 'JPEGImages', img_id+'.jpg')
+        img_path = osp.join(args.test_dir, img_id)
         result = inference_detector(model, img_path)
-        with open(os.path.join(args.result_path, img_id+'.txt'), "w") as f:
+        with open(os.path.join(args.result_path, img_id[:-4]+'.txt'), "w") as f:
             for i, boxes in enumerate(result):
                 for box in boxes:
                     bbox = [str(x) for x in (list(box[0:5]) + [i+1] + [-1, -1])]

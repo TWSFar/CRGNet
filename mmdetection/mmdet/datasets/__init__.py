@@ -10,10 +10,12 @@ from .wider_face import WIDERFaceDataset
 from .xml_style import XMLDataset
 from .visdronechip import VisdroneChipDataset
 from .visdrone import VisdroneDataset
+from .underwater import UndeWaterDataset
 
 __all__ = [
     'CustomDataset', 'XMLDataset', 'CocoDataset', 'VOCDataset',
     'GroupSampler', 'DistributedGroupSampler',
     'build_dataloader', 'ConcatDataset', 'RepeatDataset', 'WIDERFaceDataset',
-    'DATASETS', 'build_dataset', 'VisdroneChipDataset', 'VisdroneDataset'
+    'DATASETS', 'build_dataset', 'VisdroneChipDataset', 'VisdroneDataset',
+    'UndeWaterDataset',
 ]
