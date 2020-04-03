@@ -78,24 +78,33 @@ def generate_crop_region(regions, mask, mask_size):
         # weight = np.exp(0.5 * chip_area/chip_nobj)
         # weight = np.log(1 + chip_area ** 1.5 / (obj_num * 35)) + 1
         if box_w < min(mask_size) * 0.4 and box_h < min(mask_size) * 0.4:
-            weight = np.clip(np.sqrt(16.0*chip_area/(obj_num*chip_area)), 1, 2)
+            # weight = 16.0*obj_area/(obj_num*chip_area)
+            weight = np.clip(16.0*obj_area/(obj_num*chip_area), 1, 4)
         else:
             weight = 1
 
-        crop_size_w = 0.5 * box_w * weight
-        crop_size_h = 0.5 * box_h * weight
-        crop_size_w = np.clip(crop_size_w, max(box_w/2.0, 3), max(box_w/2.0, 24))
-        crop_size_h = np.clip(crop_size_h, max(box_h/2.0, 3), max(box_h/2.0, 24))
+        rect = np.sqrt(chip_area * weight)
+        if max(box_w, box_h) <= rect:
+            half_w = 0.5 * rect
+            half_h = 0.5 * rect
+        elif box_w > rect:
+            half_w = 0.5 * box_w
+            half_h = 0.5 * chip_area * weight / half_w
+        else:
+            half_h = 0.5 * box_h
+            half_w = 0.5 * chip_area * weight / half_h
+        half_w = np.clip(half_w, max(box_w/2.0, 3), max(box_w/2.0, 24))
+        half_h = np.clip(half_h, max(box_h/2.0, 3), max(box_h/2.0, 24))
 
-        center_x = crop_size_w if center_x < crop_size_w else center_x
-        center_y = crop_size_h if center_y < crop_size_h else center_y
-        center_x = width - crop_size_w if center_x > width - crop_size_w else center_x
-        center_y = height - crop_size_h if center_y > height - crop_size_h else center_y
+        center_x = half_w if center_x < half_w else center_x
+        center_y = half_h if center_y < half_h else center_y
+        center_x = width - half_w if center_x > width - half_w else center_x
+        center_y = height - half_h if center_y > height - half_h else center_y
 
-        new_box = [center_x - crop_size_w if center_x - crop_size_w > 0 else 0,
-                   center_y - crop_size_h if center_y - crop_size_h > 0 else 0,
-                   center_x + crop_size_w if center_x + crop_size_w < width else width,
-                   center_y + crop_size_h if center_y + crop_size_h < height else height]
+        new_box = [center_x - half_w if center_x - half_w > 0 else 0,
+                   center_y - half_h if center_y - half_h > 0 else 0,
+                   center_x + half_w if center_x + half_w < width else width,
+                   center_y + half_h if center_y + half_h < height else height]
         for x in new_box:
             if x < 0:
                 pdb.set_trace()
