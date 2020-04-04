@@ -15,7 +15,7 @@ from dataloaders import make_data_loader
 from models.utils import Evaluator, LR_Scheduler
 
 from utils import (Saver, Timer, TensorboardSummary,
-                   calculate_weigths_labels)
+                   calculate_weigths_labels, model_info)
 import torch
 import torch.optim as optim
 import multiprocessing
@@ -48,6 +48,7 @@ class Trainer(object):
         # model = DeepLab(opt)
         # model = CSRNet()
         model = CRGNet(opt)
+        model_info(model, self.logger)
         self.model = model.to(opt.device)
 
         # Loss
