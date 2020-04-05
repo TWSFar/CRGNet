@@ -2,35 +2,21 @@
 model = dict(
     type='CascadeRCNN',
     num_stages=3,
-    pretrained='open-mmlab://msra/hrnetv2_w32',
+    pretrained='https://shanghuagao.oss-cn-beijing.aliyuncs.com/res2net/res2net101_v1b_26w_4s-0812c246.pth',
     backbone=dict(
-        type='HRNet',
-        extra=dict(
-            stage1=dict(
-                num_modules=1,
-                num_branches=1,
-                block='BOTTLENECK',
-                num_blocks=(4, ),
-                num_channels=(64, )),
-            stage2=dict(
-                num_modules=1,
-                num_branches=2,
-                block='BASIC',
-                num_blocks=(4, 4),
-                num_channels=(32, 64)),
-            stage3=dict(
-                num_modules=4,
-                num_branches=3,
-                block='BASIC',
-                num_blocks=(4, 4, 4),
-                num_channels=(32, 64, 128)),
-            stage4=dict(
-                num_modules=3,
-                num_branches=4,
-                block='BASIC',
-                num_blocks=(4, 4, 4, 4),
-                num_channels=(32, 64, 128, 256)))),
-    neck=dict(type='HRFPN', in_channels=[32, 64, 128, 256], out_channels=256),
+        type='Res2Net',
+        depth=101,
+        scale=4,
+        baseWidth=26,
+        num_stages=4,
+        out_indices=(0, 1, 2, 3),
+        frozen_stages=1,
+        style='pytorch'),
+    neck=dict(
+        type='FPN',
+        in_channels=[256, 512, 1024, 2048],
+        out_channels=256,
+        num_outs=5),
     rpn_head=dict(
         type='RPNHead',
         in_channels=256,
@@ -55,7 +41,7 @@ model = dict(
             in_channels=256,
             fc_out_channels=1024,
             roi_feat_size=7,
-            num_classes=11,
+            num_classes=5,
             target_means=[0., 0., 0., 0.],
             target_stds=[0.1, 0.1, 0.2, 0.2],
             reg_class_agnostic=True,
@@ -68,7 +54,7 @@ model = dict(
             in_channels=256,
             fc_out_channels=1024,
             roi_feat_size=7,
-            num_classes=11,
+            num_classes=5,
             target_means=[0., 0., 0., 0.],
             target_stds=[0.05, 0.05, 0.1, 0.1],
             reg_class_agnostic=True,
@@ -81,13 +67,13 @@ model = dict(
             in_channels=256,
             fc_out_channels=1024,
             roi_feat_size=7,
-            num_classes=11,
+            num_classes=5,
             target_means=[0., 0., 0., 0.],
             target_stds=[0.033, 0.033, 0.067, 0.067],
             reg_class_agnostic=True,
             loss_cls=dict(
                 type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
-            loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0)),
+            loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0))
     ])
 # model training and testing settings
 train_cfg = dict(
@@ -165,16 +151,16 @@ train_cfg = dict(
 test_cfg = dict(
     rpn=dict(
         nms_across_levels=False,
-        nms_pre=1000,
-        nms_post=1000,
-        max_num=1000,
+        nms_pre=4000,
+        nms_post=2000,
+        max_num=2000,
         nms_thr=0.7,
         min_bbox_size=0),
     rcnn=dict(
-        score_thr=0.05, nms=dict(type='nms', iou_thr=0.5), max_per_img=500))
+        score_thr=0.05, nms=dict(type='nms', iou_thr=0.5), max_per_img=1000))
 # dataset settings
 dataset_type = 'UndeWaterDataset'
-data_root = '/home/twsf/data/Underwater/train/density_chip/'
+data_root = '/home/twsf/data/UnderWater/'
 img_norm_cfg = dict(
    mean=[63.957, 146.672, 84.370], std=[14.162, 28.455, 19.301], to_rgb=True)
 train_pipeline = [
@@ -191,7 +177,7 @@ train_pipeline = [
         min_crop_size=0.3),
     dict(
         type='Resize',
-        img_scale=[(1024, 1024), (700, 700)],
+        img_scale=[(1700, 1500), (1333, 960)],
         keep_ratio=True,
         multiscale_mode='range'),
     dict(type='RandomFlip', flip_ratio=0.5),
@@ -204,7 +190,7 @@ test_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(
         type='MultiScaleFlipAug',
-        img_scale=(1000, 1000),
+        img_scale=(1600, 1400),
         flip=False,
         transforms=[
             dict(type='Resize', keep_ratio=True),

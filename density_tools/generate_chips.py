@@ -19,13 +19,13 @@ user_dir = osp.expanduser('~')
 
 def parse_args():
     parser = argparse.ArgumentParser(description="convert to voc dataset")
-    parser.add_argument('--dataset', type=str, default='VisDrone',
-                        choices=['VisDrone'], help='dataset name')
+    parser.add_argument('--dataset', type=str, default='UnderWater',
+                        choices=['UnderWater', 'VisDrone'], help='dataset name')
     parser.add_argument('--db_root', type=str,
-                        default=user_dir+"/data/Visdrone",
+                        default=user_dir+"/data/Underwater/train",
                         # default="E:\\CV\\data\\visdrone",
                         help="dataset's root path")
-    parser.add_argument('--imgsets', type=str, default=['val'],
+    parser.add_argument('--imgsets', type=str, default=['train', 'val'],
                         nargs='+', help='for train or val')
     parser.add_argument('--padding', type=str, default=[],
                         nargs='+', help='random padding neglect box')
@@ -107,7 +107,7 @@ class MakeDataset(object):
                                    box[2] - chip[0], box[3] - chip[1]]
                         chip_gt.append(np.array(new_box))
                         chip_label.append(labels[i])
-                    elif utils.overlap(chip, box, 0.001):
+                    elif utils.overlap(chip, box, 0.1):
                         box = [max(box[0], chip[0]), max(box[1], chip[1]),
                                min(box[2], chip[2]), min(box[3], chip[3])]
                         new_box = [box[0] - chip[0], box[1] - chip[1],
@@ -194,15 +194,18 @@ class MakeDataset(object):
         # make chip
         region_box, contours = utils.generate_box_from_mask(mask)
         region_box = utils.region_postprocess(region_box, contours, (mask_w, mask_h))
-        utils.show_image(mask, np.array(region_box))
+        # utils.show_image(mask, np.array(region_box))
         region_box = utils.generate_crop_region(region_box, mask, (mask_w, mask_h))
-        utils.show_image(mask, np.array(region_box))
+        # utils.show_image(mask, np.array(region_box))
         region_box = utils.resize_box(region_box, (mask_w, mask_h), (width, height))
+
+        if len(region_box) == 0:
+            return dict()
 
         if args.show:
             utils.show_image(image, np.array(region_box))
-        # if imgset == 'train':
-        #     region_box = np.vstack((region_box, np.array([0, 0, width-1, height-1])))
+        if imgset == 'train':
+            region_box = np.vstack((region_box, np.array([0, 0, width-1, height-1])))
 
         gt_bboxes, gt_cls = sample['bboxes'], sample['cls']
 
@@ -223,10 +226,10 @@ class MakeDataset(object):
         for i, chip in enumerate(chip_list):
             if len(chip_gt_list[i]) == 0:
                 continue
-            img_name = '{}_{}.jpg'.format(img_id, i)
-            xml_name = '{}_{}.xml'.format(img_id, i)
+            img_name = '{}_{}.jpg'.format(img_id, chip_num)
+            xml_name = '{}_{}.xml'.format(img_id, chip_num)
             chip_loc[img_name] = [int(x) for x in chip]
-            chip_size = (chip[2] - chip[0], chip[3] - chip[1])  #w, h
+            chip_size = (chip[2] - chip[0], chip[3] - chip[1])  # w, h
             chip_img = image[chip[1]:chip[3], chip[0]:chip[2], :].copy()
             assert len(chip_img.shape) == 3
 
@@ -237,9 +240,8 @@ class MakeDataset(object):
                     random_box = np.random.randint(0, 256, (neg_h, neg_w, 3))
                     chip_img[neg_box[1]:neg_box[3], neg_box[0]:neg_box[2], :] = random_box
 
-
             bbox = np.array(chip_gt_list[i], dtype=np.int)
-            label = np.array(chip_label_list[i], dtype=np.int)
+            label = np.array(chip_label_list[i])
 
             dom = self.make_xml(chip, bbox, label, img_name, chip_size)
             with open(osp.join(self.anno_dir, xml_name), 'w') as f:

@@ -10,19 +10,19 @@ hyp = {
     'dataset': 'VisDrone2019_detect_voc',
     'img_type': '.jpg',
     'mode': 'val',  # for save instance_train.json
-    'data_dir': '/home/twsf/data/Visdrone/region_chip/',
+    'data_dir': '/home/twsf/data/Underwater/train/density_chip/',
 }
-hyp['json_dir'] = osp.join(hyp['data_dir'], 'annotations_json')
+hyp['json_dir'] = osp.join(hyp['data_dir'], 'Annotations_json')
 hyp['xml_dir'] = osp.join(hyp['data_dir'], 'Annotations')
 hyp['img_dir'] = osp.join(hyp['data_dir'], 'JPEGImages')
 hyp['set_file'] = osp.join(hyp['data_dir'], 'ImageSets', 'Main', hyp['mode'] + '.txt')
 
-
+str2int = {'holothurian': 0, 'echinus': 1, 'scallop': 2, 'starfish': 3}
 class getItem(object):
     def __init__(self):
-        self.classes = ('pedestrian', 'person', 'bicycle', 'car', 'van',
-                        'truck', 'tricycle', 'awning-tricycle', 'bus', 'motor')
-        # self.classes = ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9')
+        # self.classes = ('pedestrian', 'person', 'bicycle', 'car', 'van',
+        #                 'truck', 'tricycle', 'awning-tricycle', 'bus', 'motor')
+        self.classes = ('0', '1', '2', '3')
 
     def get_img_item(self, file_name, image_id, size):
         """Gets a image item."""
@@ -76,7 +76,7 @@ def getGTBox(anno_xml, **kwargs):
             cur_pt = int(bbox.find(pt).text) - 1
             bndbox.append(cur_pt)
         box_all += [bndbox]
-        cls = obj.find('name').text
+        cls = str2int[obj.find('name').text]
         gt_cls.append(int(cls))
 
     return box_all, gt_cls

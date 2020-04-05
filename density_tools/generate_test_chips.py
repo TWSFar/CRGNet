@@ -17,8 +17,8 @@ user_dir = osp.expanduser('~')
 def parse_args():
     parser = argparse.ArgumentParser(description="convert to chip dataset")
     parser.add_argument('--test_dir', type=str,
-                        # default=user_dir+"/data/UnderWater/test",
-                        default="E:\\CV\\data\\Underwater\\test")
+                        default=user_dir+"/data/UnderWater/test")
+                        # default="E:\\CV\\data\\Underwater\\test")
     parser.add_argument('--show', type=bool, default=False,
                         help="show image and chip box")
     args = parser.parse_args()
@@ -52,7 +52,7 @@ class MakeDataset(object):
         for i, img_name in enumerate(img_list):
             img_id = osp.splitext(osp.basename(img_name))[0]
             sys.stdout.write('\rcomplete: {:d}/{:d} {:s}'
-                                .format(i + 1, len(img_list), img_id))
+                             .format(i + 1, len(img_list), img_id))
             sys.stdout.flush()
 
             chiplen, loc = self.make_chip(img_name)
@@ -80,7 +80,7 @@ class MakeDataset(object):
         region_box = utils.region_postprocess(region_box, contours, (mask_w, mask_h))
         region_box = utils.resize_box(region_box, (mask_w, mask_h), (width, height))
         region_box = utils.generate_crop_region(region_box, (width, height))
-
+        region_box
         if args.show:
             utils.show_image(image, region_box)
 

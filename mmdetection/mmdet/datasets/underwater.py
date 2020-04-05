@@ -28,7 +28,7 @@ from .registry import DATASETS
 @DATASETS.register_module
 class UndeWaterDataset(CustomDataset):
 
-    CLASSES = ('holothurian', 'echinus', 'scallop', 'starfish')
+    CLASSES = ('0', '1', '2', '3')
 
     def load_annotations(self, ann_file):
         self.coco = COCO(ann_file)
