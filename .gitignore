@@ -14,3 +14,4 @@ debug/
 .debug.py
 results/
 *.json
+*.csv

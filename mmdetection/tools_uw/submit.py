@@ -7,9 +7,9 @@ import numpy as np
 
 
 test_dir = '/home/twsf/data/UnderWater/test/images'
-result_file = 'tools_uw/submit.csv'
-config_file = '/home/twsf/work/underwater/mmdetection/tools_uw/config_new.py'
-checkpoint_file = '/home/twsf/work/underwater/mmdetection/tools_uw/work_dirs/map48_2/epoch_46.pth'
+result_file = 'submit.csv'
+config_file = 'mmdetection/tools_uw/config_new.py'
+checkpoint_file = '/home/twsf/work/CRGNet/mmdetection/tools_uw/work_dirs/cascade_rcnn_x101_32x4d_fpn_1x/epoch_40.pth'
 
 # build the model from a config file and a checkpoint file
 model = init_detector(config_file, checkpoint_file, device='cuda:0')
