@@ -1,4 +1,3 @@
-import os
 import cv2
 import json
 import numpy as np
@@ -7,23 +6,25 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
-from utils import nms, plot_img
+from utils import nms, nms2, plot_img, MyEncoder, iou_calc1
 hyp = {
-    'gt': "/home/twsf/data/Visdrone/val/labels/",
-    'result': "chip_results.json",
-    'local': "/home/twsf/data/Visdrone/region_chip/Locations/val_chip.json",
+    'gt': "/home/twsf/data/Visdrone/VisDrone2019-DET-test-dev/annotations_json/instances_test.json",
+    'result': "/home/twsf/work/CRGNet/chip_results.json",
+    'local': "/home/twsf/data/Visdrone/density_chip/Locations/test_chip.json",
     'show': False,
-    'srcimg_dir': "/home/twsf/data/Visdrone/VisDrone2019-DET-val/images/"
+    'srcimg_dir': "/home/twsf/data/Visdrone/VisDrone2019-DET-test-dev/images/",
+    'gt_txt': "/home/twsf/data/Visdrone/VisDrone2019-DET-test-dev/annotations"
 }
 
 
 class DET_toolkit(object):
     def __init__(self):
-        self.coco_true = COCO(hyp['gt'])
-        self.img_dir = hyp['srcimg_dir']
+        self.coco = COCO(hyp['gt'])
+        self.srcimg_dir = hyp['srcimg_dir']
+        self.img_ids = self.coco.getImgIds()
+        self.cat_ids = self.coco.loadCats(self.coco.getCatIds())
 
     def __call__(self):
-        coco_true = COCO(hyp['gt'])
         # get val predict box
         with open(hyp['result'], 'r') as f:
             results = json.load(f)
@@ -45,59 +46,50 @@ class DET_toolkit(object):
 
         # metrics
         results = []
-        for img_name, det in tqdm(detecions.items()):
-            pred_bboxes = nms(det, score_threshold=0.05)[:, [0, 1, 2, 3, 5, 4]].astype(np.float32)
-            gt_bboxes = load_annotations(img_name)
-            for bbox in pred_bboxes:
-                results.append({"image_id": img_name,
+        for img_id in tqdm(self.img_ids):
+            img_info = self.coco.loadImgs(img_id)[0]
+            det = detecions[img_info['file_name']]
+            det = nms(det, score_threshold=0.05)[:, [0, 1, 2, 3, 5, 4]].astype(np.float32)
+            # det = nms2(det)
+            gt = self.load_annotations(img_id)
+            if hyp['show']:
+                img = cv2.imread(osp.join(self.srcimg_dir, img_info['file_name']))[:, :, ::-1]
+                gt_img = plot_img(img, gt, self.cat_ids)
+                pred_img = plot_img(img, det, self.cat_ids)
+                plt.figure(figsize=(10, 10))
+                plt.subplot(1, 1, 1).imshow(gt_img)
+                plt.show()
+                plt.subplot(1, 1, 1).imshow(pred_img)
+                plt.show()
+
+            for bbox in det:
+                bbox[2:4] = bbox[2:4] - bbox[:2]
+                results.append({"image_id": img_id,
                                 "category_id": bbox[4],
                                 "bbox": np.round(bbox[:4]),
                                 "score": bbox[5]})
-            if hyp['show']:
-                img = cv2.imread(osp.join(self.img_dir, img_name))[:, :, ::-1]
-                gt_bbox[:, 4] = 0
-                pred_bbox[:, 4] = 1
-                gt_img = plot_img(img, gt_bboxes)
-                pred_img = plot_img(img, pred_bboxes)
-                plt.figure(figsize=(10, 10))
-                plt.subplot(2, 1, 1).imshow(gt_img)
-                plt.subplot(2, 1, 2).imshow(pred_img)
-                plt.show()
 
-        coco_pred = coco_true.loadRes(hyp['result'])
-        coco_eval = COCOeval(coco_true, coco_pred, 'bbox')
-        coco_eval.params.imgIds = coco_true.getImgIds()
+        coco_pred = self.coco.loadRes(results)
+        coco_eval = COCOeval(self.coco, coco_pred, 'bbox')
+        coco_eval.params.imgIds = self.coco.getImgIds()
         coco_eval.evaluate()
         coco_eval.accumulate()
         coco_eval.summarize()
 
-    def load_annotations(self, image_index):
-        # get ground truth annotations
-        annotations_ids = self.coco.getAnnIds(imgIds=self.image_ids[image_index], iscrowd=False)
-        annotations = np.zeros((0, 5))
+        with open('results.json', 'w') as f:
+            json.dump(results, f, indent=4, cls=MyEncoder)
 
-        # some images appear to miss annotations (like image with id 257034)
-        if len(annotations_ids) == 0:
-            return annotations
+    def load_annotations(self, img_id):
+        anno_file = osp.join(hyp['gt_txt'], img_id+'.txt')
+        with open(anno_file, 'r') as f:
+            [x.strip().split(',')[:8] for x in f.readlines()]
 
-        # parse annotations
-        coco_annotations = self.coco.loadAnns(annotations_ids)
-        for idx, a in enumerate(coco_annotations):
-
-            # some annotations have basically no width / height, skip them
-            if a['bbox'][2] < 1 or a['bbox'][3] < 1:
-                continue
-
-            annotation = np.zeros((1, 5))
-            annotation[0, :4] = a['bbox']
-            annotation[0, 4] = self.coco_label_to_label(a['category_id'])
-            annotations = np.append(annotations, annotation, axis=0)
-
-        # transform from [x, y, w, h] to [x1, y1, x2, y2]
-        annotations[:, 2] = annotations[:, 0] + annotations[:, 2]
-        annotations[:, 3] = annotations[:, 1] + annotations[:, 3]
-
-        return annotations
+    def dropObjectsInIgr(self, gt, det):
+        idxFr = gt[:, 6] != 0
+        idxIgr = gt[:, 6] == 0
+        igrRegion = gt[idxIgr, 0:4]
+        iou = iou_calc1(igrRegion, det)
+        
 
 
 if __name__ == '__main__':

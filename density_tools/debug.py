@@ -1,6 +1,14 @@
+from utils import iou_calc1
 import numpy as np
-m1 = np.array([1, 2 ,3 ])
-m2 = m1
 
-for x, y in zip(m1, m2):
-    print(x, y)
+
+a = np.array([[0, 0, 5, 5], [0, 0, 3, 3], [3,  3, 5, 5]])
+
+b = np.array([[0, 0, 3, 3], [1, 1, 3, 3]])
+
+c = a[0]
+
+
+iou = iou_calc1(b, c)
+
+pass
