@@ -49,9 +49,10 @@ class DET_toolkit(object):
         for img_id in tqdm(self.img_ids):
             img_info = self.coco.loadImgs(img_id)[0]
             det = detecions[img_info['file_name']]
+            gt = self.load_annotations(img_id)
+            gt, det = self.dropObjectsInIgr(gt, det)
             det = nms(det, score_threshold=0.05)[:, [0, 1, 2, 3, 5, 4]].astype(np.float32)
             # det = nms2(det)
-            gt = self.load_annotations(img_id)
             if hyp['show']:
                 img = cv2.imread(osp.join(self.srcimg_dir, img_info['file_name']))[:, :, ::-1]
                 gt_img = plot_img(img, gt, self.cat_ids)
@@ -82,14 +83,21 @@ class DET_toolkit(object):
     def load_annotations(self, img_id):
         anno_file = osp.join(hyp['gt_txt'], img_id+'.txt')
         with open(anno_file, 'r') as f:
-            [x.strip().split(',')[:8] for x in f.readlines()]
+            bboxes = [x.strip().split(',')[:6] for x in f.readlines()]
+        bboxes[2:4] += bboxes[:2]
+
+        return bboxes
 
     def dropObjectsInIgr(self, gt, det):
-        idxFr = gt[:, 6] != 0
-        idxIgr = gt[:, 6] == 0
+        idxFr = gt[:, 4] != 0
+        idxIgr = gt[:, 4] == 0
         igrRegion = gt[idxIgr, 0:4]
-        iou = iou_calc1(igrRegion, det)
-        
+        igrDet = np.ones(len(det), dtype=np.int)
+        for igr in igrRegion:
+            iou = iou_calc1(igr, det)
+            igrDet[iou > 0.5] = 0
+
+        return gt[idxFr, [0, 1, 2, 3, 5]], det[igrDet]
 
 
 if __name__ == '__main__':
