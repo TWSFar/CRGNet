@@ -4,20 +4,19 @@ import matplotlib.pyplot as plt
 
 
 def get_label_box(img_path, dataset):
-    if dataset == "visdrone":
-        anno_path = img_path.replace('JPEGImages', 'Annotations')
-        anno_path = anno_path.replace('jpg', 'txt')
-        with open(anno_path, 'r') as f:
-            data = [x.strip().split(',')[:8] for x in f.readlines()]
-            annos = np.array(data)
-        boxes = annos[annos[:, 4] == '1'][:, :4].astype(np.int32)
-        y = np.zeros_like(boxes)
-        y[:, 0] = boxes[:, 0]
-        y[:, 1] = boxes[:, 1]
-        y[:, 2] = boxes[:, 0] + boxes[:, 2]
-        y[:, 3] = boxes[:, 1] + boxes[:, 3]
-    else:
-        raise NotImplementedError
+    # if dataset == "visdrone":
+    anno_path = img_path.replace('JPEGImages', 'Annotations')
+    anno_path = anno_path.replace('jpg', 'txt')
+    with open(anno_path, 'r') as f:
+        data = [x.strip().split(',')[:8] for x in f.readlines()]
+        annos = np.array(data)
+    boxes = annos[annos[:, 4] == '1'][:, :4].astype(np.int32)
+    y = np.zeros_like(boxes)
+    y[:, 0] = boxes[:, 0]
+    y[:, 1] = boxes[:, 1]
+    y[:, 2] = boxes[:, 0] + boxes[:, 2]
+    y[:, 3] = boxes[:, 1] + boxes[:, 3]
+
     return y
 
 

@@ -81,7 +81,7 @@ def _centerness_pattern(xmin, xmax, ymin, ymax):
         max_lr = max(left, right) if max(left, right) else 1
         centerness = np.sqrt(1.0 * min_lr * min_tb / (max_lr * max_tb))
         pattern[yi, xi] = centerness
-        
+
     return pattern
 
 
