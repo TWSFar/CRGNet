@@ -9,11 +9,11 @@ from collections import OrderedDict
 hyp = {
     'dataset': 'VisDrone2019_detect_voc',
     'img_type': '.jpg',
-    'mode': 'val',  # for save instance_train.json
-    'data_dir': '/home/twsf/data/VisDrone/VisDrone2019-DET-test-dev/',
+    'mode': 'train',  # for save instance_train.json
+    'data_dir': '/home/twsf/data/Visdrone/density_chip',
 }
 hyp['json_dir'] = osp.join(hyp['data_dir'], 'Annotations_json')
-hyp['xml_dir'] = osp.join(hyp['data_dir'], 'annotations')
+hyp['xml_dir'] = osp.join(hyp['data_dir'], 'Annotations')
 hyp['img_dir'] = osp.join(hyp['data_dir'], 'images')
 hyp['set_file'] = osp.join(hyp['data_dir'], 'ImageSets', 'Main', hyp['mode'] + '.txt')
 

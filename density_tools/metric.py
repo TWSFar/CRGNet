@@ -93,7 +93,7 @@ class DET_toolkit(object):
         idxFr = gt[:, 4] != 0
         idxIgr = gt[:, 4] == 0
         igrRegion = gt[idxIgr, 0:4]
-        
+
         igrDet = np.ones(len(det), dtype=np.bool)
         for i in range(len(igrRegion)):
             iou = iou_calc1(igrRegion[i], det[:, :4])

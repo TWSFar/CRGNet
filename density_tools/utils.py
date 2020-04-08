@@ -67,6 +67,7 @@ def generate_crop_region(regions, mask, mask_size):
     """
     width, height = mask_size
     final_regions = []
+    temp = []
     for box in regions:
         # show_image(mask, np.array(box)[None])
         box_w, box_h = box[2] - box[0], box[3] - box[1]
@@ -76,13 +77,12 @@ def generate_crop_region(regions, mask, mask_size):
         obj_area = max(np.where(mask_chip > 0, 1, 0).sum(), 1)
         obj_num = max(mask_chip.sum(), 1.0)
         chip_area = box_w * box_h
-        # weight = np.exp(0.5 * chip_area/chip_nobj)
-        # weight = np.log(1 + chip_area ** 1.5 / (obj_num * 35)) + 1
         if box_w < min(mask_size) * 0.4 and box_h < min(mask_size) * 0.4:
-            # weight = 16.0*obj_area/(obj_num*chip_area)
-            weight = np.clip(16.0*obj_area/(obj_num*chip_area), 1, 4)
+            temp.append(4.0*obj_area/(obj_num*chip_area))
+            weight = np.clip(4.0*obj_area/(obj_num*chip_area), 1, 2.25)
         else:
             weight = 1
+            # weight = np.clip(16.0*obj_area/(obj_num*chip_area), 1, 4)
 
         rect = np.sqrt(chip_area * weight)
         if max(box_w, box_h) <= rect:
@@ -94,8 +94,8 @@ def generate_crop_region(regions, mask, mask_size):
         else:
             half_h = 0.5 * box_h
             half_w = 0.5 * chip_area * weight / half_h
-        half_w = np.clip(half_w, max(box_w/2.0, 3), max(box_w/2.0, 24))
-        half_h = np.clip(half_h, max(box_h/2.0, 3), max(box_h/2.0, 24))
+        half_w = min(half_w, width/2.0)
+        half_h = min(half_h, height/2.0)
 
         center_x = half_w if center_x < half_w else center_x
         center_y = half_h if center_y < half_h else center_y
@@ -106,14 +106,12 @@ def generate_crop_region(regions, mask, mask_size):
                    center_y - half_h if center_y - half_h > 0 else 0,
                    center_x + half_w if center_x + half_w < width else width,
                    center_y + half_h if center_y + half_h < height else height]
-        for x in new_box:
-            if x < 0:
-                pdb.set_trace()
+
         final_regions.append(new_box)
         # show_image(mask, np.array(final_regions)[None, -1])
 
     regions = np.array(final_regions)
-    while(1):
+    while(0):
         idx = np.zeros((len(regions)))
         for i in range(len(regions)):
             for j in range(len(regions)):
@@ -126,64 +124,7 @@ def generate_crop_region(regions, mask, mask_size):
             break
         regions = regions[idx == 0]
 
-    return regions
-
-
-def generate_crop_region2(regions, img_size):
-    """
-    generate final regions
-    enlarge regions < 300
-    """
-    width, height = img_size
-    final_regions = []
-    for box in regions:
-        box_w, box_h = box[2] - box[0], box[3] - box[1]
-        center_x, center_y = box[0] + box_w / 2.0, box[1] + box_h / 2.0
-        if box_w < min(img_size) * 0.4 and box_h < min(img_size) * 0.4:
-            refine = True
-            crop_size = min(img_size) * 0.2
-        # elif box_w / box_h > 1.3 or box_h / box_w > 1.3:
-        #     refine = True
-        #     crop_size = max(box_w, box_h) / 2
-        else:
-            refine = True
-            crop_size = max(box_w, box_h) / 2
-
-        if refine:
-            center_x = crop_size if center_x < crop_size else center_x
-            center_y = crop_size if center_y < crop_size else center_y
-            center_x = width - crop_size - 1 if center_x > width - crop_size - 1 else center_x
-            center_y = height - crop_size - 1 if center_y > height - crop_size - 1 else center_y
-
-            new_box = [center_x - crop_size if center_x - crop_size > 0 else 0,
-                       center_y - crop_size if center_y - crop_size > 0 else 0,
-                       center_x + crop_size if center_x + crop_size < width else width-1,
-                       center_y + crop_size if center_y + crop_size < height else height-1]
-            for x in new_box:
-                if x < 0:
-                    pdb.set_trace()
-            final_regions.append([int(x) for x in new_box])
-        else:
-            final_regions.append([int(x) for x in box])
-
-    regions = np.array(final_regions)
-    while(1):
-        idx = np.zeros((len(regions)))
-        for i in range(len(regions)):
-            for j in range(len(regions)):
-                if i == j or idx[i] == 1 or idx[j] == 1:
-                    continue
-                box1, box2 = regions[i], regions[j]
-                if overlap(regions[i], regions[j], 0.8):
-                    regions[i][0] = min(box1[0], box2[0])
-                    regions[i][1] = min(box1[1], box2[1])
-                    regions[i][2] = max(box1[2], box2[2])
-                    regions[i][3] = max(box1[3], box2[3])
-                    idx[j] = 1
-        if sum(idx) == 0:
-            break
-        regions = regions[idx == 0]
-    return regions
+    return regions, temp
 
 
 def resize_box(box, original_size, dest_size):
@@ -325,10 +266,6 @@ def overlap(box1, box2, thresh=0.75):
         box1: [xmin, ymin, xmax, ymax]
         box2: [xmin, ymin, xmax, ymax]
     """
-    box1_area = np.product(box1[2:] - box1[:2])
-    box2_area = np.product(box2[2:] - box2[:2])
-    if box1_area < box2_area:
-        box1, box2 = box2, box1
     matric = np.array([box1, box2])
     u_xmin = max(matric[:,0])
     u_ymin = max(matric[:,1])
@@ -405,7 +342,7 @@ def nms(prediction, score_threshold=0.05, iou_threshold=0.5, overlap_threshold=0
     """
     prediction = np.array(prediction)
     detections = prediction[(-prediction[:,4]).argsort()]
-    detections = detections[:500]  
+    detections = detections[:500]
     # Iterate through all predicted classes
     unique_labels = np.unique(detections[:, -1])
 
@@ -426,11 +363,8 @@ def nms(prediction, score_threshold=0.05, iou_threshold=0.5, overlap_threshold=0
             overlap = iou_calc2(best_bbox[np.newaxis, :4], cls_bboxes[:, :4])
             overlap_mask = overlap > overlap_threshold
 
-            weight = np.ones((len(iou),), dtype=np.float32)
-            weight[iou_mask] = 0.0
-            weight[overlap_mask] = 0.0
-
-            cls_bboxes[:, 4] = cls_bboxes[:, 4] * weight
+            mask = iou_mask | overlap_mask
+            cls_bboxes[mask, 4] = 0
             score_mask = cls_bboxes[:, 4] > score_threshold
             cls_bboxes = cls_bboxes[score_mask]
     best_bboxes = np.array(best_bboxes)

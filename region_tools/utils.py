@@ -8,6 +8,20 @@ from sklearn.cluster import AgglomerativeClustering
 import pdb
 
 
+def bbox_merge(bbox1, bbox2):
+    """ (box1 cup box2) / box2
+    Args:
+        box1: [xmin, ymin, xmax, ymax]
+        box2: [xmin, ymin, xmax, ymax]
+    Return:
+        overlap box1 and box2
+    """
+    left_up = np.minimum(bbox1[:2], bbox2[:2])
+    right_down = np.maximum(bbox1[2:], bbox2[2:])
+
+    return np.hstack((left_up, right_down))
+
+
 def region_cluster(regions, mask_shape):
     """
     层次聚类
@@ -102,8 +116,9 @@ def region_postprocess(regions, contours, mask_shape):
         for j in range(len(regions)):
             if i == j or idx[i] == 1 or idx[j] == 1:
                 continue
-            box1, box2 = regions[i], regions[j]
+            # box1, box2 = regions[i], regions[j]
             if overlap(regions[i], regions[j], 0.9):
+                # regions[i] = bbox_merge(regions[i], regions[j])
                 idx[j] = 1
     regions = regions[idx == 0]
 
@@ -319,6 +334,7 @@ def nms(prediction, score_threshold=0.05, iou_threshold=0.5, overlap_threshold=0
     """
     prediction = np.array(prediction)
     detections = prediction[(-prediction[:,4]).argsort()]
+    detections = detections[:500]
     # Iterate through all predicted classes
     unique_labels = np.unique(detections[:, -1])
 

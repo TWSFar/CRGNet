@@ -1,5 +1,4 @@
 import os
-import mmcv
 import json
 import argparse
 import numpy as np
@@ -10,9 +9,9 @@ from tqdm import tqdm
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Test chip')
-    parser.add_argument('--checkpoint', default='/home/twsf/work/CRGNet/mmdetection/tools_visdrone/work_dirs/retinanet_r50_fpn_1x/epoch_29.pth', help='model')
+    parser.add_argument('--checkpoint', default='/home/twsf/work/CRGNet/mmdetection/tools_visdrone/work_dirs/region_cascadercnn_res50/epoch_29.pth', help='model')
     parser.add_argument('--config', default='/home/twsf/work/CRGNet/mmdetection/tools_visdrone/retinanet_r50_fpn_1x.py')
-    parser.add_argument('--test-dir', default='/home/twsf/data/Visdrone/region_chip')
+    parser.add_argument('--test-dir', default='/home/twsf/data/Visdrone/density_chip')
     parser.add_argument('--result-path', default='./')
     args = parser.parse_args()
     return args

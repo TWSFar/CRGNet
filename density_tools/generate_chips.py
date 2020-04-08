@@ -38,7 +38,7 @@ def parse_args():
 args = parse_args()
 print(args)
 
-
+temp = []
 class MakeDataset(object):
     def __init__(self):
         self.dataset = get_dataset(args.dataset, args.db_root)
@@ -78,6 +78,7 @@ class MakeDataset(object):
                     chip_ids.append('{}_{}'.format(img_id, i))
                 chip_loc.update(loc)
 
+            np.array(temp) * 1000
             self.generate_imgset(chip_ids, imgset)
 
             # wirte chip loc json
@@ -182,7 +183,7 @@ class MakeDataset(object):
         return dom
 
     def make_chip(self, sample, imgset):
-        image = cv2.imread(sample['image'])[:, :, ::-1]
+        image = cv2.imread(sample['image'])
         height, width = sample['height'], sample['width']
         img_id = osp.splitext(osp.basename(sample['image']))[0]
 
@@ -195,10 +196,10 @@ class MakeDataset(object):
         region_box, contours = utils.generate_box_from_mask(mask)
         region_box = utils.region_postprocess(region_box, contours, (mask_w, mask_h))
         # utils.show_image(mask, np.array(region_box))
-        # region_box = utils.generate_crop_region(region_box, mask, (mask_w, mask_h))
+        region_box, temp = utils.generate_crop_region(region_box, mask, (mask_w, mask_h))
+        temp.extend(temp)
         # utils.show_image(mask, np.array(region_box))
         region_box = utils.resize_box(region_box, (mask_w, mask_h), (width, height))
-        region_box = utils.generate_crop_region2(region_box, (width, height))
         # if len(region_box) == 0:
         #     return dict()
 
