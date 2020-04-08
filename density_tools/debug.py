@@ -9,6 +9,6 @@ b = np.array([[0, 0, 3, 3], [1, 1, 3, 3]])
 c = a[0]
 
 
-iou = iou_calc1(b, c)
+iou = iou_calc1(c[np.newaxis, :], b)
 
 pass

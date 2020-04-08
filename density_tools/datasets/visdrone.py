@@ -65,16 +65,14 @@ class VisDrone(object):
             return samples
 
         img_list = self._get_imglist(split)
-
-        # load information of image and save to cache
         sizes = [Image.open(img).size for img in img_list]
-
-        anno_path = [img.replace(IMG_ROOT, ANNO_ROOT).replace('jpg', 'txt')
-                        for img in img_list]
+        anno_path = [img_path.replace(IMG_ROOT, ANNO_ROOT).replace('jpg', 'txt')
+                     for img_path in img_list]
+        # load information of image and save to cache
         samples = [self._get_gtbox(ann) for ann in anno_path]
 
-        for i, img in enumerate(img_list):
-            samples[i]['image'] = img  # image path
+        for i, img_path in enumerate(img_list):
+            samples[i]['image'] = img_path  # image path
             samples[i]['width'] = sizes[i][0]
             samples[i]['height'] = sizes[i][1]
 
@@ -86,6 +84,6 @@ class VisDrone(object):
 
 
 if __name__ == "__main__":
-    dataset = VisDrone("E:\CV\data\\visdrone")
+    dataset = VisDrone("/home/twsf/data/Visdrone")
     out = dataset._load_samples('train')
     pass

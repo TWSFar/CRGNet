@@ -20,12 +20,12 @@ user_dir = osp.expanduser('~')
 
 def parse_args():
     parser = argparse.ArgumentParser(description="convert to voc dataset")
-    parser.add_argument('--dataset', type=str, default='Underwater',
-                        choices=['VisDrone', 'Underwater'], help='dataset name')
-    parser.add_argument('--mode', type=str, default=['train', 'val'],
+    parser.add_argument('--dataset', type=str, default='Visdrone',
+                        choices=['Visdrone', 'Underwater'], help='dataset name')
+    parser.add_argument('--mode', type=str, default=['val'],
                         nargs='+', help='for train or val')
     parser.add_argument('--db_root', type=str,
-                        default=user_dir+"/data/Underwater/train",
+                        default=user_dir+"/data/Visdrone/",
                         # default="E:\\CV\\data\\visdrone",
                         help="dataset's root path")
     parser.add_argument('--mask_size', type=list, default=[30, 40],
@@ -55,10 +55,10 @@ def _copy(src_image, dest_path):
     shutil.copy(src_image, dest_path)
 
 
-def _myaround_up(value, maxv):
+def _myaround_up(value):
     """0.05 * stride = 0.8"""
     tmp = np.floor(value).astype(np.int32)
-    return min(maxv, tmp + 1 if value - tmp > 0.05 else tmp)
+    return tmp + 1 if value - tmp > 0.05 else tmp
 
 
 def _myaround_down(value):
@@ -67,9 +67,9 @@ def _myaround_down(value):
     return max(0, tmp - 1 if tmp - value > 0.05 else tmp)
 
 
-def _centerness_pattern(xmin, xmax, ymin, ymax):
-    pattern = np.zeros((ymax-ymin+1, xmax-xmin+1), dtype=np.float32)
-    yv, xv = np.meshgrid(np.arange(ymin, ymax+1), np.arange(xmin, xmax+1))
+def _centerness_pattern(xmin, ymin, xmax, ymax):
+    pattern = np.zeros((ymax-ymin, xmax-xmin), dtype=np.float32)
+    yv, xv = np.meshgrid(np.arange(ymin, ymax), np.arange(xmin, xmax))
     for yi, xi in zip(yv.ravel(), xv.ravel()):
         left = xi - xmin
         right = xmax - xi
@@ -85,15 +85,13 @@ def _centerness_pattern(xmin, xmax, ymin, ymax):
     return pattern
 
 
-def gaussian_pattern(xmin, xmax, ymin, ymax):
-    """cx+0.05是希望中心点向右下偏移, 这样左上总值偏大
-    gamma_w = w * 0.5 * 0.3, 即半径的0.3倍,
-    最后在3倍的gamma距离内的和高斯的97%
+def gaussian_pattern(xmin, ymin, xmax, ymax):
+    """在3倍的gamma距离内的和高斯的97%
     """
-    cx = int(round((xmin+xmax+0.05)/2)) - xmin
-    cy = int(round((ymin+ymax+0.05)/2)) - ymin
-    h = ymax-ymin+1
-    w = xmax-xmin+1
+    cx = int(round((xmin+xmax-0.01)/2)) - xmin
+    cy = int(round((ymin+ymax-0.01)/2)) - ymin
+    h = ymax-ymin
+    w = xmax-xmin
     pattern = np.zeros((h, w), dtype=np.float32)
     pattern[cy, cx] = 1
     gamma = [0.15*h, 0.15*w]
@@ -113,19 +111,21 @@ def _generate_mask(sample, mask_scale=(30, 40)):
         for box in sample["bboxes"]:
             xmin = _myaround_down(1.0 * box[0] / width * mask_w)
             ymin = _myaround_down(1.0 * box[1] / height * mask_h)
-            xmax = _myaround_up(1.0 * box[2] / width * mask_w, mask_w-1)
-            ymax = _myaround_up(1.0 * box[3] / height * mask_h, mask_h-1)
-            if xmin == xmax or ymin == ymax:
+            xmax = _myaround_up(1.0 * box[2] / width * mask_w)
+            ymax = _myaround_up(1.0 * box[3] / height * mask_h)
+            ymax = min(mask_h-1, ymax)
+            xmax = min(mask_w-1, xmax)
+            if xmin == xmax and ymin == ymax:
                 continue
             if args.method == 'default':
-                density_mask[ymin:ymax+1, xmin:xmax+1] += 1
+                density_mask[ymin:ymax+1, xmin:xmax+1] = 1
             elif args.method == 'gauss':
-                density_mask[ymin:ymax+1, xmin:xmax+1] += gaussian_pattern(xmin, xmax, ymin, ymax)
+                density_mask[ymin:ymax+1, xmin:xmax+1] += gaussian_pattern(xmin, ymin, xmax+1, ymax+1)
             elif args.method == 'centerness':
-                density_mask[ymin:ymax+1, xmin:xmax+1] += _centerness_pattern(xmin, xmax, ymin, ymax)
+                density_mask[ymin:ymax+1, xmin:xmax+1] += _centerness_pattern(xmin, ymin, xmax+1, ymax+1)
 
-        return density_mask.clip(min=0, max=args.maximum)
-        # return density_mask
+        # return density_mask.clip(min=0, max=args.maximum)
+        return density_mask
 
     except Exception as e:
         print(e)

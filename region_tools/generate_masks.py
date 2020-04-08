@@ -22,7 +22,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="convert to voc dataset")
     parser.add_argument('--dataset', type=str, default='VisDrone',
                         choices=['VisDrone'], help='dataset name')
-    parser.add_argument('--mode', type=str, default=['train','val'],
+    parser.add_argument('--mode', type=str, default=['val'],
                         nargs='+', help='for train or val')
     parser.add_argument('--db_root', type=str,
                         default=user_dir+"/data/Visdrone",
@@ -65,7 +65,7 @@ def _resize(src_image, dest_path):
 def _myaround_up(value):
     """0.05 * stride = 0.8"""
     tmp = np.floor(value).astype(np.int32)
-    return tmp + 1 if value - tmp > 0.2 else tmp
+    return tmp + 1 if value - tmp > 0.05 else tmp
 
 
 def _myaround_down(value):
@@ -87,7 +87,7 @@ def _generate_mask(sample, mask_scale=(30, 40)):
             ymin = _myaround_down(1.0 * box[1] / height * mask_h)
             xmax = _myaround_up(1.0 * box[2] / width * mask_w)
             ymax = _myaround_up(1.0 * box[3] / height * mask_h)
-            if xmin == xmax or ymin == ymax:
+            if xmin == xmax and ymin == ymax:
                 continue
             region_mask[ymin:ymax+1, xmin:xmax+1] = 1
 

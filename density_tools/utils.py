@@ -1,4 +1,5 @@
 import cv2
+import json
 import numpy as np
 from sklearn.cluster import AgglomerativeClustering
 import pdb
@@ -128,6 +129,63 @@ def generate_crop_region(regions, mask, mask_size):
     return regions
 
 
+def generate_crop_region2(regions, img_size):
+    """
+    generate final regions
+    enlarge regions < 300
+    """
+    width, height = img_size
+    final_regions = []
+    for box in regions:
+        box_w, box_h = box[2] - box[0], box[3] - box[1]
+        center_x, center_y = box[0] + box_w / 2.0, box[1] + box_h / 2.0
+        if box_w < min(img_size) * 0.4 and box_h < min(img_size) * 0.4:
+            refine = True
+            crop_size = min(img_size) * 0.2
+        # elif box_w / box_h > 1.3 or box_h / box_w > 1.3:
+        #     refine = True
+        #     crop_size = max(box_w, box_h) / 2
+        else:
+            refine = True
+            crop_size = max(box_w, box_h) / 2
+
+        if refine:
+            center_x = crop_size if center_x < crop_size else center_x
+            center_y = crop_size if center_y < crop_size else center_y
+            center_x = width - crop_size - 1 if center_x > width - crop_size - 1 else center_x
+            center_y = height - crop_size - 1 if center_y > height - crop_size - 1 else center_y
+
+            new_box = [center_x - crop_size if center_x - crop_size > 0 else 0,
+                       center_y - crop_size if center_y - crop_size > 0 else 0,
+                       center_x + crop_size if center_x + crop_size < width else width-1,
+                       center_y + crop_size if center_y + crop_size < height else height-1]
+            for x in new_box:
+                if x < 0:
+                    pdb.set_trace()
+            final_regions.append([int(x) for x in new_box])
+        else:
+            final_regions.append([int(x) for x in box])
+
+    regions = np.array(final_regions)
+    while(1):
+        idx = np.zeros((len(regions)))
+        for i in range(len(regions)):
+            for j in range(len(regions)):
+                if i == j or idx[i] == 1 or idx[j] == 1:
+                    continue
+                box1, box2 = regions[i], regions[j]
+                if overlap(regions[i], regions[j], 0.8):
+                    regions[i][0] = min(box1[0], box2[0])
+                    regions[i][1] = min(box1[1], box2[1])
+                    regions[i][2] = max(box1[2], box2[2])
+                    regions[i][3] = max(box1[3], box2[3])
+                    idx[j] = 1
+        if sum(idx) == 0:
+            break
+        regions = regions[idx == 0]
+    return regions
+
+
 def resize_box(box, original_size, dest_size):
     """
     Args:
@@ -204,7 +262,7 @@ def region_postprocess(regions, contours, mask_shape):
     # 2. image open
     regions = region_morphology(big_contours, mask_shape) + small_regions
 
-    # 3. delete inner box
+    # 3. merge inner box
     regions = np.array(regions)
     idx = np.zeros((len(regions)))
     for i in range(len(regions)):
@@ -339,7 +397,7 @@ def iou_calc2(boxes1, boxes2):
     return IOU
 
 
-def nms(prediction, score_threshold=0.05, iou_threshold=0.5, overlap_threshold=0.95):
+def nms(prediction, score_threshold=0.05, iou_threshold=0.5, overlap_threshold=0.95, topN=500):
     """
     :param prediction:
     (x, y, w, h, conf, cls)
@@ -347,6 +405,7 @@ def nms(prediction, score_threshold=0.05, iou_threshold=0.5, overlap_threshold=0
     """
     prediction = np.array(prediction)
     detections = prediction[(-prediction[:,4]).argsort()]
+    detections = detections[:500]  
     # Iterate through all predicted classes
     unique_labels = np.unique(detections[:, -1])
 
@@ -427,3 +486,15 @@ def plot_img(img, bboxes, id2name):
             continue
 
     return img
+
+
+class MyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        else:
+            return super(MyEncoder, self).default(obj)
