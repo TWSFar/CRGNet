@@ -77,11 +77,11 @@ def generate_crop_region(regions, mask, mask_size):
         obj_area = max(np.where(mask_chip > 0, 1, 0).sum(), 1)
         obj_num = max(mask_chip.sum(), 1.0)
         chip_area = box_w * box_h
-        if box_w < min(mask_size) * 0.4 and box_h < min(mask_size) * 0.4:
-            temp.append(4.0*obj_area/(obj_num*chip_area))
-            weight = np.clip(4.0*obj_area/(obj_num*chip_area), 1, 2.25)
-        else:
-            weight = 1
+        temp.append(obj_area/(obj_num*chip_area))
+        # if box_w < min(mask_size) * 0.4 and box_h < min(mask_size) * 0.4:
+        #     weight = np.clip(9.0*obj_area/(obj_num*chip_area), 1.1, 2)
+        # else:
+        weight = 1
             # weight = np.clip(16.0*obj_area/(obj_num*chip_area), 1, 4)
 
         rect = np.sqrt(chip_area * weight)
@@ -111,7 +111,7 @@ def generate_crop_region(regions, mask, mask_size):
         # show_image(mask, np.array(final_regions)[None, -1])
 
     regions = np.array(final_regions)
-    while(0):
+    while(1):
         idx = np.zeros((len(regions)))
         for i in range(len(regions)):
             for j in range(len(regions)):
@@ -211,7 +211,7 @@ def region_postprocess(regions, contours, mask_shape):
             if i == j or idx[i] == 1 or idx[j] == 1:
                 continue
             if overlap(regions[i], regions[j], 0.9):
-                regions[i] = bbox_merge(regions[i], regions[j])
+                # regions[i] = bbox_merge(regions[i], regions[j])
                 idx[j] = 1
     regions = regions[idx == 0]
 

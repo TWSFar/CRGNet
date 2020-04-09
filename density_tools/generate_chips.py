@@ -9,6 +9,7 @@ import h5py
 import argparse
 import numpy as np
 import os.path as osp
+import matplotlib.pyplot as plt
 from xml.etree.ElementTree import Element, SubElement, tostring
 from xml.dom.minidom import parseString
 
@@ -29,7 +30,7 @@ def parse_args():
                         nargs='+', help='for train or val')
     parser.add_argument('--padding', type=str, default=[],
                         nargs='+', help='random padding neglect box')
-    parser.add_argument('--show', type=bool, default=True,
+    parser.add_argument('--show', type=bool, default=False,
                         help="show image and chip box")
     args = parser.parse_args()
     return args
@@ -38,7 +39,7 @@ def parse_args():
 args = parse_args()
 print(args)
 
-temp = []
+
 class MakeDataset(object):
     def __init__(self):
         self.dataset = get_dataset(args.dataset, args.db_root)
@@ -68,6 +69,7 @@ class MakeDataset(object):
             chip_ids = []
             chip_loc = dict()
             for i, sample in enumerate(samples):
+                # if i > 3: break
                 img_id = osp.splitext(osp.basename(sample['image']))[0]
                 sys.stdout.write('\rcomplete: {:d}/{:d} {:s}'
                                  .format(i + 1, len(samples), img_id))
@@ -78,7 +80,6 @@ class MakeDataset(object):
                     chip_ids.append('{}_{}'.format(img_id, i))
                 chip_loc.update(loc)
 
-            np.array(temp) * 1000
             self.generate_imgset(chip_ids, imgset)
 
             # wirte chip loc json
@@ -197,7 +198,6 @@ class MakeDataset(object):
         region_box = utils.region_postprocess(region_box, contours, (mask_w, mask_h))
         # utils.show_image(mask, np.array(region_box))
         region_box, temp = utils.generate_crop_region(region_box, mask, (mask_w, mask_h))
-        temp.extend(temp)
         # utils.show_image(mask, np.array(region_box))
         region_box = utils.resize_box(region_box, (mask_w, mask_h), (width, height))
         # if len(region_box) == 0:
