@@ -61,13 +61,11 @@ def test(**kwargs):
             sample = transform(sample)
 
             # predict
-            output = model(sample['image'].unsqueeze(0).to(opt.device))
+            region_pred, density_pred = model(sample['image'].unsqueeze(0).to(opt.device))
 
-            if output.shape[1] > 1:
-                pred = np.argmax(output.cpu().numpy(), axis=1)
-            else:
-                pred = torch.round(output.cpu()).numpy()
-            pred = pred.reshape(pred.shape[-2:]) * opt.norm_cfg['para']
+            region_pred = np.argmax(region_pred.cpu().numpy(), axis=1).reshape(30, 40)
+            density_pred = torch.clamp(density_pred, min=1e-5).cpu().numpy().reshape(30, 40)
+            pred = region_pred * density_pred * opt.norm_cfg['para']
 
             file_name = osp.join(
                 results_dir, osp.splitext(img_name)[0] + ".hdf5")

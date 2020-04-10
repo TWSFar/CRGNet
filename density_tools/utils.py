@@ -77,11 +77,10 @@ def generate_crop_region(regions, mask, mask_size):
         obj_area = max(np.where(mask_chip > 0, 1, 0).sum(), 1)
         obj_num = max(mask_chip.sum(), 1.0)
         chip_area = box_w * box_h
-        temp.append(obj_area/(obj_num*chip_area))
-        # if box_w < min(mask_size) * 0.4 and box_h < min(mask_size) * 0.4:
-        #     weight = np.clip(9.0*obj_area/(obj_num*chip_area), 1.1, 2)
-        # else:
-        weight = 1
+        if box_w < min(mask_size) * 0.4 and box_h < min(mask_size) * 0.4:
+            weight = np.clip(9*obj_area/(obj_num*chip_area), 1.1, 2.5)
+        else:
+            weight = 1
             # weight = np.clip(16.0*obj_area/(obj_num*chip_area), 1, 4)
 
         rect = np.sqrt(chip_area * weight)
@@ -90,10 +89,10 @@ def generate_crop_region(regions, mask, mask_size):
             half_h = 0.5 * rect
         elif box_w > rect:
             half_w = 0.5 * box_w
-            half_h = 0.5 * chip_area * weight / half_w
+            half_h = 0.5 * chip_area * weight / box_w
         else:
             half_h = 0.5 * box_h
-            half_w = 0.5 * chip_area * weight / half_h
+            half_w = 0.5 * chip_area * weight / box_h
         half_w = min(half_w, width/2.0)
         half_h = min(half_h, height/2.0)
 
@@ -124,7 +123,7 @@ def generate_crop_region(regions, mask, mask_size):
             break
         regions = regions[idx == 0]
 
-    return regions, temp
+    return regions
 
 
 def resize_box(box, original_size, dest_size):
