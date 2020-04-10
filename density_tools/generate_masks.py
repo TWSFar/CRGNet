@@ -67,34 +67,32 @@ def _myaround_down(value):
     return max(0, tmp - 1 if tmp - value > 0.05 else tmp)
 
 
-def _centerness_pattern(xmin, ymin, xmax, ymax):
-    pattern = np.zeros((ymax-ymin, xmax-xmin), dtype=np.float32)
-    yv, xv = np.meshgrid(np.arange(ymin, ymax), np.arange(xmin, xmax))
+def _centerness_pattern(width, height):
+    """ Follow @FCOS
+    """
+    pattern = np.zeros((height, width), dtype=np.float32)
+    yv, xv = np.meshgrid(np.arange(0, height), np.arange(0, width))
     for yi, xi in zip(yv.ravel(), xv.ravel()):
-        left = xi - xmin
-        right = xmax - xi
-        top = yi - ymin
-        bottom = ymax - yi
-        min_tb = min(top, bottom) if min(top, bottom) else 1
-        max_tb = max(top, bottom) if max(top, bottom) else 1
-        min_lr = min(left, right) if min(left, right) else 1
-        max_lr = max(left, right) if max(left, right) else 1
+        right = width - xi - 1
+        bottom = height - yi - 1
+        min_tb = min(yi+1, bottom)
+        max_tb = max(yi+1, bottom)
+        min_lr = min(xi+1, right)
+        max_lr = max(xi+1, right)
         centerness = np.sqrt(1.0 * min_lr * min_tb / (max_lr * max_tb))
         pattern[yi, xi] = centerness
 
     return pattern
 
 
-def gaussian_pattern(xmin, ymin, xmax, ymax):
+def gaussian_pattern(width, height):
     """在3倍的gamma距离内的和高斯的97%
     """
-    cx = int(round((xmin+xmax-0.01)/2)) - xmin
-    cy = int(round((ymin+ymax-0.01)/2)) - ymin
-    h = ymax-ymin
-    w = xmax-xmin
-    pattern = np.zeros((h, w), dtype=np.float32)
+    cx = int(round((width-0.01)/2))
+    cy = int(round((height-0.01)/2))
+    pattern = np.zeros((height, width), dtype=np.float32)
     pattern[cy, cx] = 1
-    gamma = [0.15*h, 0.15*w]
+    gamma = [0.15*height, 0.15*width]
     pattern = gaussian_filter(pattern, gamma)
 
     return pattern
@@ -120,9 +118,9 @@ def _generate_mask(sample, mask_scale=(30, 40)):
             if args.method == 'default':
                 density_mask[ymin:ymax+1, xmin:xmax+1] = 1
             elif args.method == 'gauss':
-                density_mask[ymin:ymax+1, xmin:xmax+1] += gaussian_pattern(xmin, ymin, xmax+1, ymax+1)
+                density_mask[ymin:ymax+1, xmin:xmax+1] += gaussian_pattern(xmax-xmin+1, ymax-ymin+1)
             elif args.method == 'centerness':
-                density_mask[ymin:ymax+1, xmin:xmax+1] += _centerness_pattern(xmin, ymin, xmax+1, ymax+1)
+                density_mask[ymin:ymax+1, xmin:xmax+1] += _centerness_pattern(xmax-xmin+1, ymax-ymin+1)
 
         # return density_mask.clip(min=0, max=args.maximum)
         return density_mask

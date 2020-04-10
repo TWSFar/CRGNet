@@ -2,7 +2,6 @@ import cv2
 import json
 import numpy as np
 from sklearn.cluster import AgglomerativeClustering
-import pdb
 
 
 def bbox_merge(bbox1, bbox2):
@@ -17,6 +16,30 @@ def bbox_merge(bbox1, bbox2):
     right_down = np.maximum(bbox1[2:], bbox2[2:])
 
     return np.hstack((left_up, right_down))
+
+
+def delete_inner_region(regions, mask_shape, thresh=0.9):
+    """
+    Args:
+        regions: xmin, ymin, xmax, ymax
+        mask_shape: width, height
+    """
+    mask_w, mask_h = mask_shape
+    regions = np.array(regions)
+    areas = np.product(regions[:, 2:] - regions[:, :2], axis=1)
+    sort_idx = (-areas).argsort()
+    regions = regions[sort_idx]
+    areas = areas[sort_idx]
+
+    mask = np.zeros((mask_h, mask_w), dtype=np.int)
+    del_idx = np.ones(len(regions), dtype=np.bool)
+    for i, region in enumerate(regions):
+        if mask[region[1]:region[3], region[0]:region[2]].sum() > thresh*areas[i]:
+            del_idx[i] = False
+        else:
+            mask[region[1]:region[3], region[0]:region[2]] = 1
+
+    return regions[del_idx]
 
 
 def enlarge_box(mask_box, image_size, ratio=2):
@@ -67,7 +90,6 @@ def generate_crop_region(regions, mask, mask_size):
     """
     width, height = mask_size
     final_regions = []
-    temp = []
     for box in regions:
         # show_image(mask, np.array(box)[None])
         box_w, box_h = box[2] - box[0], box[3] - box[1]
@@ -203,16 +225,7 @@ def region_postprocess(regions, contours, mask_shape):
     regions = region_morphology(big_contours, mask_shape) + small_regions
 
     # 3. merge inner box
-    regions = np.array(regions)
-    idx = np.zeros((len(regions)))
-    for i in range(len(regions)):
-        for j in range(len(regions)):
-            if i == j or idx[i] == 1 or idx[j] == 1:
-                continue
-            if overlap(regions[i], regions[j], 0.9):
-                # regions[i] = bbox_merge(regions[i], regions[j])
-                idx[j] = 1
-    regions = regions[idx == 0]
+    regions = delete_inner_region(regions, mask_shape)
 
     # 4. process small regions and big regions
     small_regions = []

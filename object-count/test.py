@@ -7,10 +7,8 @@ import os.path as osp
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
-# from configs.deeplabv3_region_sample import opt
-# from configs.deeplabv3_density_sample import opt
-# from configs.deeplabv3_region import opt
-from configs.deeplabv3_density import opt
+from configs.crgnet_double_float import opt
+# from configs.deeplabv3_density import opt
 
 from models import DeepLab
 # from models import CSRNet
@@ -64,7 +62,7 @@ def test(**kwargs):
             region_pred, density_pred = model(sample['image'].unsqueeze(0).to(opt.device))
 
             region_pred = np.argmax(region_pred.cpu().numpy(), axis=1).reshape(30, 40)
-            density_pred = torch.clamp(density_pred, min=1e-5).cpu().numpy().reshape(30, 40)
+            density_pred = torch.clamp(density_pred, min=0.00018).cpu().numpy().reshape(30, 40)
             pred = region_pred * density_pred * opt.norm_cfg['para']
 
             file_name = osp.join(
