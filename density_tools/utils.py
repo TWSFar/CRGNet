@@ -434,6 +434,21 @@ def plot_img(img, bboxes, id2name):
     return img
 
 
+def save_image(img, img_path, label=None):
+    import matplotlib.pyplot as plt
+    import matplotlib.cm as cm
+    plt.axis('off')
+    fig = plt.gcf()
+    # fig.set_size_inches(7.0/3,7.0/3) #dpi = 300, output = 700*700 pixels
+    plt.gca().xaxis.set_major_locator(plt.NullLocator())
+    plt.gca().yaxis.set_major_locator(plt.NullLocator())
+    plt.imshow(img)
+    if label is not None:
+        plt.plot(label[:, [0, 2, 2, 0, 0]].T, label[:, [1, 1, 3, 3, 1]].T, '-')
+    plt.margins(0, 0)
+    fig.savefig(img_path, format='png', transparent=True, dpi=600, pad_inches=0, bbox_inches='tight')
+    plt.close()
+
 class MyEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.integer):

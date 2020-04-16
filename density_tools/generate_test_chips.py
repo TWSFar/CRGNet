@@ -32,9 +32,9 @@ print(args)
 class MakeDataset(object):
     def __init__(self):
         self.img_dir = osp.join(args.test_dir, "images")
-        self.mask_dir = osp.join(args.test_dir, "region_mask")
-        self.chip_dir = osp.join(args.test_dir, "region_chip")
-        self.loc_dir = osp.join(args.test_dir, "region_loc")
+        self.mask_dir = osp.join(args.test_dir, "density_mask")
+        self.chip_dir = osp.join(args.test_dir, "density_chip")
+        self.loc_dir = osp.join(args.test_dir, "density_loc")
         self._init_path()
 
     def _init_path(self):
@@ -78,9 +78,11 @@ class MakeDataset(object):
         # make chip
         region_box, contours = utils.generate_box_from_mask(mask)
         region_box = utils.region_postprocess(region_box, contours, (mask_w, mask_h))
+        # utils.show_image(mask, np.array(region_box))
+        region_box = utils.generate_crop_region(region_box, mask, (mask_w, mask_h))
+        # utils.show_image(mask, np.array(region_box))
         region_box = utils.resize_box(region_box, (mask_w, mask_h), (width, height))
-        region_box = utils.generate_crop_region(region_box, (width, height))
-        region_box
+
         if args.show:
             utils.show_image(image, region_box)
 
