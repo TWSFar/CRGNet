@@ -1,43 +1,32 @@
-import h5py
-import numpy as np
 import torch
 import torch.nn as nn
 
 
-class CONV(nn.Module):
+class test1(nn.Module):
     def __init__(self):
-        super(CONV, self).__init__()
-        self.conv1 = nn.Conv2d(3, 64, 1, bias=False)
-        self.s = nn.Sequential(
-            nn.Conv2d(192, 64, 1, bias=False),
-            nn.Conv2d(64, 64, 1, bias=False)
-        )
-        self._init_weight()
-
-    def _init_weight(self):
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                torch.nn.init.kaiming_normal_(m.weight)
+        super(test1, self).__init__()
+        self.conv1 = nn.Conv2d(3, 3, 1, bias=False)
 
     def forward(self, x):
         return self.conv1(x)
 
-class test(nn.Module):
-    def __init__(self):
-        super(test, self).__init__()
-        self.conv1 = CONV()
-        self._init_weight()
 
-    def _init_weight(self):
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                torch.nn.init.kaiming_normal_(m.weight)
+class test2(nn.Module):
+    def __init__(self):
+        super(test2, self).__init__()
+        self.conv1 = nn.Conv2d(3, 3, 1, bias=False)
+
+    def forward(self, x):
+        return self.conv1(x)
+
 
 if __name__=='__main__':
-    model = CONV()
-    input = torch.rand(2, 3, 2, 2)
-    
-    m = model(input)
-    m.sum().backward()
-    torch.nn.utils.clip_grad_norm_(model.parameters(), 0.3)
+    device = torch.device('cuda:0')
+    model1 = nn.DataParallel(test1().to(device))
+    model2 = nn.DataParallel(test2().to(device))
+    input = torch.rand(2, 3, 2, 2).to(device)
+    for i in range(100):
+        m = model1(input)
+        t = model2(m)
+
     pass
