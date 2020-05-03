@@ -6,14 +6,14 @@ user_dir = os.path.expanduser('~')
 
 class Config:
     # data
-    dataset = "UnderWater"
-    root_dir = user_dir + "/data/Underwater/train/density_mask"
+    dataset = "Visdrone"
+    root_dir = user_dir + "/data/Visdrone/density_mask"
     test_dir = ""
     num_classes = 1
     input_size = (640, 480)
     norm_cfg = dict(mean=[0.382, 0.383, 0.367], std=[0.164, 0.156, 0.164], para=1)
     resume = False
-    pre = "/home/twsf/work/CRGNet/run/visdrone/20200227_235050_train/model_best.pth.tar"
+    pre = ""
 
     # model
     backbone = 'mobilenetv2'
@@ -38,22 +38,17 @@ class Config:
 
     # optimizer
     use_balanced_weights = False
-    lr_scheduler = 'poly'  # choices = 'poly', 'step', 'cos'
     lr = 0.0005
     momentum = 0.9
-    decay = 5e-4
+    # decay = 5e-4
+    decay = 1e-5
     steps = [0.8, 0.9]
     gamma = 0.3
     workers = 1
 
-    # eval
-    # parameters
-    region_thd = 0.5
-
     # visual
     print_freq = 50
-    plot_every = 100  # every n batch plot
-    saver_freq = 1
+    plot_every = 1e5  # every n batch plot
 
     seed = 1
 

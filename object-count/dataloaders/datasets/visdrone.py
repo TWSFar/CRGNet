@@ -14,7 +14,7 @@ IMG_ROOT = "JPEGImages"
 REGION_ROOT = "SegmentationClass"
 
 
-class VisDroneRegion(Dataset):
+class VisDrone(Dataset):
     """
     Visdrone dataset
     """

@@ -12,7 +12,8 @@ class Saver(object):
     def __init__(self, opt, mode='train'):
         self.opt = opt
         self.directory = osp.join('run', opt.dataset)
-        self.experiment_name = time.strftime("%Y%m%d_%H%M%S") + '_' + mode
+        # self.experiment_name = time.strftime("%Y%m%d_%H%M%S") + '_' + mode
+        self.experiment_name = time.strftime("%Y%m%d_%H") + '_' + mode
         self.experiment_dir = osp.join(self.directory, self.experiment_name)
         self.logfile = osp.join(self.experiment_dir, 'train.log')
         if not osp.exists(self.experiment_dir):
@@ -24,7 +25,7 @@ class Saver(object):
         f_handler = logging.FileHandler(self.logfile, mode='a')
         self.logger = logging.getLogger(__name__)
         self.logger.addHandler(f_handler)
-        with open(self.logfile, 'a') as f:
+        with open(self.logfile, 'w') as f:
             for key, val in self.opt._state_dict().items():
                 f.write(key + ': ' + str(val) + '\n')
 

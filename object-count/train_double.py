@@ -6,7 +6,7 @@ import numpy as np
 import os.path as osp
 from tqdm import tqdm
 
-from configs.crgnet_double_float import opt
+from configs.crgnet_density import opt
 
 from models import CRG2Net
 from models.losses import build_loss
@@ -135,7 +135,7 @@ class Trainer(object):
                 self.step_time.append(batch_time)
                 if global_step % opt.print_freq == 0:
                     printline = ('Epoch: [{}][{}/{}] '
-                                 'lr: (1x:{:1.5f}, '  # 10x:{:1.5f}), '
+                                 'lr: {:1.5f}, '  # 10x:{:1.5f}), '
                                  'eta: {}, time: {:1.1f}, '
                                  'region loss: {:1.4f}, '
                                  'density loss: {:1.4f}, '

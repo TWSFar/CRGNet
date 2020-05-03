@@ -1,11 +1,11 @@
-from dataloaders.datasets import visdrone_region, underwater
+from dataloaders.datasets import visdrone, underwater
 from torch.utils.data import DataLoader
 
 
 def make_data_loader(opt, mode="train"):
 
     if opt.dataset in ['visdrone', 'VisDrone', 'Visdrone']:
-        dataset = visdrone_region.VisDroneRegion(opt, mode)
+        dataset = visdrone.VisDrone(opt, mode)
         dataloader = DataLoader(dataset,
                                 batch_size=opt.batch_size,
                                 num_workers=opt.workers,
