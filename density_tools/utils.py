@@ -449,6 +449,7 @@ def save_image(img, img_path, label=None):
     fig.savefig(img_path, format='png', transparent=True, dpi=600, pad_inches=0, bbox_inches='tight')
     plt.close()
 
+
 class MyEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.integer):

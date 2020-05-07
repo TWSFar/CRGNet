@@ -21,8 +21,9 @@ hyp['set_file'] = osp.join(hyp['data_dir'], 'ImageSets', 'Main', hyp['mode'] + '
 # str2int = {'holothurian': 0, 'echinus': 1, 'scallop': 2, 'starfish': 3}
 class getItem(object):
     def __init__(self):
-        self.classes = ('pedestrian', 'person', 'bicycle', 'car', 'van',
-                        'truck', 'tricycle', 'awning-tricycle', 'bus', 'motor')
+        # self.classes = ('pedestrian', 'person', 'bicycle', 'car', 'van',
+        #                 'truck', 'tricycle', 'awning-tricycle', 'bus', 'motor')
+        self.classes = ("1", "2", "3", "4", "5", "6", "7", "8", "9")
 
     def get_img_item(self, file_name, image_id, size):
         """Gets a image item."""

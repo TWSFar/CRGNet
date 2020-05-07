@@ -18,8 +18,7 @@ from .custom import CustomDataset
 @DATASETS.register_module()
 class VisdroneDataset(CustomDataset):
 
-    CLASSES = ('pedestrian', 'person', 'bicycle', 'car', 'van',
-               'truck', 'tricycle', 'awning-tricycle', 'bus', 'motor')
+    CLASSES = ("1", "2", "3", "4", "5", "6", "7", "8", "9")
 
     def load_annotations(self, ann_file):
         self.coco = COCO(ann_file)

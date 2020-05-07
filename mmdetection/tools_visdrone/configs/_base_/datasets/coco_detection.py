@@ -1,5 +1,5 @@
 dataset_type = 'VisdroneDataset'
-data_root = '/home/twsf/data/Visdrone/'
+data_root = '/home/twsf/data/Visdrone/density_chip/'
 img_norm_cfg = dict(
     mean=[95.115, 96.39, 93.075], std=[48.96, 46.665, 49.47], to_rgb=True)
 train_pipeline = [
@@ -29,16 +29,16 @@ test_pipeline = [
 ]
 data = dict(
     samples_per_gpu=2,
-    workers_per_gpu=2,
+    workers_per_gpu=1,
     train=dict(
         type=dataset_type,
-        ann_file=data_root + "VisDrone2019-DET-train/annotations_json/instances_train.json",
-        img_prefix=data_root + 'VisDrone2019-DET-train/images',
+        ann_file=data_root + "Annotations_json/instances_train.json",
+        img_prefix=data_root + 'JPEGImages',
         pipeline=train_pipeline),
     val=dict(
         type=dataset_type,
-        ann_file=data_root + "VisDrone2019-DET-val/annotations_json/instances_val.json",
-        img_prefix=data_root + 'VisDrone2019-DET-val/images',
+        ann_file=data_root + "Annotations_json/instances_val.json",
+        img_prefix=data_root + 'JPEGImages',
         pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
