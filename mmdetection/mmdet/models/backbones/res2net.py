@@ -4,13 +4,12 @@ import torch
 import torch.nn as nn
 import torch.utils.checkpoint as cp
 import torch.utils.model_zoo as model_zoo
-from mmcv.cnn import constant_init, kaiming_init
 from torch.nn.modules.batchnorm import _BatchNorm
 
-from mmdet.models.plugins import GeneralizedAttention
-from mmdet.ops import ContextBlock
-from ..registry import BACKBONES
-from ..utils import build_conv_layer, build_norm_layer
+from mmdet.ops import GeneralizedAttention, ContextBlock
+from mmcv.cnn import (build_conv_layer, build_norm_layer, constant_init,
+                      kaiming_init)
+from ..builder import BACKBONES
 
 
 class Bottle2neck(nn.Module):
