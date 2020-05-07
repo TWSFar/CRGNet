@@ -32,7 +32,7 @@ def parse_args():
                         help="Size of production target mask")
     parser.add_argument('--method', type=str, default='gauss',
                         choices=['centerness', 'gauss', 'default'])
-    parser.add_argument('--maximum', type=int, default=10,
+    parser.add_argument('--maximum', type=int, default=999,
                         help="maximum of mask")
     parser.add_argument('--show', type=bool, default=False,
                         help="show image and region mask")
@@ -113,12 +113,12 @@ def _generate_mask(sample, mask_scale=(30, 40)):
             ymax = _myaround_up(1.0 * box[3] / height * mask_h)
             ymax = min(mask_h-1, ymax)
             xmax = min(mask_w-1, xmax)
-            if xmin == xmax or ymin == ymax:
+            if xmin == xmax and ymin == ymax:
                 continue
             if args.method == 'default':
                 density_mask[ymin:ymax+1, xmin:xmax+1] = 1
             elif args.method == 'gauss':
-                density_mask[ymin:ymax, xmin:xmax] += gaussian_pattern(xmax-xmin, ymax-ymin)
+                density_mask[ymin:ymax+1, xmin:xmax+1] += gaussian_pattern(xmax-xmin+1, ymax-ymin+1)
             elif args.method == 'centerness':
                 density_mask[ymin:ymax+1, xmin:xmax+1] += _centerness_pattern(xmax-xmin+1, ymax-ymin+1)
 

@@ -1,27 +1,28 @@
 import os
 import json
-import numpy as np
 import os.path as osp
 from tqdm import tqdm
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
+import xml.etree.ElementTree as ET
 from collections import OrderedDict
 
 hyp = {
-    'dataset': 'VisDrone2019',
+    'dataset': 'VisDrone2019_detect_voc',
     'img_type': '.jpg',
     'mode': 'val',  # for save instance_train.json
-    'data_dir': '/home/twsf/data/VisDrone/VisDrone2019-DET-val/',
+    'data_dir': '/home/twsf/data/Visdrone/density_chip',
 }
-hyp['json_dir'] = osp.join(hyp['data_dir'], 'annotations_json')
-hyp['txt_dir'] = osp.join(hyp['data_dir'], 'annotations')
+hyp['json_dir'] = osp.join(hyp['data_dir'], 'Annotations_json')
+hyp['xml_dir'] = osp.join(hyp['data_dir'], 'Annotations')
 hyp['img_dir'] = osp.join(hyp['data_dir'], 'images')
+hyp['set_file'] = osp.join(hyp['data_dir'], 'ImageSets', 'Main', hyp['mode'] + '.txt')
 
 
+# str2int = {'holothurian': 0, 'echinus': 1, 'scallop': 2, 'starfish': 3}
 class getItem(object):
     def __init__(self):
         self.classes = ('pedestrian', 'person', 'bicycle', 'car', 'van',
                         'truck', 'tricycle', 'awning-tricycle', 'bus', 'motor')
-        # self.classes = ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9')
 
     def get_img_item(self, file_name, image_id, size):
         """Gets a image item."""
@@ -62,26 +63,42 @@ class getItem(object):
         return categories
 
 
-def getGTBox(anno_path, **kwargs):
+def getGTBox(anno_xml, **kwargs):
     box_all = []
     gt_cls = []
-    with open(anno_path, 'r') as f:
-        data = [x.strip().split(',')[:8] for x in f.readlines()]
-        annos = np.array(data)
-
-    bboxes = annos[annos[:, 4] == '1'][:, :6].astype(np.float64)
-    for bbox in bboxes:
-        if bbox[2] <= 0 or bbox[3] <= 0:
-            print(osp.basename(anno_path) + ' exist an illegal side:')
-            print(bbox)
-            print('illegal side has been abandoned')
-            continue
-        bbox[2] += bbox[0]
-        bbox[3] += bbox[1]
-        box_all.append(bbox[:4].tolist())
-        gt_cls.append(int(bbox[5]) - 1)  # index begin idx 0
+    xml = ET.parse(anno_xml).getroot()
+    pts = ['xmin', 'ymin', 'xmax', 'ymax']
+    # bounding boxes
+    for obj in xml.iter('object'):
+        bbox = obj.find('bndbox')
+        bndbox = []
+        for i, pt in enumerate(pts):
+            cur_pt = int(bbox.find(pt).text) - 1
+            bndbox.append(cur_pt)
+        box_all += [bndbox]
+        # cls = str2int[obj.find('name').text]
+        gt_cls.append(int(float(obj.find('name').text)))
 
     return box_all, gt_cls
+
+
+def getImgInfo(anno_xml):
+    xml = ET.parse(anno_xml).getroot()
+    img_name = xml.find('filename').text  # image name
+    tsize = xml.find('size')
+    size = {'height': int(tsize.find('height').text),
+            'width': int(tsize.find('width').text)}
+
+    chip = []
+    location = []
+    pts = ['xmin', 'ymin', 'xmax', 'ymax']
+    lct = xml.find('location')
+    for pt in pts:
+        cur_pt = int(lct.find(pt).text) - 1
+        chip.append(cur_pt)
+    location = [chip[0], chip[1], chip[2] - chip[0], chip[3] - chip[1]]
+
+    return img_name, size, location
 
 
 def make_json():
@@ -93,24 +110,24 @@ def make_json():
     # categories
     categories = item.get_cat_item()
 
-    txt_files = os.listdir(hyp['txt_dir'])
-    for id, file_name in enumerate(tqdm(txt_files)):
+    with open(hyp['set_file'], 'r') as f:
+        xml_list = f.readlines()
+    for id, file_name in enumerate(tqdm(xml_list)):
+        file_name = file_name.strip()
         img_id = id
 
         # anno info
-        anno_txt = os.path.join(hyp['txt_dir'], file_name)
-        box_all, gt_cls = getGTBox(anno_txt)
+        anno_xml = osp.join(hyp['xml_dir'], file_name + '.xml')
+        box_all, gt_cls = getGTBox(anno_xml)
         for ii in range(len(box_all)):
             annotations.append(
                 item.get_ann_item(box_all[ii], img_id, gt_cls[ii], anno_id))
             anno_id += 1
 
         # image info
-        img_name = file_name[:-4] + hyp['img_type']  # image name
-        img_path = osp.join(hyp['img_dir'], img_name)  # image path
-        tsize = plt.imread(img_path).shape[:2]  # (h, w)
-        size = {'height': tsize[0], 'width': tsize[1]}
+        img_name, size, location = getImgInfo(anno_xml)
         image = item.get_img_item(img_name, img_id, size)
+        image['location'] = location
         images.append(image)
 
     # all info
@@ -122,10 +139,12 @@ def make_json():
     # saver
     if not osp.exists(hyp['json_dir']):
         os.makedirs(hyp['json_dir'])
-    save_file = os.path.join(hyp['json_dir'], 'instances_{}.json'.format(hyp['mode']))
+    save_file = osp.join(hyp['json_dir'], 'instances_{}.json'.format(hyp['mode']))
     print('Saving annotations to {}'.format(save_file))
     json.dump(ann, open(save_file, 'w'), indent=4)
+    print('done!')
 
 
 if __name__ == '__main__':
+    print(hyp)
     make_json()

@@ -58,7 +58,7 @@ d. Install build requirements and then install mmdetection.
 ```shell
 pip install -r requirements/build.txt
 pip install "git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI"
-pip install -v -e .  # or "python setup.py develop"
+pip install "git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI"  # or "python setup.py develop"
 ```
 
 If you build mmdetection on macOS, replace the last command with

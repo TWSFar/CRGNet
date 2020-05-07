@@ -7,3 +7,4 @@ matplotlib
 tensorboard
 tensorboardX
 opencv-python
+lightgbm

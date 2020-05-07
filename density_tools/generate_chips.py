@@ -6,6 +6,7 @@ import cv2
 import sys
 import json
 import h5py
+import joblib
 import argparse
 import numpy as np
 import os.path as osp
@@ -13,7 +14,7 @@ import matplotlib.pyplot as plt
 from xml.etree.ElementTree import Element, SubElement, tostring
 from xml.dom.minidom import parseString
 
-import utils
+import utils3 as utils
 from datasets import get_dataset
 user_dir = osp.expanduser('~')
 
@@ -26,8 +27,10 @@ def parse_args():
                         default=user_dir+"/data/Visdrone/",
                         # default="E:\\CV\\data\\visdrone",
                         help="dataset's root path")
-    parser.add_argument('--imgsets', type=str, default=['val'],
+    parser.add_argument('--imgsets', type=str, default=['val', 'train'],
                         nargs='+', help='for train or val')
+    parser.add_argument('--aim', type=int, default=80,
+                        help='gt aim scale in chip')
     parser.add_argument('--padding', type=str, default=[],
                         nargs='+', help='random padding neglect box')
     parser.add_argument('--show', type=bool, default=False,
@@ -52,6 +55,7 @@ class MakeDataset(object):
         self.anno_dir = self.dest_datadir + '/Annotations'
         self.list_dir = self.dest_datadir + '/ImageSets/Main'
         self.loc_dir = self.dest_datadir + '/Locations'
+        self.gbm = joblib.load('density_tools/gbm_{}.pkl'.format(args.aim))
         self._init_path()
 
     def _init_path(self):
@@ -195,18 +199,16 @@ class MakeDataset(object):
 
         # make chip
         region_box, contours = utils.generate_box_from_mask(mask)
-        region_box = utils.region_postprocess(region_box, contours, (mask_w, mask_h))
+        # region_box = utils.region_postprocess(region_box, contours, (mask_w, mask_h))
         # utils.show_image(mask, np.array(region_box))
-        region_box = utils.generate_crop_region(region_box, mask, (mask_w, mask_h))
+        region_box = utils.generate_crop_region(region_box, mask, (mask_w, mask_h), (width, height), self.gbm)
         # utils.show_image(mask, np.array(region_box))
         region_box = utils.resize_box(region_box, (mask_w, mask_h), (width, height))
-        # if len(region_box) == 0:
-        #     return dict()
 
         if args.show:
             utils.show_image(image, np.array(region_box))
-        if imgset == 'train':
-            region_box = np.vstack((region_box, np.array([0, 0, width-1, height-1])))
+        # if imgset == 'train':
+        #     region_box = np.vstack((region_box, np.array([0, 0, width-1, height-1])))
 
         gt_bboxes, gt_cls = sample['bboxes'], sample['cls']
 
