@@ -21,7 +21,7 @@ class Config:
     sync_bn = False
 
     # train
-    batch_size = 16  # assert bs > 2
+    batch_size = 32  # assert bs > 2
     epochs = 200
     freeze_bn = False
 
@@ -40,8 +40,8 @@ class Config:
     use_balanced_weights = False
     lr = 0.0005
     momentum = 0.9
-    # decay = 5e-4
-    decay = 1e-5
+    decay = 5e-4
+    # decay = 1e-5
     steps = [0.8, 0.9]
     gamma = 0.3
     workers = 1

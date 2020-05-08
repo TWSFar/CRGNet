@@ -33,6 +33,7 @@ class VisDrone(Dataset):
         if self.mode == "train":
             self.transform = transforms.Compose([
                 dtf.FixedNoMaskResize(size=opt.input_size),
+                dtf.RandomFilter(),
                 dtf.RandomColorJeter(0.3, 0.3, 0.3, 0.3),
                 dtf.RandomHorizontalFlip(),
                 dtf.Normalize(**opt.norm_cfg),
@@ -40,6 +41,7 @@ class VisDrone(Dataset):
         else:
             self.transform = transforms.Compose([
                 dtf.FixedNoMaskResize(size=opt.input_size),  # 513
+                # dtf.RandomFilter(),
                 dtf.Normalize(**opt.norm_cfg),
                 dtf.ToTensor()])
 

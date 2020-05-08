@@ -22,7 +22,7 @@ class Config:
     sync_bn = False
 
     # train
-    batch_size = 16  # assert bs > 2
+    batch_size = 32  # assert bs > 2
     epochs = 200
     freeze_bn = False
 

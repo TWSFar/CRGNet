@@ -18,19 +18,19 @@ class CRG2Net(nn.Module):
             BatchNorm = nn.BatchNorm2d
 
         self.backbone = build_backbone(opt.backbone, opt.output_stride, BatchNorm)
-        # self.aspp = ASPP(opt.backbone,
-        #                  opt.output_stride,
-        #                  self.backbone.high_outc+128,
-        #                  BatchNorm)
-        # self.link_conv = nn.Sequential(nn.Conv2d(
-        #     self.backbone.low_outc, 128, kernel_size=1, stride=2, padding=0, bias=False))
-        self.region = nn.Sequential(nn.Conv2d(self.backbone.high_outc, 128, kernel_size=3, stride=1, padding=1, bias=False),
+        self.aspp = ASPP(opt.backbone,
+                         opt.output_stride,
+                         self.backbone.high_outc+128,
+                         BatchNorm)
+        self.link_conv = nn.Sequential(nn.Conv2d(
+            self.backbone.low_outc, 128, kernel_size=1, stride=1, padding=0, bias=False))
+        self.region = nn.Sequential(nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1, bias=False),
                                     SELayer(128),
                                     nn.BatchNorm2d(128),
                                     nn.ReLU(),
                                     nn.Conv2d(128, 2, kernel_size=1, stride=1))
 
-        self.density = nn.Sequential(nn.Conv2d(self.backbone.high_outc, 128, kernel_size=3, stride=1, padding=1, bias=False),
+        self.density = nn.Sequential(nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1, bias=False),
                                      SELayer(128),
                                      nn.BatchNorm2d(128),
                                      nn.ReLU(),
@@ -42,9 +42,9 @@ class CRG2Net(nn.Module):
 
     def forward(self, input):
         x, low_level_feat = self.backbone(input)
-        # low_level_feat = self.link_conv(low_level_feat)
-        # x = torch.cat((x, low_level_feat), dim=1)
-        # x = self.aspp(x)
+        low_level_feat = self.link_conv(low_level_feat)
+        x = torch.cat((x, low_level_feat), dim=1)
+        x = self.aspp(x)
         region = self.region(x)
         density = self.density(x)
         return region, density

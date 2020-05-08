@@ -58,6 +58,19 @@ class RandomGaussianBlur(object):
         return sample
 
 
+class RandomFilter(object):
+    def __init__(self):
+        self.kernel = np.array([[0, -1, 0],
+                                [-1, 5, -1],
+                                [0, -1, 0]])
+
+    def __call__(self, sample):
+        if random.random() < 0.5:
+            sample['image'] = cv2.filter2D(sample['image'], -1, self.kernel)
+
+        return sample
+
+
 class RandomHorizontalFlip(object):
     def __call__(self, sample):
         if random.random() < 0.5:
