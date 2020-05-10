@@ -69,8 +69,8 @@ class InvertedResidual(nn.Module):
         else:
             x = self.conv(x_pad)
 
-        if self.contextBlock is not None:
-            x = self.contextBlock(x)
+        # if self.contextBlock is not None:
+        #     x = self.contextBlock(x)
 
         return x
 

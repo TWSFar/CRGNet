@@ -21,8 +21,8 @@ class TensorboardSummary(object):
 
         # target
         grid_target = make_grid(target[:3].clone().cpu().data, nrow=3, normalize=True)
-        writer.add_image('Groundtruth label', grid_target, global_step)
+        writer.add_image('Groundtruth_label', grid_target, global_step)
 
         # output
         grid_output = make_grid(output[:3].clone().cpu().data, nrow=3, normalize=True)
-        writer.add_image('Predicted label', grid_output, global_step)
+        writer.add_image('Predicted_label', grid_output, global_step)

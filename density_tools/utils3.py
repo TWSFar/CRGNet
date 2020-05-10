@@ -75,7 +75,7 @@ def generate_crop_region(regions, mask, mask_shape, img_shape, gbm):
         obj_num = max(mask_chip.sum(), 1.0)
         chip_area = box_w * box_h
         weight = gbm.predict([[obj_num, obj_area, chip_area, img_shape[0]*img_shape[1]]])[0]
-        if weight < 0.75 and min(box_w, box_h) > min(mask_shape) * 0.5:
+        if weight < 0.36 and min(box_w, box_h) > min(mask_shape) * 0.5:
             # show_image(mask, np.array(box)[None])
             final_regions.extend(region_split(box, mask_shape))
         elif weight > 1 and min(box_w, box_h) < min(mask_shape) * 0.4:
