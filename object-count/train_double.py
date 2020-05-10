@@ -117,8 +117,8 @@ class Trainer(object):
                 region_loss = self.loss_region(region_pred, region_gt)
                 density_loss = self.loss_density(density_pred, density_gt)
                 loss = region_loss + density_loss
-                # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 3)
                 loss.backward()
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(), 10)
                 self.loss_hist.append(float(loss))
                 epoch_loss.append(float(loss.cpu().item()))
 

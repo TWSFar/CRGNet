@@ -22,7 +22,7 @@ class Config:
 
     # train
     batch_size = 32  # assert bs > 2
-    epochs = 200
+    epochs = 50
     freeze_bn = False
 
     loss_region = dict(
@@ -38,7 +38,7 @@ class Config:
 
     # optimizer
     use_balanced_weights = False
-    lr = 0.0005
+    lr = 0.01
     momentum = 0.9
     decay = 5e-4
     # decay = 1e-5
