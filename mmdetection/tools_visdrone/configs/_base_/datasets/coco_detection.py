@@ -28,10 +28,11 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    samples_per_gpu=2,
+    samples_per_gpu=3,
     workers_per_gpu=1,
     train=dict(
         type=dataset_type,
+        # /home/twsf/data/Visdrone/VisDrone2019-DET-val/annotations_json/
         ann_file=data_root + "VisDrone2019-DET-train/annotations_json/instances_train.json",
         img_prefix=data_root + 'VisDrone2019-DET-train/images',
         pipeline=train_pipeline),

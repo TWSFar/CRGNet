@@ -20,4 +20,3 @@ model = dict(
         in_channels=[256, 512, 1024, 2048],
         out_channels=256,
         num_outs=5))
-# train_pipeline = dict(type='Resize', img_scale=(1000, 600), keep_ratio=True)
