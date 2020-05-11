@@ -155,11 +155,11 @@ def analyze_results(res_file, ann_file, res_types, out_dir):
 
 def main():
     parser = ArgumentParser(description='COCO Error Analysis Tool')
-    parser.add_argument('result', help='result file (json format) path')
-    parser.add_argument('out_dir', help='dir to save analyze result images')
+    parser.add_argument('--result', default='', help='result file (json format) path')
+    parser.add_argument('--out_dir', default='', help='dir to save analyze result images')
     parser.add_argument(
         '--ann',
-        default='data/coco/annotations/instances_val2017.json',
+        default='/home/twsf/data/Visdrone/VisDrone2019-DET-val/annotations_json/instances_val.json',
         help='annotation file path')
     parser.add_argument(
         '--types', type=str, nargs='+', default=['bbox'], help='result types')
