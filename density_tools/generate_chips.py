@@ -10,7 +10,6 @@ import joblib
 import argparse
 import numpy as np
 import os.path as osp
-import matplotlib.pyplot as plt
 from xml.etree.ElementTree import Element, SubElement, tostring
 from xml.dom.minidom import parseString
 
@@ -29,7 +28,7 @@ def parse_args():
                         help="dataset's root path")
     parser.add_argument('--imgsets', type=str, default=['val', 'train'],
                         nargs='+', help='for train or val')
-    parser.add_argument('--aim', type=int, default=80,
+    parser.add_argument('--aim', type=int, default=100,
                         help='gt aim scale in chip')
     parser.add_argument('--padding', type=str, default=[],
                         nargs='+', help='random padding neglect box')
@@ -207,6 +206,7 @@ class MakeDataset(object):
 
         if args.show:
             utils.show_image(image, np.array(region_box))
+
         # if imgset == 'train':
         #     region_box = np.vstack((region_box, np.array([0, 0, width-1, height-1])))
 

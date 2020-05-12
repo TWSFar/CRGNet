@@ -17,7 +17,7 @@ def bbox_merge(bbox1, bbox2):
     return np.hstack((left_up, right_down))
 
 
-def delete_inner_region(regions, mask_shape, thresh=1):
+def delete_inner_region(regions, mask_shape, thresh=0.9):
     """
     Args:
         regions: xmin, ymin, xmax, ymax
@@ -34,7 +34,7 @@ def delete_inner_region(regions, mask_shape, thresh=1):
     del_idx = np.ones(len(regions), dtype=np.bool)
     for i, region in enumerate(regions):
         temp = np.array(region, dtype=np.int)
-        if mask[temp[1]:temp[3], temp[0]:temp[2]].sum() > thresh*areas[i]:
+        if mask[temp[1]:temp[3], temp[0]:temp[2]].sum() >= thresh*areas[i]:
             del_idx[i] = False
         else:
             mask[temp[1]:temp[3], temp[0]:temp[2]] = 1
@@ -47,14 +47,16 @@ def generate_box_from_mask(mask):
     Args:
         mask: 0/1 array
     """
+    temp = mask.copy()
     regions = []
     mask = (mask > 0).astype(np.uint8)
+    mask = region_morphology(mask)
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     for i in range(len(contours)):
         x, y, w, h = cv2.boundingRect(contours[i])
         regions.append([x, y, x+w, y+h])
         # temp = np.array(regions[-1])
-    # show_image(mask, temp[None])
+    # show_image(temp, np.array(regions))
     # v = mask[temp[1]:temp[3], temp[0]:temp[2]].sum()
     return regions, contours
 
@@ -65,8 +67,9 @@ def generate_crop_region(regions, mask, mask_shape, img_shape, gbm):
     enlarge regions < 300
     """
     width, height = mask_shape
+    # regions = delete_inner_region(regions, mask_shape)
+    # show_image(mask, np.array(regions))
     final_regions = []
-    regions = delete_inner_region(regions, mask_shape)
     for box in regions:
         # show_image(mask, np.array(box)[None])
         mask_chip = mask[box[1]:box[3], box[0]:box[2]]
@@ -75,34 +78,40 @@ def generate_crop_region(regions, mask, mask_shape, img_shape, gbm):
         obj_num = max(mask_chip.sum(), 1.0)
         chip_area = box_w * box_h
         weight = gbm.predict([[obj_num, obj_area, chip_area, img_shape[0]*img_shape[1]]])[0]
-        if weight < 0.36 and min(box_w, box_h) > min(mask_shape) * 0.5:
+        if weight <= 0.6 and (box_w > width * 0.3 or box_h > height * 0.4):
             # show_image(mask, np.array(box)[None])
-            final_regions.extend(region_split(box, mask_shape))
-        elif weight > 1 and min(box_w, box_h) < min(mask_shape) * 0.4:
+            final_regions.extend(region_split(box, mask_shape, weight))
+        elif weight >= 1 and box_w < width * 0.5 and box_h < height * 0.6:
             weight = np.clip(weight, 1, 9)
             final_regions.append(region_enlarge(box, mask_shape, weight))
         else:
             final_regions.append(region_enlarge(box, mask_shape, 1))
 
-        # final_regions.append(box)
-        # show_image(mask, np.array(final_regions)[None, -1])
+    final_regions = np.array(final_regions)
+    # show_image(mask, final_regions)
 
-    regions = np.array(final_regions)
     while(1):
-        idx = np.zeros((len(regions)))
-        for i in range(len(regions)):
-            for j in range(len(regions)):
+        idx = np.zeros((len(final_regions)))
+        for i in range(len(final_regions)):
+            for j in range(len(final_regions)):
                 if i == j or idx[i] == 1 or idx[j] == 1:
                     continue
-                if overlap(regions[i], regions[j], thresh=0.8):
-                    regions[i] = bbox_merge(regions[i], regions[j])
+                if overlap(final_regions[i], final_regions[j], thresh=0.8):
+                    final_regions[i] = bbox_merge(final_regions[i], final_regions[j])
                     idx[j] = 1
         if sum(idx) == 0:
             break
-        regions = regions[idx == 0]
-    regions = delete_inner_region(regions, mask_shape)
+        final_regions = final_regions[idx == 0]
+    final_regions = delete_inner_region(final_regions, mask_shape)
+    # show_image(mask, final_regions)
+    return final_regions
 
-    return regions
+
+def region_morphology(mask):
+    kernel = cv2.getStructuringElement(cv2.MORPH_CROSS, (3, 3))
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)  # 闭操作
+
+    return mask
 
 
 def resize_box(box, original_size, dest_size):
@@ -157,12 +166,20 @@ def region_enlarge(region, mask_shape, weight):
     return new_box
 
 
-def region_split(region, mask_shape):
+def region_split(region, mask_shape, weight):
     alpha = 1
     mask_w, mask_h = mask_shape
     new_region = []
     width, height = region[2] - region[0], region[3] - region[1]
-    if width / height > 1.5:
+    #  and max(width, height) / min(width, height) < 1.5
+    if weight <= 0.3 and max(width, height) / min(width, height) < 1.5:
+        mid_w = int(region[0] + width / 2.0)
+        mid_h = int(region[1] + height / 2.0)
+        new_region.append([region[0], region[1], mid_w + alpha, mid_h + alpha])
+        new_region.append([mid_w - alpha, region[1], region[2], mid_h + alpha])
+        new_region.append([region[0], mid_h - alpha, mid_w + alpha, region[3]])
+        new_region.append([mid_w - alpha, mid_h - alpha, region[2], region[3]])
+    elif width / height > 1.5:
         mid = int(region[0] + width / 2.0)
         new_region.append([region[0], region[1], mid + alpha, region[3]])
         new_region.append([mid - alpha, region[1], region[2], region[3]])
@@ -171,13 +188,7 @@ def region_split(region, mask_shape):
         new_region.append([region[0], region[1], region[2], mid + alpha])
         new_region.append([region[0], mid - alpha, region[2], region[3]])
     else:
-        mid_w = int(region[0] + width / 2.0)
-        mid_h = int(region[1] + height / 2.0)
-        new_region.append([region[0], region[1], mid_w + alpha, mid_h + alpha])
-        new_region.append([mid_w - alpha, region[1], region[2], mid_h + alpha])
-        new_region.append([region[0], mid_h - alpha, mid_w - alpha, region[3]])
-        new_region.append([mid_w - alpha, mid_h - alpha, region[2], region[3]])
-
+        new_region.append(region)
     return new_region
 
 
@@ -294,12 +305,20 @@ def nms(prediction, score_threshold=0.05, iou_threshold=0.5, overlap_threshold=0
 
 def show_image(img, labels=None):
     import matplotlib.pyplot as plt
+    import matplotlib.cm as cm
     # plt.figure(figsize=(10, 10))
-    plt.imshow(img)
+    fig = plt.figure(frameon=False)
+    ax = plt.Axes(fig, [0., 0., 1., 1.])
+    ax.set_axis_off()
+    fig.add_axes(ax)
+    plt.imshow(img, cmap=cm.jet)
     if labels is not None:
         if labels.shape[0] > 0:
             plt.plot(labels[:, [0, 2, 2, 0, 0]].T, labels[:, [1, 1, 3, 3, 1]].T, '-')
+    plt.savefig("test.png", dpi=600)
     plt.show()
+    ax.set_axis_off()
+
     pass
 
 

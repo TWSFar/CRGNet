@@ -10,7 +10,7 @@ from utils import nms, plot_img, MyEncoder, iou_calc1
 hyp = {
     'gt': "/home/twsf/data/Visdrone/VisDrone2019-DET-val/annotations_json/instances_val.json",
     'result': "/home/twsf/work/CRGNet/chip_results.json",
-    'local': "/home/twsf/data/Visdrone/region_chip/Locations/val_chip.json",
+    'local': "/home/twsf/data/Visdrone/density_chip/Locations/val_chip.json",
     'show': False,
     'srcimg_dir': "/home/twsf/data/Visdrone/VisDrone2019-DET-val/images/",
     'gt_txt': "/home/twsf/data/Visdrone/VisDrone2019-DET-val/annotations"

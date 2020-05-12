@@ -3,14 +3,14 @@ import json
 import argparse
 import numpy as np
 import os.path as osp
-from mmdet.apis import init_detector, inference_detector, show_result
+from mmdet.apis import init_detector, inference_detector
 from tqdm import tqdm
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Test chip')
-    parser.add_argument('--checkpoint', default='/home/twsf/work/CRGNet/mmdetection/tools_visdrone/work_dirs/region_cascadercnn_res50/epoch_29.pth', help='model')
-    parser.add_argument('--config', default='/home/twsf/work/CRGNet/mmdetection/tools_visdrone/retinanet_r50_fpn_1x.py')
+    parser.add_argument('--checkpoint', default='/home/twsf/cache/tools_visdrone/work_dirs/师兄实验/fcos_x101_32x4d_fpn_gn_1x_4gpu/epoch_23.pth', help='model')
+    parser.add_argument('--config', default='/home/twsf/work/CRGNet/mmdetection/tools_visdrone/configs/region/fcos_x101_32x4d_fpn_gn_1x_4gpu.py')
     parser.add_argument('--test-dir', default='/home/twsf/data/Visdrone/density_chip')
     parser.add_argument('--result-path', default='./')
     args = parser.parse_args()
@@ -55,7 +55,7 @@ if __name__ == "__main__":
                                 "category_id": i,
                                 "bbox": np.round(box[:4]),
                                 "score": box[4]})
-        # show_result(img_path, result, model.CLASSES)
+        # model.show_result(img_path, result, out_file='result.jpg')
 
     with open(os.path.join(args.result_path, 'chip_results.json'), "w") as f:
         json.dump(results, f, cls=MyEncoder)

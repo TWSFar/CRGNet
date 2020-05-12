@@ -9,7 +9,7 @@ from collections import OrderedDict
 hyp = {
     'dataset': 'VisDrone2019_detect_voc',
     'img_type': '.jpg',
-    'mode': 'val',  # for save instance_train.json
+    'mode': 'train',  # for save instance_train.json
     'data_dir': '/home/twsf/data/Visdrone/density_chip',
 }
 hyp['json_dir'] = osp.join(hyp['data_dir'], 'Annotations_json')
@@ -23,7 +23,7 @@ class getItem(object):
     def __init__(self):
         # self.classes = ('pedestrian', 'person', 'bicycle', 'car', 'van',
         #                 'truck', 'tricycle', 'awning-tricycle', 'bus', 'motor')
-        self.classes = ("1", "2", "3", "4", "5", "6", "7", "8", "9")
+        self.classes = ("0", "1", "2", "3", "4", "5", "6", "7", "8", "9")
 
     def get_img_item(self, file_name, image_id, size):
         """Gets a image item."""
