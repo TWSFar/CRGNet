@@ -9,8 +9,8 @@ from tqdm import tqdm
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Test chip')
-    parser.add_argument('--checkpoint', default='/home/twsf/cache/tools_visdrone/work_dirs/师兄实验/fcos_x101_32x4d_fpn_gn_1x_4gpu/epoch_23.pth', help='model')
-    parser.add_argument('--config', default='/home/twsf/work/CRGNet/mmdetection/tools_visdrone/configs/region/fcos_x101_32x4d_fpn_gn_1x_4gpu.py')
+    parser.add_argument('--checkpoint', default='/home/twsf/work/CRGNet/mmdetection/tools_visdrone/work_dirs/retinanet_x101_pafpn/epoch_25.pth', help='model')
+    parser.add_argument('--config', default='/home/twsf/work/CRGNet/mmdetection/tools_visdrone/configs/density/retinanet_x101_pafpn.py')
     parser.add_argument('--test-dir', default='/home/twsf/data/Visdrone/density_chip')
     parser.add_argument('--result-path', default='./')
     args = parser.parse_args()

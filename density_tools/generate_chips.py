@@ -26,7 +26,7 @@ def parse_args():
                         default=user_dir+"/data/Visdrone/",
                         # default="E:\\CV\\data\\visdrone",
                         help="dataset's root path")
-    parser.add_argument('--imgsets', type=str, default=['val', 'train'],
+    parser.add_argument('--imgsets', type=str, default=['val'],
                         nargs='+', help='for train or val')
     parser.add_argument('--aim', type=int, default=100,
                         help='gt aim scale in chip')
@@ -208,7 +208,7 @@ class MakeDataset(object):
             utils.show_image(image, np.array(region_box))
 
         # if imgset == 'train':
-        #     region_box = np.vstack((region_box, np.array([0, 0, width-1, height-1])))
+            # region_box = np.vstack((region_box, np.array([0, 0, width, height])))
 
         gt_bboxes, gt_cls = sample['bboxes'], sample['cls']
 
