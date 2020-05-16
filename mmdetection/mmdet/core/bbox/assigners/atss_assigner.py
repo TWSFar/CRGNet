@@ -101,13 +101,14 @@ class ATSSAssigner(BaseAssigner):
         # Selecting candidates based on the center distance
         candidate_idxs = []
         start_idx = 0
+        topk = min(num_level_bboxes[-1], self.topk)
         for level, bboxes_per_level in enumerate(num_level_bboxes):
             # on each pyramid level, for each gt,
             # select k bbox whose center are closest to the gt center
             end_idx = start_idx + bboxes_per_level
             distances_per_level = distances[start_idx:end_idx, :]
             _, topk_idxs_per_level = distances_per_level.topk(
-                min(self.topk, bboxes_per_level), dim=0, largest=False)
+                topk, dim=0, largest=False)
             candidate_idxs.append(topk_idxs_per_level + start_idx)
             start_idx = end_idx
         candidate_idxs = torch.cat(candidate_idxs, dim=0)
