@@ -5,8 +5,9 @@ from .dataset_utils import (get_label_box, generate_box_from_mask,
 
 
 class Evaluator(object):
-    def __init__(self, num_classes=2):
+    def __init__(self, num_classes=2, anno_type='txt'):
         self.num_class = num_classes
+        self.anno_type = anno_type
         self.confusion_matrix = np.zeros((self.num_class,)*2)
         self.label_object = []
         self.detect_object = []
@@ -56,7 +57,7 @@ class Evaluator(object):
             img = cv2.imread(img_path)
             height, width = img.shape[:2]
 
-            label_box = get_label_box(img_path, dataset)
+            label_box = get_label_box(img_path, dataset, self.anno_type)
 
             mask_h, mask_w = mask_img.shape[:2]
             mask_box = generate_box_from_mask(mask_img.astype(np.uint8))

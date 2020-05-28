@@ -3,10 +3,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def get_label_box(img_path, dataset):
+def get_label_box(img_path, dataset, anno_type):
     # if dataset == "visdrone":
     anno_path = img_path.replace('JPEGImages', 'Annotations')
-    anno_path = anno_path.replace('jpg', 'txt')
+    anno_path = anno_path.replace('jpg', anno_type)
     with open(anno_path, 'r') as f:
         data = [x.strip().split(',')[:8] for x in f.readlines()]
         annos = np.array(data)

@@ -62,7 +62,7 @@ class Trainer(object):
         self.loss_density = build_loss(opt.loss_density)
 
         # Define Evaluator
-        self.evaluator = Evaluator()  # use region to eval: class_num is 2
+        self.evaluator = Evaluator(anno_type=opt.anno_type)  # use region to eval: class_num is 2
 
         # Resuming Checkpoint
         self.best_pred = 0.0
