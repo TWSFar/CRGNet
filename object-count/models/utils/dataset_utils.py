@@ -1,23 +1,40 @@
 import cv2 as cv
 import numpy as np
 import matplotlib.pyplot as plt
+import xml.etree.ElementTree as ET
 
 
 def get_label_box(img_path, dataset, anno_type):
     # if dataset == "visdrone":
     anno_path = img_path.replace('JPEGImages', 'Annotations')
     anno_path = anno_path.replace('jpg', anno_type)
-    with open(anno_path, 'r') as f:
-        data = [x.strip().split(',')[:8] for x in f.readlines()]
-        annos = np.array(data)
-    boxes = annos[annos[:, 4] == '1'][:, :4].astype(np.int32)
-    y = np.zeros_like(boxes)
-    y[:, 0] = boxes[:, 0]
-    y[:, 1] = boxes[:, 1]
-    y[:, 2] = boxes[:, 0] + boxes[:, 2]
-    y[:, 3] = boxes[:, 1] + boxes[:, 3]
+    if anno_type.lower() == 'txt':
+        with open(anno_path, 'r') as f:
+            data = [x.strip().split(',')[:8] for x in f.readlines()]
+            annos = np.array(data)
+        boxes = annos[annos[:, 4] == '1'][:, :4].astype(np.int32)
+        y = np.zeros_like(boxes)
+        y[:, 0] = boxes[:, 0]
+        y[:, 1] = boxes[:, 1]
+        y[:, 2] = boxes[:, 0] + boxes[:, 2]
+        y[:, 3] = boxes[:, 1] + boxes[:, 3]
+        return y
 
-    return y
+    elif anno_type.lower() == 'xml':
+        box_all = []
+        xml = ET.parse(anno_path).getroot()
+        pts = ['xmin', 'ymin', 'xmax', 'ymax']
+        for obj in xml.iter('object'):
+            bbox = obj.find('bndbox')
+            bndbox = []
+            for i, pt in enumerate(pts):
+                cur_pt = int(bbox.find(pt).text) - 1
+                bndbox.append(cur_pt)
+            box_all += [bndbox]
+        return np.array(box_all, dtype=np.float32)
+
+    else:
+        raise NotImplementedError
 
 
 def generate_box_from_mask(mask):
