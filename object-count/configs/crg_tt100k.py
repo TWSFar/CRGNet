@@ -6,51 +6,49 @@ user_dir = os.path.expanduser('~')
 
 class Config:
     # data
-    dataset = "visdrone"
-    root_dir = user_dir + "/data/Visdrone/region_mask"
+    dataset = "TT100K"
+    root_dir = user_dir + "/data/TT100K/density_mask"
     test_dir = ""
-    input_size = (640, 480)
-    norm_cfg = dict(mean=[0.382, 0.383, 0.367], std=[0.164, 0.156, 0.164])
-    num_classes = 2
+    num_classes = 1
+    input_size = (480, 480)
+    norm_cfg = dict(mean=[0.51, 0.535, 0.556], std=[0.196, 0.208, 0.246], para=1)
     resume = False
-    pre = "/home/twsf/work/CRGNet/run/visdrone/20200102_230256_train/model_best.pth.tar"
+    pre = ""
 
     # model
     backbone = 'mobilenetv2'
     output_stride = 16
-    output_channels = 2
     sync_bn = False
 
     # train
-    batch_size = 16
-    epochs = 200
+    batch_size = 32  # assert bs > 2
+    epochs = 50
     freeze_bn = False
 
-    # loss
-    loss = dict(
+    loss_region = dict(
         type="CrossEntropyLoss",
         ignore_index=-1,
-        weight=[1, 2]
+        weight=None
     )
 
-    # param for optimizer
+    loss_density = dict(
+        type="MSELoss",
+        reduction="mean"
+    )
+
+    # optimizer
     use_balanced_weights = False
-    lr_scheduler = 'step'  # choices = 'poly', 'step', 'cos'
-    lr = 0.0005
+    lr = 0.01
     momentum = 0.9
     decay = 5e-4
+    # decay = 1e-5
     steps = [0.8, 0.9]
     gamma = 0.3
-    workers = 12
-
-    # eval
-    # parameters
-    region_thd = 0.5
+    workers = 1
 
     # visual
     print_freq = 50
-    plot_every = 100  # every n batch plot
-    saver_freq = 1
+    plot_every = 200  # every n batch plot
 
     seed = 1
 

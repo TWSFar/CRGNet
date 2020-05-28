@@ -20,21 +20,21 @@ user_dir = osp.expanduser('~')
 
 def parse_args():
     parser = argparse.ArgumentParser(description="convert to voc dataset")
-    parser.add_argument('--dataset', type=str, default='Visdrone',
-                        choices=['Visdrone', 'Underwater'], help='dataset name')
-    parser.add_argument('--mode', type=str, default=['val'],
+    parser.add_argument('--dataset', type=str, default='TT100K',
+                        choices=['Visdrone', 'TT100K'], help='dataset name')
+    parser.add_argument('--mode', type=str, default=['val', 'train'],
                         nargs='+', help='for train or val')
     parser.add_argument('--db_root', type=str,
-                        default=user_dir+"/data/Visdrone/",
-                        # default="E:\\CV\\data\\visdrone",
+                        default=user_dir+"/data/TT100K/",
+                        # default="G:\\CV\\Dataset\\Detection\\Visdrone",
                         help="dataset's root path")
-    parser.add_argument('--mask_size', type=list, default=[30, 40],
+    parser.add_argument('--mask_size', type=list, default=[30, 30],
                         help="Size of production target mask")
     parser.add_argument('--method', type=str, default='gauss',
                         choices=['centerness', 'gauss', 'default'])
     parser.add_argument('--maximum', type=int, default=999,
                         help="maximum of mask")
-    parser.add_argument('--show', type=bool, default=False,
+    parser.add_argument('--show', type=bool, default=True,
                         help="show image and region mask")
     args = parser.parse_args()
     return args
@@ -46,8 +46,8 @@ def show_image(img, labels, mask):
     plt.subplot(2, 1, 1).imshow(img)
     plt.plot(labels[:, [0, 0, 2, 2, 0]].T, labels[:, [1, 3, 3,  1, 1]].T, '-')
     plt.subplot(2, 1, 2).imshow(mask)
-    # plt.savefig('test_0.jpg')
-    plt.show()
+    plt.savefig('mask.jpg')
+    # plt.show()
 
 
 # copy train and test images
@@ -113,8 +113,8 @@ def _generate_mask(sample, mask_scale=(30, 40)):
             ymax = _myaround_up(1.0 * box[3] / height * mask_h)
             ymax = min(mask_h-1, ymax)
             xmax = min(mask_w-1, xmax)
-            if xmin == xmax and ymin == ymax:
-                continue
+            # if xmin == xmax and ymin == ymax:
+            #     continue
             if args.method == 'default':
                 density_mask[ymin:ymax+1, xmin:xmax+1] = 1
             elif args.method == 'gauss':

@@ -8,10 +8,11 @@ IMG_ROOT = "JPEGImages"
 ANNO_ROOT = "Annotations"
 
 
-class UnderWater(object):
+class TT100K(object):
     def __init__(self, db_root):
-        self.db_root = db_root
-        self.image_set = db_root + '/ImageSets/Main'
+        self.set_dir = db_root + '/ImageSets'
+        self.img_dir = db_root + IMG_ROOT
+        self.anno_dir = db_root + ANNO_ROOT
         self.density_voc_dir = db_root + '/density_mask'
         self.detect_voc_dir = db_root + '/density_chip'
         self.cache_dir = osp.join(db_root, 'cache')
@@ -24,8 +25,12 @@ class UnderWater(object):
     def _get_imglist(self, split='train'):
         """ return list of all image paths
         """
-        with open(osp.join(self.image_set, split+'.txt'), 'r') as f:
-            return [osp.join(self.db_root, IMG_ROOT, x.strip()+'.jpg') for x in f.readlines()]
+        set_file = osp.join(self.set_dir, split+'.txt')
+        img_list = []
+        with open(set_file) as f:
+            for line in f.readlines():
+                img_list.append(osp.join(self.img_dir, line.strip()+'.jpg'))
+        return img_list
 
     def _get_annolist(self, split):
         """ annotation type is '.txt'
@@ -35,26 +40,29 @@ class UnderWater(object):
         return [img.replace(IMG_ROOT, ANNO_ROOT).replace('jpg', 'xml')
                 for img in img_list]
 
-    def _get_gtbox(self, anno_path):
+    def _get_gtbox(self, anno_xml, **kwargs):
+        img_path = anno_xml.replace(ANNO_ROOT, IMG_ROOT).replace('xml', 'jpg')
         box_all = []
         gt_cls = []
-        xml = ET.parse(anno_path).getroot()
+        xml = ET.parse(anno_xml).getroot()
         pts = ['xmin', 'ymin', 'xmax', 'ymax']
+        size = xml.find('size')
+        width = int(size.find('width').text)
+        height = int(size.find('height').text)
         # bounding boxes
         for obj in xml.iter('object'):
-            cls = obj.find('name').text
-            if cls == "waterweeds":
-                continue
             bbox = obj.find('bndbox')
             bndbox = []
             for i, pt in enumerate(pts):
                 cur_pt = int(bbox.find(pt).text) - 1
                 bndbox.append(cur_pt)
             box_all += [bndbox]
-            gt_cls.append(cls)
-
+            gt_cls.append(obj.find('name').text)
         return {'bboxes': np.array(box_all, dtype=np.float64),
-                'cls': gt_cls}
+                'cls': gt_cls,
+                'width': width,
+                'height': height,
+                'image': img_path}  # cls id run from 0
 
     def _load_samples(self, split):
         cache_file = osp.join(self.cache_dir, split + '_samples.pkl')
@@ -66,18 +74,11 @@ class UnderWater(object):
             print('gt samples loaded from {}'.format(cache_file))
             return samples
 
-        img_list = self._get_imglist(split)
-        sizes = [Image.open(img).size for img in img_list]
-
-        anno_path = [img_path.replace(IMG_ROOT, ANNO_ROOT).replace('jpg', 'xml')
-                        for img_path in img_list]
         # load information of image and save to cache
+        img_list = self._get_imglist(split)
+        anno_path = [img_path.replace(IMG_ROOT, ANNO_ROOT).replace('jpg', 'xml')
+                     for img_path in img_list]
         samples = [self._get_gtbox(ann) for ann in anno_path]
-
-        for i, img_path in enumerate(img_list):
-            samples[i]['image'] = img_path  # image path
-            samples[i]['width'] = sizes[i][0]
-            samples[i]['height'] = sizes[i][1]
 
         with open(cache_file, 'wb') as fid:
             pickle.dump(samples, fid, pickle.HIGHEST_PROTOCOL)
@@ -87,6 +88,6 @@ class UnderWater(object):
 
 
 if __name__ == "__main__":
-    dataset = UnderWater("E:\\CV\\data\\Underwater\\UnderWater_VOC")
+    dataset = TT100K("/home/twsf/data/TT100K")
     out = dataset._load_samples('train')
     pass

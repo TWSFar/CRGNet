@@ -14,9 +14,9 @@ IMG_ROOT = "JPEGImages"
 REGION_ROOT = "SegmentationClass"
 
 
-class VisDrone(Dataset):
+class VOC(Dataset):
     """
-    Visdrone dataset
+    VOC dataset style
     """
     def __init__(self, opt, mode="train"):
         super().__init__()
@@ -90,7 +90,7 @@ class VisDrone(Dataset):
 if __name__ == "__main__":
     # from torch.utils.data import DataLoader
     # from configs.deeplabv3_region_sample import opt
-    dataset = VisDroneRegion(opt, mode="train")
+    dataset = VOC(opt, mode="train")
     data = dataset.__getitem__(0)
     dataloader = DataLoader(dataset, batch_size=20, num_workers=2, shuffle=True)
     for sample in dataloader:
