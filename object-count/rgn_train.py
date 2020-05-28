@@ -6,8 +6,7 @@ import numpy as np
 import os.path as osp
 from tqdm import tqdm
 
-# from configs.crg_visdrone import opt
-from configs.crg_tt100k import opt
+from configs.rgn_visdrone import opt
 
 from models import CRGNet
 from models.losses import build_loss
@@ -58,7 +57,7 @@ class Trainer(object):
                 weight = np.load(classes_weights_file)
             else:
                 weight = calculate_weigths_labels(
-                    self.train_loader, opt.root_dir, opt.num_classes)
+                    self.train_loader, opt.root_dir)
             print(weight)
             opt.loss['weight'] = weight
         self.loss = build_loss(opt.loss)

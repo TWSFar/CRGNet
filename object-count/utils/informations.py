@@ -3,18 +3,16 @@ from tqdm import tqdm
 import numpy as np
 
 
-def calculate_weigths_labels(dataloader, root_dir, num_classes):
+def calculate_weigths_labels(dataloader, root_dir):
     # Create an instance from the data loader
-    z = np.zeros((num_classes,))
+    z = np.zeros((2,))
     # Initialize tqdm
     tqdm_batch = tqdm(dataloader)
     print('Calculating classes weights')
     for sample in tqdm_batch:
-        y = sample['label']
-        y = y.detach().cpu().numpy()
-        mask = (y >= 0) & (y < num_classes)
-        labels = y[mask].astype(np.uint8)
-        count_l = np.bincount(labels, minlength=num_classes)
+        mask = sample['label'].detach().cpu().view(-1).numpy()
+        labels = np.where(mask > 0, 1, 0).astype(np.uint8)
+        count_l = np.bincount(labels, minlength=2)
         z += count_l
     tqdm_batch.close()
     total_frequency = np.sum(z)

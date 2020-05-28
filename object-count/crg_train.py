@@ -55,7 +55,7 @@ class Trainer(object):
                 weight = np.load(classes_weights_file)
             else:
                 weight = calculate_weigths_labels(
-                    self.train_loader, opt.root_dir, opt.num_classes)
+                    self.train_loader, opt.root_dir)
             print(weight)
             opt.loss_density['weight'] = weight
         self.loss_region = build_loss(opt.loss_region)
