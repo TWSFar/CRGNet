@@ -9,11 +9,12 @@ from .wider_face import WIDERFaceDataset
 from .xml_style import XMLDataset
 from .visdrone import VisdroneDataset
 from .tt100k import TT100KDataset
+from .dotaall import DOTAAllDataset
 
 __all__ = [
     'CustomDataset', 'XMLDataset', 'CocoDataset', 'VOCDataset',
     'CityscapesDataset', 'GroupSampler', 'DistributedGroupSampler',
     'DistributedSampler', 'build_dataloader', 'ConcatDataset', 'RepeatDataset',
     'WIDERFaceDataset', 'DATASETS', 'PIPELINES', 'build_dataset',
-    'VisdroneDataset', 'TT100KDataset'
+    'VisdroneDataset', 'TT100KDataset', 'DOTAAllDataset'
 ]

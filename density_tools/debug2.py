@@ -24,7 +24,7 @@ import matplotlib.pyplot as plt
 hyp = {
     'dataset': 'DOTA15',
     'img_type': '.png',
-    'mode': 'train',  # for save Set: train.txt
+    'mode': 'val',  # for save Set: train.txt
     'data_dir': '/home/twsf/data/DOTA15/',
     'show': False
 }

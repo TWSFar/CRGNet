@@ -20,15 +20,15 @@ user_dir = osp.expanduser('~')
 
 def parse_args():
     parser = argparse.ArgumentParser(description="convert to voc dataset")
-    parser.add_argument('--dataset', type=str, default='TT100K',
-                        choices=['Visdrone', 'TT100K'], help='dataset name')
-    parser.add_argument('--mode', type=str, default=['val', 'train'],
+    parser.add_argument('--dataset', type=str, default='DOTA15',
+                        choices=['Visdrone', 'TT100K', 'DOTA15'], help='dataset name')
+    parser.add_argument('--mode', type=str, default=['train', 'val'],
                         nargs='+', help='for train or val')
     parser.add_argument('--db_root', type=str,
-                        default=user_dir+"/data/TT100K/",
+                        default=user_dir+"/data/DOTA15/",
                         # default="G:\\CV\\Dataset\\Detection\\Visdrone",
                         help="dataset's root path")
-    parser.add_argument('--mask_size', type=list, default=[30, 30],
+    parser.add_argument('--mask_size', type=list, default=[40, 40],
                         help="Size of production target mask")
     parser.add_argument('--method', type=str, default='gauss',
                         choices=['centerness', 'gauss', 'default'])
@@ -155,9 +155,9 @@ if __name__ == "__main__":
             temp = [osp.splitext(osp.basename(x))[0]+'\n' for x in img_list]
             f.writelines(temp)
 
-        print('copy {} images....'.format(split))
-        with concurrent.futures.ThreadPoolExecutor() as exector:
-            exector.map(_copy, img_list, [image_dir]*len(img_list))
+        # print('copy {} images....'.format(split))
+        # with concurrent.futures.ThreadPoolExecutor() as exector:
+        #     exector.map(_copy, img_list, [image_dir]*len(img_list))
 
         print('generate {} masks...'.format(split))
         for sample in tqdm(samples):
