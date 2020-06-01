@@ -9,9 +9,9 @@ from tqdm import tqdm
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Test chip')
-    parser.add_argument('--checkpoint', default="/home/twsf/cache/tools_visdrone/work_dirs/density/fcos_x101_fpn_chip/epoch_25.pth", help='model')
-    parser.add_argument('--config', default='/home/twsf/work/CRGNet/mmdetection/tools_visdrone/configs/density/fcos_x101_fpn.py')
-    parser.add_argument('--test-dir', default='/home/twsf/data/Visdrone/density_chip')
+    parser.add_argument('--checkpoint', default="/home/twsf/work/CRGNet/mmdetection/tools_dota/work_dirs/fcos_r50_fpn/epoch_12.pth", help='model')
+    parser.add_argument('--config', default='/home/twsf/work/CRGNet/mmdetection/tools_dota/configs/source/fcos_r50_fpn.py')
+    parser.add_argument('--test-dir', default='/home/twsf/data/DOTA/')
     parser.add_argument('--result-path', default='./')
     args = parser.parse_args()
     return args
@@ -38,7 +38,7 @@ if __name__ == "__main__":
     model = init_detector(args.config, args.checkpoint, device='cuda:0')
 
     img_list = []
-    set_file = osp.join(args.test_dir, 'ImageSets/Main/val.txt')
+    set_file = osp.join(args.test_dir, 'ImageSets/val_all.txt')
     with open(set_file, 'r') as f:
         for line in f.readlines():
             img_list.append(line.strip())
@@ -55,7 +55,7 @@ if __name__ == "__main__":
                                 "category_id": i,
                                 "bbox": np.round(box[:4]),
                                 "score": box[4]})
-        # model.show_result(img_path, result, out_file='result.jpg')
+        model.show_result(img_path, result, out_file='result.jpg')
 
     with open(os.path.join(args.result_path, 'chip_results.json'), "w") as f:
         json.dump(results, f, cls=MyEncoder)

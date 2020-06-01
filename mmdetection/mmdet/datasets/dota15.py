@@ -16,12 +16,9 @@ from .custom import CustomDataset
 
 
 @DATASETS.register_module()
-class DOTAAllDataset(CustomDataset):
+class DOTA15Dataset(CustomDataset):
 
-    CLASSES = ('plane', 'ship', 'storage-tank', 'baseball-diamond',
-               'tennis-court', 'basketball-court', 'ground-track-field',
-               'harbor', 'bridge', 'small-vehicle', 'large-vehicle', 'helicopter',
-               'roundabout', 'soccer-ball-field', 'swimming-pool', 'container-crane')
+    CLASSES = ('plane', 'ship', 'small-vehicle', 'large-vehicle', 'helicopter')
 
     def load_annotations(self, ann_file):
         self.coco = COCO(ann_file)

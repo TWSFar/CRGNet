@@ -20,7 +20,7 @@ model = dict(
         num_outs=5),
     bbox_head=dict(
         type='RetinaHead',
-        num_classes=5,
+        num_classes=15,
         in_channels=256,
         stacked_convs=4,
         feat_channels=256,
@@ -57,4 +57,4 @@ test_cfg = dict(
     min_bbox_size=0,
     score_thr=0.05,
     nms=dict(type='nms', iou_thr=0.5),
-    max_per_img=1000)
+    max_per_img=2000)

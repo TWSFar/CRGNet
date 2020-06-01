@@ -12,7 +12,8 @@ visdrone:
         roundabout, soccer-ball-field, swimming-pool, container-crane)
 """
 import os
-import cv2
+
+import mmcv
 import os.path as osp
 import numpy as np
 from tqdm import tqdm
@@ -22,21 +23,22 @@ import matplotlib.pyplot as plt
 
 
 hyp = {
-    'dataset': 'DOTA15',
+    'dataset': 'DOTA',
     'img_type': '.png',
-    'mode': 'val',  # for save Set: train.txt
-    'data_dir': '/home/twsf/data/DOTA15/',
+    'mode': 'train',  # for save Set: train.txt
+    'data_dir': '/home/twsf/data/DOTA/',
     'show': False
 }
 hyp['xml_dir'] = osp.join(hyp['data_dir'], 'Annotations_all')
 hyp['txt_dir'] = osp.join(hyp['data_dir'], 'Annotations_txt')
-hyp['img_dir'] = osp.join(hyp['data_dir'], 'JPEGImages')
+hyp['img_dir'] = osp.join(hyp['data_dir'], 'source_images')
+hyp['dstimg_dir'] = osp.join(hyp['data_dir'], 'JPEGImages')
 hyp['set_dir'] = osp.join(hyp['data_dir'], 'ImageSets')
 
 classes = ('plane', 'ship', 'storage-tank', 'baseball-diamond',
-               'tennis-court', 'basketball-court', 'ground-track-field',
-               'harbor', 'bridge', 'small-vehicle', 'large-vehicle', 'helicopter',
-               'roundabout', 'soccer-ball-field', 'swimming-pool', 'container-crane')
+            'tennis-court', 'basketball-court', 'ground-track-field',
+            'harbor', 'bridge', 'small-vehicle', 'large-vehicle', 'helicopter',
+            'roundabout', 'soccer-ball-field', 'swimming-pool')
 
 
 def show_image(img, labels):
@@ -106,6 +108,14 @@ def make_xml(box_list, label_list, difficult_list, image_name, tsize):
     return dom
 
 
+def resizer(image, annots, input_size=(2048, 2048)):
+    annots = np.array(annots)
+    image, scale_factor = mmcv.imrescale(image, input_size, return_scale=True)
+
+    annots[:, :4] = annots[:, :4] * scale_factor
+    return image, annots
+
+
 if __name__ == '__main__':
     setList = []
     if not osp.exists(hyp['xml_dir']):
@@ -121,11 +131,16 @@ if __name__ == '__main__':
         file_name = line + '.png'
         anno_txt = osp.join(hyp['txt_dir'], line+'.txt')
         box_all, gt_cls, difficult = getGTBox_DOTA(anno_txt)
+        if len(gt_cls) == 0:
+            continue
 
         # image info
         img_name = file_name[:-4] + hyp['img_type']  # image name
         img_path = osp.join(hyp['img_dir'], img_name)  # image path
         img = plt.imread(img_path)
+
+        # transform
+        img, box_all = resizer(img, box_all)
         tsize = img.shape[:2]
 
         # del
@@ -150,6 +165,7 @@ if __name__ == '__main__':
         anno_xml = os.path.join(hyp['xml_dir'], file_name[:-4] + '.xml')
         with open(anno_xml, 'w') as fx:
             fx.write(dom.toprettyxml(indent='\t', encoding='utf-8').decode('utf-8'))
+        mmcv.imwrite((img[..., ::-1]*255).astype(np.uint8), osp.join(hyp['dstimg_dir'], file_name[:-4]+'.jpg'))
 
         if hyp['show']:
             show_image(img, np.array(box_all))

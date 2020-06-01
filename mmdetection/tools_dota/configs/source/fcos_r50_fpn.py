@@ -5,16 +5,15 @@ _base_ = [
 # model settings
 model = dict(
     type='FCOS',
-    pretrained='open-mmlab://resnext101_32x4d',
+    pretrained='torchvision://resnet50',
     backbone=dict(
-        type='ResNeXt',
-        depth=101,
-        groups=32,
-        base_width=4,
+        type='ResNet',
+        depth=50,
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
         norm_cfg=dict(type='BN', requires_grad=True),
+        norm_eval=True,
         style='pytorch'),
     neck=dict(
         type='FPN',
@@ -27,7 +26,7 @@ model = dict(
         relu_before_extra_convs=True),
     bbox_head=dict(
         type='FCOSHead',
-        num_classes=10,
+        num_classes=15,
         in_channels=256,
         stacked_convs=4,
         feat_channels=256,
@@ -57,13 +56,13 @@ test_cfg = dict(
     min_bbox_size=0,
     score_thr=0.05,
     nms=dict(type='nms', iou_thr=0.5),
-    max_per_img=1000)
+    max_per_img=2000)
 img_norm_cfg = dict(
-    mean=[103.530, 116.280, 123.675], std=[1.0, 1.0, 1.0], to_rgb=False)
+    mean=[83.38, 84.884, 78.397], std=[37.487, 35.72, 34.775], to_rgb=True)
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
-    dict(type='Resize', img_scale=(1000, 600), keep_ratio=True),
+    dict(type='Resize', img_scale=(1000, 1000), keep_ratio=True),
     dict(type='RandomFlip', flip_ratio=0.5),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size_divisor=32),
@@ -74,7 +73,7 @@ test_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(
         type='MultiScaleFlipAug',
-        img_scale=(1000, 600),
+        img_scale=(1000, 1000),
         flip=False,
         transforms=[
             dict(type='Resize', keep_ratio=True),
@@ -86,16 +85,16 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    samples_per_gpu=2,
-    workers_per_gpu=2,
+    samples_per_gpu=1,
+    workers_per_gpu=1,
     train=dict(pipeline=train_pipeline),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
 # optimizer
 optimizer = dict(
-    lr=0.01, paramwise_cfg=dict(bias_lr_mult=2., bias_decay_mult=0.))
+    lr=0.0005, paramwise_cfg=dict(bias_lr_mult=2., bias_decay_mult=0.))
 optimizer_config = dict(
     _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
 lr_config = dict(warmup='constant')
-total_epochs = 12
+total_epochs = 70

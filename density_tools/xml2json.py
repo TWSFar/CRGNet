@@ -8,10 +8,10 @@ import xml.etree.ElementTree as ET
 from collections import OrderedDict
 
 hyp = {
-    'dataset': 'DOTA15',
-    'img_type': '.png',
-    'mode': 'val_all',  # for save Set: train.txt choose: train, test
-    'data_dir': '/home/twsf/data/DOTA15',
+    'dataset': 'DOTA',
+    'img_type': '.jpg',
+    'mode': 'train_all',  # for save Set: train.txt choose: train, test
+    'data_dir': '/home/twsf/data/DOTA',
 }
 hyp['json_dir'] = osp.join(hyp['data_dir'], 'Annotations_json')
 hyp['xml_dir'] = osp.join(hyp['data_dir'], 'Annotations_all')
@@ -25,7 +25,7 @@ class getItem(object):
         self.classes = ('plane', 'ship', 'storage-tank', 'baseball-diamond',
                'tennis-court', 'basketball-court', 'ground-track-field',
                'harbor', 'bridge', 'small-vehicle', 'large-vehicle', 'helicopter',
-               'roundabout', 'soccer-ball-field', 'swimming-pool', 'container-crane')
+               'roundabout', 'soccer-ball-field', 'swimming-pool')
         self.class2id = dict()
         for ii, cls in enumerate(self.classes):
             self.class2id[cls] = ii
@@ -52,7 +52,7 @@ class getItem(object):
         annotation['iscrowd'] = 0
         annotation['image_id'] = img_id
         annotation['bbox'] = [x1, y1, w, h]
-        annotation['category_id'] = cat_id
+        annotation['category_id'] = int(cat_id)
         annotation['id'] = anno_id
         return annotation
 
@@ -61,8 +61,8 @@ class getItem(object):
         categories = []
         for idx, cat in enumerate(self.classes):
             cate = {}
-            cate['supercategory'] = cat
-            cate['name'] = cat
+            cate['supercategory'] = str(self.class2id[cat])
+            cate['name'] = str(self.class2id[cat])
             cate['id'] = idx
             categories.append(cate)
 

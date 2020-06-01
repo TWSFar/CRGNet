@@ -11,9 +11,11 @@ import torch
 
 class CocoDataset(object):
     """Coco dataset."""
+    CLASSES = ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14')
     def __init__(self):
-        self.coco = COCO("/home/twsf/data/DOTA15/Annotations_json/instances_val_all.json")
+        self.coco = COCO("/home/twsf/data/DOTA/Annotations_json/instances_train_all.json")
         self.image_ids = self.coco.getImgIds()
+        self.cat_ids = self.coco.getCatIds(catNms=self.CLASSES)
 
     def __getitem__(self, idx):
         img = self.load_image(idx)
@@ -24,7 +26,7 @@ class CocoDataset(object):
 
     def load_image(self, image_index):
         image_info = self.coco.loadImgs(self.image_ids[image_index])[0]
-        path = os.path.join("/home/twsf/data/DOTA15/JPEGImages/", image_info['file_name'])
+        path = os.path.join("/home/twsf/data/DOTA/JPEGImages/", image_info['file_name'])
         # read img and BGR to RGB before normalize
         img = cv2.imread(path)[:, :, ::-1] / 255.0
         return img.astype(np.float32)
@@ -72,5 +74,7 @@ def show_image(img, labels):
 
 dataset = CocoDataset()
 
-sample = dataset.__getitem__(0)
-show_image(sample['img'], sample['annot'])
+for i in range(10):
+    sample = dataset.__getitem__(i)
+    show_image(sample['img'], sample['annot'])
+    

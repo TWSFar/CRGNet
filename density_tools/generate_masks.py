@@ -20,8 +20,8 @@ user_dir = osp.expanduser('~')
 
 def parse_args():
     parser = argparse.ArgumentParser(description="convert to voc dataset")
-    parser.add_argument('--dataset', type=str, default='DOTA15',
-                        choices=['Visdrone', 'TT100K', 'DOTA15'], help='dataset name')
+    parser.add_argument('--dataset', type=str, default='DOTAAll',
+                        choices=['Visdrone', 'TT100K', 'DOTA15', 'DOTAAll'], help='dataset name')
     parser.add_argument('--mode', type=str, default=['train', 'val'],
                         nargs='+', help='for train or val')
     parser.add_argument('--db_root', type=str,
@@ -34,7 +34,7 @@ def parse_args():
                         choices=['centerness', 'gauss', 'default'])
     parser.add_argument('--maximum', type=int, default=999,
                         help="maximum of mask")
-    parser.add_argument('--show', type=bool, default=True,
+    parser.add_argument('--show', type=bool, default=False,
                         help="show image and region mask")
     args = parser.parse_args()
     return args
@@ -175,5 +175,9 @@ if __name__ == "__main__":
         anno_list = dataset._get_annolist(split)
         with concurrent.futures.ThreadPoolExecutor() as exector:
             exector.map(_copy, anno_list, [annotation_dir]*len(anno_list))
+
+        # link image
+
+        os.symlink(dataset.img_dir, image_dir)
 
         print('done.')
