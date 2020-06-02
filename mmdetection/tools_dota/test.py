@@ -1,5 +1,4 @@
 import os
-import json
 import argparse
 import numpy as np
 import os.path as osp
@@ -9,24 +8,18 @@ from tqdm import tqdm
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Test chip')
-    parser.add_argument('--checkpoint', default="/home/twsf/work/CRGNet/mmdetection/tools_dota/work_dirs/fcos_r50_fpn/epoch_12.pth", help='model')
-    parser.add_argument('--config', default='/home/twsf/work/CRGNet/mmdetection/tools_dota/configs/source/fcos_r50_fpn.py')
+    parser.add_argument('--checkpoint', default="/home/twsf/work/CRGNet/mmdetection/tools_dota/work_dirs/retinanet_x101/epoch_52.pth", help='model')
+    parser.add_argument('--config', default='/home/twsf/work/CRGNet/mmdetection/tools_dota/configs/source/retinanet_x101.py')
     parser.add_argument('--test-dir', default='/home/twsf/data/DOTA/')
-    parser.add_argument('--result-path', default='./')
+    parser.add_argument('--result-path', default='./results')
     args = parser.parse_args()
     return args
 
 
-class MyEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, np.integer):
-            return int(obj)
-        elif isinstance(obj, np.floating):
-            return float(obj)
-        elif isinstance(obj, np.ndarray):
-            return obj.tolist()
-        else:
-            return super(MyEncoder, self).default(obj)
+classes = ('plane', 'ship', 'storage-tank', 'baseball-diamond',
+            'tennis-court', 'basketball-court', 'ground-track-field',
+            'harbor', 'bridge', 'small-vehicle', 'large-vehicle', 'helicopter',
+            'roundabout', 'soccer-ball-field', 'swimming-pool')
 
 
 if __name__ == "__main__":
@@ -45,18 +38,26 @@ if __name__ == "__main__":
 
     # img_list = os.listdir(args.test_dir)
 
-    results = []
+    results = dict()
+    for i in range(len(classes)):
+        results[str(i)] = []
+
+    # item = 1
     for img_name in tqdm(img_list):
+        # if item > 10: break
+        # item += 1
         img_path = osp.join(args.test_dir, 'JPEGImages', img_name+'.jpg')
         result = inference_detector(model, img_path)
         for i, boxes in enumerate(result):
             for box in boxes:
-                results.append({"image_id": img_name+'.jpg',
-                                "category_id": i,
-                                "bbox": np.round(box[:4]),
-                                "score": box[4]})
+                temp = img_name + ' ' + str(box[4])
+                for v in box[:4]:
+                    temp += ' ' + str(v)
+                results[str(i)].append(temp)
+
         model.show_result(img_path, result, out_file='result.jpg')
 
-    with open(os.path.join(args.result_path, 'chip_results.json'), "w") as f:
-        json.dump(results, f, cls=MyEncoder)
-        print("results json saved.")
+    for i, cls in enumerate(classes):
+        with open(osp.join(args.result_path, 'Task2_'+cls+'.txt'), 'w') as f:
+            for line in results[str(i)]:
+                f.writelines(line+'\n')
