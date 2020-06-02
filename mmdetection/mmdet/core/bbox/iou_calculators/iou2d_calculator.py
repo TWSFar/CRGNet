@@ -107,19 +107,55 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False):
         else:
             ious = overlap / area1
     else:
-        lt = torch.max(bboxes1[:, None, :2], bboxes2[:, :2])  # [rows, cols, 2]
-        rb = torch.min(bboxes1[:, None, 2:], bboxes2[:, 2:])  # [rows, cols, 2]
+        # lt = torch.max(bboxes1[:, None, :2], bboxes2[:, :2])  # [rows, cols, 2]
+        # rb = torch.min(bboxes1[:, None, 2:], bboxes2[:, 2:])  # [rows, cols, 2]
 
-        wh = (rb - lt).clamp(min=0)  # [rows, cols, 2]
-        overlap = wh[:, :, 0] * wh[:, :, 1]
-        area1 = (bboxes1[:, 2] - bboxes1[:, 0]) * (
-            bboxes1[:, 3] - bboxes1[:, 1])
+        # wh = (rb - lt).clamp(min=0)  # [rows, cols, 2]
+        # overlap = wh[:, :, 0] * wh[:, :, 1]
+        # area1 = (bboxes1[:, 2] - bboxes1[:, 0]) * (
+        #     bboxes1[:, 3] - bboxes1[:, 1])
 
-        if mode == 'iou':
-            area2 = (bboxes2[:, 2] - bboxes2[:, 0]) * (
+        # if mode == 'iou':
+        #     area2 = (bboxes2[:, 2] - bboxes2[:, 0]) * (
+        #         bboxes2[:, 3] - bboxes2[:, 1])
+        #     ious = overlap / (area1[:, None] + area2 - overlap)
+        # else:
+        #     ious = overlap / (area1[:, None])
+        # subset_maxnum = 1000
+        # ious = []
+        # # print(rows, " ", cols)
+        # for i in range(0, cols, subset_maxnum):
+        #     bboxes2_subset = bboxes2[i:i+subset_maxnum]
+        #     lt = torch.max(bboxes1[:, None, :2], bboxes2_subset[:, :2])  # [rows, cols, 2]
+        #     rb = torch.min(bboxes1[:, None, 2:], bboxes2_subset[:, 2:])  # [rows, cols, 2]
+
+        #     wh = (rb - lt).clamp(min=0)  # [rows, cols, 2]
+        #     overlap = wh[:, :, 0] * wh[:, :, 1]
+        #     area1 = (bboxes1[:, 2] - bboxes1[:, 0]) * (
+        #         bboxes1[:, 3] - bboxes1[:, 1])
+
+        #     area2_subset = (bboxes2_subset[:, 2] - bboxes2_subset[:, 0]) * (
+        #         bboxes2_subset[:, 3] - bboxes2_subset[:, 1])
+        #     ious_subset = overlap / (area1[:, None] + area2_subset - overlap)
+        #     ious.append(ious_subset)
+        # ious = torch.cat(ious, dim=1)
+        subset_maxnum = 100
+        ious = []
+        # print(rows, " ", cols)
+        for i in range(0, rows, subset_maxnum):
+            bboxes1_subset = bboxes1[i:i+subset_maxnum]
+            lt = torch.max(bboxes1_subset[:, None, :2], bboxes2[:, :2])  # [rows, cols, 2]
+            rb = torch.min(bboxes1_subset[:, None, 2:], bboxes2[:, 2:])  # [rows, cols, 2]
+
+            wh = (rb - lt).clamp(min=0)  # [rows, cols, 2]
+            overlap = wh[:, :, 0] * wh[:, :, 1]
+            area1 = (bboxes1_subset[:, 2] - bboxes1_subset[:, 0]) * (
+                bboxes1_subset[:, 3] - bboxes1_subset[:, 1])
+
+            area2_subset = (bboxes2[:, 2] - bboxes2[:, 0]) * (
                 bboxes2[:, 3] - bboxes2[:, 1])
-            ious = overlap / (area1[:, None] + area2 - overlap)
-        else:
-            ious = overlap / (area1[:, None])
+            ious_subset = overlap / (area1[:, None] + area2_subset - overlap)
+            ious.append(ious_subset)
+        ious = torch.cat(ious, dim=0)
 
     return ious
