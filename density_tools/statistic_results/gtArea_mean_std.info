@@ -1,0 +1,32 @@
+chip num: 1409
+chip percent: 1.0
+box num: 98906
+box mean: 0.0018207812034786782
+box nom_mean: 27.309192242628974
+box mae: 12.125774179132879
+box_std: 0.008779274362216347
+box_std_2: 21.137089621268363
+box_nstd: 0.0159136807615947
+small_obj: 87983
+median_obj: 9476
+large_obj: 1447
+scale 0~5 sum: 11181
+scale 5~10 sum: 30309
+scale 10~15 sum: 21249
+scale 15~20 sum: 11006
+scale 20~25 sum: 7119
+scale 25~30 sum: 4761
+scale 30~35 sum: 3576
+scale 35~40 sum: 1944
+scale 40~45 sum: 1533
+scale 45~50 sum: 1019
+scale 50~55 sum: 827
+scale 55~60 sum: 510
+scale 60~65 sum: 613
+scale 65~70 sum: 452
+scale 70~75 sum: 344
+scale 75~80 sum: 286
+scale 80~85 sum: 242
+scale 85~90 sum: 200
+scale 90~95 sum: 206
+scale 95~100 sum: 193

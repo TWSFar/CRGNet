@@ -20,12 +20,12 @@ user_dir = osp.expanduser('~')
 
 def parse_args():
     parser = argparse.ArgumentParser(description="convert to voc dataset")
-    parser.add_argument('--dataset', type=str, default='DOTAAll',
-                        choices=['Visdrone', 'TT100K', 'DOTA15', 'DOTAAll'], help='dataset name')
+    parser.add_argument('--dataset', type=str, default='DOTA',
+                        choices=['Visdrone', 'TT100K', 'DOTA'], help='dataset name')
     parser.add_argument('--mode', type=str, default=['train', 'val'],
                         nargs='+', help='for train or val')
     parser.add_argument('--db_root', type=str,
-                        default=user_dir+"/data/DOTA15/",
+                        default=user_dir+"/data/DOTA/",
                         # default="G:\\CV\\Dataset\\Detection\\Visdrone",
                         help="dataset's root path")
     parser.add_argument('--mask_size', type=list, default=[40, 40],
@@ -34,9 +34,10 @@ def parse_args():
                         choices=['centerness', 'gauss', 'default'])
     parser.add_argument('--maximum', type=int, default=999,
                         help="maximum of mask")
-    parser.add_argument('--show', type=bool, default=False,
+    parser.add_argument('--show', type=bool, default=True,
                         help="show image and region mask")
     args = parser.parse_args()
+    args.copyImg = True if args.dataset.lower() == 'visdrone' else False
     return args
 
 
@@ -142,10 +143,16 @@ if __name__ == "__main__":
 
     if not osp.exists(dest_datadir):
         os.mkdir(dest_datadir)
-        os.mkdir(image_dir)
         os.mkdir(mask_dir)
         os.mkdir(annotation_dir)
         os.mkdir(list_folder)
+    # link image
+    if args.copyImg:
+        os.mkdir(image_dir)
+    else:
+        if osp.exists(image_dir):
+            os.remove(image_dir)
+        os.symlink(dataset.img_dir, image_dir)
 
     for split in args.mode:
         img_list = dataset._get_imglist(split)
@@ -155,9 +162,10 @@ if __name__ == "__main__":
             temp = [osp.splitext(osp.basename(x))[0]+'\n' for x in img_list]
             f.writelines(temp)
 
-        # print('copy {} images....'.format(split))
-        # with concurrent.futures.ThreadPoolExecutor() as exector:
-        #     exector.map(_copy, img_list, [image_dir]*len(img_list))
+        if args.copyImg:
+            print('copy {} images....'.format(split))
+            with concurrent.futures.ThreadPoolExecutor() as exector:
+                exector.map(_copy, img_list, [image_dir]*len(img_list))
 
         print('generate {} masks...'.format(split))
         for sample in tqdm(samples):
@@ -175,9 +183,5 @@ if __name__ == "__main__":
         anno_list = dataset._get_annolist(split)
         with concurrent.futures.ThreadPoolExecutor() as exector:
             exector.map(_copy, anno_list, [annotation_dir]*len(anno_list))
-
-        # link image
-
-        os.symlink(dataset.img_dir, image_dir)
 
         print('done.')

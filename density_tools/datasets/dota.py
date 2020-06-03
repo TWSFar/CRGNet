@@ -3,12 +3,11 @@ import pickle
 import numpy as np
 import os.path as osp
 from PIL import Image
-import xml.etree.ElementTree as ET
-IMG_ROOT = "JPEGImages"
-ANNO_ROOT = "Annotations"
+IMG_ROOT = "source_images"
+ANNO_ROOT = "Annotations_txt"
 
 
-class DOTA15(object):
+class DOTA(object):
     def __init__(self, db_root):
         self.set_dir = db_root + '/ImageSets'
         self.img_dir = db_root + IMG_ROOT
@@ -25,7 +24,7 @@ class DOTA15(object):
     def _get_imglist(self, split='train'):
         """ return list of all image paths
         """
-        set_file = osp.join(self.set_dir, split+'.txt')
+        set_file = osp.join(self.set_dir, split+'_sall.txt')
         img_list = []
         with open(set_file) as f:
             for line in f.readlines():
@@ -37,32 +36,33 @@ class DOTA15(object):
         return list of all image annotation path
         """
         img_list = self._get_imglist(split)
-        return [img.replace(IMG_ROOT, ANNO_ROOT).replace('png', 'xml')
+        return [img.replace(IMG_ROOT, ANNO_ROOT).replace('png', 'txt')
                 for img in img_list]
 
-    def _get_gtbox(self, anno_xml, **kwargs):
-        img_path = anno_xml.replace(ANNO_ROOT, IMG_ROOT).replace('xml', 'png')
+    def _get_gtbox(self, anno_txt, tsize, **kwargs):
+        """
+            tisze: (w, h), Image.open is diffed with cv2.imread
+        """
         box_all = []
         gt_cls = []
-        xml = ET.parse(anno_xml).getroot()
-        pts = ['xmin', 'ymin', 'xmax', 'ymax']
-        size = xml.find('size')
-        width = int(size.find('width').text)
-        height = int(size.find('height').text)
-        # bounding boxes
-        for obj in xml.iter('object'):
-            bbox = obj.find('bndbox')
-            bndbox = []
-            for i, pt in enumerate(pts):
-                cur_pt = int(bbox.find(pt).text) - 1
-                bndbox.append(cur_pt)
-            box_all += [bndbox]
-            gt_cls.append(obj.find('name').text)
+        with open(anno_txt, 'r') as f:
+            for line in f.readlines():
+                data = line.split()
+                # First, data is a grountruth info
+                if len(data) == 10:
+                    box = [float(data[0]), float(data[1]), float(data[4]), float(data[5])]
+                    # Second, left and top must less than scale
+                    if box[2] > tsize[0]:
+                        box[2] = tsize[0]
+                    if box[3] > tsize[1]:
+                        box[3] = tsize[1]
+                    # Third, box must be legal
+                    if box[0] >= tsize[0] or box[1] >= tsize[1] or box[0] >= box[2] or box[1] >= box[3]:
+                        continue
+                    box_all.append(box)
+                    gt_cls.append(str(data[8].strip()))
         return {'bboxes': np.array(box_all, dtype=np.float64),
-                'cls': gt_cls,
-                'width': width,
-                'height': height,
-                'image': img_path}  # cls id run from 0
+                'cls': gt_cls}  # cls id run from 0
 
     def _load_samples(self, split):
         cache_file = osp.join(self.cache_dir, split + '_samples.pkl')
@@ -76,9 +76,15 @@ class DOTA15(object):
 
         # load information of image and save to cache
         img_list = self._get_imglist(split)
-        anno_path = [img_path.replace(IMG_ROOT, ANNO_ROOT).replace('png', 'xml')
+        sizes = [Image.open(img).size for img in img_list]
+        anno_path = [img_path.replace(IMG_ROOT, ANNO_ROOT).replace('png', 'txt')
                      for img_path in img_list]
-        samples = [self._get_gtbox(ann) for ann in anno_path]
+        samples = [self._get_gtbox(ann, sizes[i]) for i, ann in enumerate(anno_path)]
+
+        for i, img_path in enumerate(img_list):
+            samples[i]['image'] = img_path  # image path
+            samples[i]['width'] = sizes[i][0]
+            samples[i]['height'] = sizes[i][1]
 
         with open(cache_file, 'wb') as fid:
             pickle.dump(samples, fid, pickle.HIGHEST_PROTOCOL)
@@ -88,6 +94,6 @@ class DOTA15(object):
 
 
 if __name__ == "__main__":
-    dataset = DOTA15("/home/twsf/data/DOTA15")
+    dataset = DOTA("/home/twsf/data/DOTA")
     out = dataset._load_samples('train')
     pass
