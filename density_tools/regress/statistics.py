@@ -8,9 +8,9 @@ import argparse
 import numpy as np
 from tqdm import tqdm
 import os.path as osp
-import utils
 import sys
 sys.path.insert(0, osp.join(osp.dirname(osp.abspath(__file__)), '../'))
+from regress import utils
 from datasets import get_dataset
 import matplotlib.pyplot as plt
 user_dir = os.path.expanduser('~')
@@ -24,10 +24,8 @@ def parse_args():
                         # default="G:\\CV\\Dataset\\Detection\\Visdrone",
                         default="/home/twsf/data/DOTA",
                         help="dataset's root path")
-    parser.add_argument('--imgsets', type=str, default=['train'],
+    parser.add_argument('--imgsets', type=str, default=['val'],
                         nargs='+', help='for train or val')
-    parser.add_argument('--input_size', type=int, default=640*640,
-                        help='input scale of object acount network')
     parser.add_argument('--aim', type=int, default=100,
                         help='gt aim scale in chip')
     parser.add_argument('--show', type=bool, default=False,
@@ -63,7 +61,7 @@ class ChipStatistics(object):
                 self.make_chip(sample, imgset)
 
             # plot
-            box_scale_coco = np.round(np.sqrt(np.array(self.box_scale)*args.input_size))
+            box_scale_coco = np.round(np.sqrt(np.array(self.box_scale)*640*480))
             scale_distribution = np.bincount(box_scale_coco.astype(np.int) // 5, minlength=20)
             x_axis = [str(i)+'~'+str(i+5) for i in range(0, 100, 5)]
             y_axis = scale_distribution[:20]
@@ -72,7 +70,7 @@ class ChipStatistics(object):
             # plt.title('object scale distribution')
             plt.xlabel('object scale')
             plt.ylabel('numbers')
-            plt.ylim((0, 100000))
+            plt.ylim((0, 40000))
             plt.bar(x_axis, y_axis)
             plt.savefig(osp.join(result_dir, "scale_distribution.png"), dpi=600)
             plt.show()
@@ -90,7 +88,7 @@ class ChipStatistics(object):
                 f.writelines('chip percent: '+str(chip_scale[:, 1].mean()) + '\n')
                 f.writelines('box num: '+str(len(self.box_scale)) + '\n')
                 f.writelines('box mean: '+str(box_scale.mean()) + '\n')
-                f.writelines('box nom_mean: '+str(np.sqrt(box_scale.mean()*args.input_size)) + '\n')
+                f.writelines('box nom_mean: '+str(np.sqrt(box_scale.mean()*480*640)) + '\n')
                 f.writelines('box mae: '+str((abs(box_scale_coco - box_scale_coco.mean()).mean())) + '\n')
                 f.writelines('box_std: '+str(np.std(self.box_scale)) + '\n')
                 f.writelines('box_std_2: '+str(np.std(box_scale_coco)) + '\n')
@@ -156,22 +154,17 @@ class ChipStatistics(object):
         mask_h, mask_w = mask.shape[:2]
 
         # make chip
-        # region_box, contours = utils.generate_box_from_mask(mask)
+        region_box = utils.generate_box_from_mask(mask)
 
-        # region_box = utils.region_postprocess(region_box, contours, (mask_w, mask_h), mask)
+        region_box, info = utils.generate_crop_region(region_box, mask, (mask_w, mask_h), (width, height), gbm)
 
-        # region_box, info = utils.generate_crop_region(region_box, mask, (mask_w, mask_h), (width, height), gbm)
+        region_box = utils.resize_box(region_box, (mask_w, mask_h), (width, height))
 
-        # region_box = utils.resize_box(region_box, (mask_w, mask_h), (width, height))
-
-        # region_box = utils.generate_crop_region2(region_box, (width, height))
-
-        # utils.show_image(image[..., ::-1], np.array(region_box))
+        # info = []
+        # region_box = np.array([[0, 0, width, height]])
 
         if args.show:
             utils.show_image(image, np.array(region_box))
-        info = []
-        region_box = np.array([[0, 0, width, height]])
 
         gt_bboxes, gt_cls = sample['bboxes'], sample['cls']
 
@@ -206,7 +199,7 @@ class ChipStatistics(object):
             self.box_scale.extend(list(area_ratio))
             self.chip_scale.append([area, 1.0*area/(width*height)])
             self.chip_box_scale.append(np.median(area_ratio))
-            # self.info.append(info[i] + [image.shape[0]*image.shape[1], np.mean(area_ratio)])
+            self.info.append(info[i] + [image.shape[0]*image.shape[1], np.mean(area_ratio)])
 
         return chip_loc
 

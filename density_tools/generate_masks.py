@@ -34,7 +34,7 @@ def parse_args():
                         choices=['centerness', 'gauss', 'default'])
     parser.add_argument('--maximum', type=int, default=999,
                         help="maximum of mask")
-    parser.add_argument('--show', type=bool, default=True,
+    parser.add_argument('--show', type=bool, default=False,
                         help="show image and region mask")
     args = parser.parse_args()
     args.copyImg = True if args.dataset.lower() == 'visdrone' else False
