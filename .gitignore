@@ -17,3 +17,5 @@ results/
 *.csv
 *.log
 *.jpg
+*.png
+*statistic_results/

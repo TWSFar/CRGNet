@@ -50,26 +50,28 @@ def generate_box_from_mask(mask):
         mask: 0/1 array
     """
     temp = mask.copy()
-    regions = []
-    mask = (mask > 0).astype(np.uint8)
-    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    for i in range(len(contours)):
-        x, y, w, h = cv2.boundingRect(contours[i])
-        regions.append([x, y, x+w, y+h])
-    show_image(temp, np.array(regions))
     # regions = []
-    # mask = region_morphology(mask)
+    # mask = (mask > 0).astype(np.uint8)
     # contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     # for i in range(len(contours)):
     #     x, y, w, h = cv2.boundingRect(contours[i])
     #     regions.append([x, y, x+w, y+h])
-    #     # temp = np.array(regions[-1])
+    # show_image(temp, np.array(regions))
+
+    regions = []
+    mask = (mask > 0).astype(np.uint8)
+    mask = region_morphology(mask)
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    for i in range(len(contours)):
+        x, y, w, h = cv2.boundingRect(contours[i])
+        regions.append([x, y, x+w, y+h])
+        # temp = np.array(regions[-1])
     # show_image(temp, np.array(regions))
     # v = mask[temp[1]:temp[3], temp[0]:temp[2]].sum()
-    return regions, contours
+    return regions
 
 
-def generate_crop_region(regions, mask, mask_shape, img_shape, gbm):
+def generate_crop_region(regions, mask, mask_shape, img_shape, gbm=None):
     """
     generate final regions
     enlarge regions < 300
@@ -78,6 +80,7 @@ def generate_crop_region(regions, mask, mask_shape, img_shape, gbm):
     # regions = delete_inner_region(regions, mask_shape)
     # show_image(mask, np.array(regions))
     final_regions = []
+    info = []
     for box in regions:
         # show_image(mask, np.array(box)[None])
         mask_chip = mask[box[1]:box[3], box[0]:box[2]]
@@ -85,6 +88,9 @@ def generate_crop_region(regions, mask, mask_shape, img_shape, gbm):
         obj_area = max(np.where(mask_chip > 0, 1, 0).sum(), 1)
         obj_num = max(mask_chip.sum(), 1.0)
         chip_area = box_w * box_h
+        info.append([obj_num, obj_area, chip_area])
+        final_regions.append(box)
+    """
         weight = gbm.predict([[obj_num, obj_area, chip_area, img_shape[0]*img_shape[1]]])[0]
         if weight <= 0.6 and (box_w > width * 0.3 or box_h > height * 0.4):
             # show_image(mask, np.array(box)[None])
@@ -111,8 +117,9 @@ def generate_crop_region(regions, mask, mask_shape, img_shape, gbm):
             break
         final_regions = final_regions[idx == 0]
     final_regions = delete_inner_region(final_regions, mask_shape)
-    show_image(mask, final_regions)
-    return final_regions, []
+    # show_image(mask, final_regions)
+    """
+    return np.array(final_regions), info
 
 
 def region_morphology(mask):
@@ -307,12 +314,13 @@ def get_dataset(file, aim, transform=True, scaler=True):
     # load dataset
     feature = []
     target = []
+    aim_ratio = aim*aim/(640*480)
     csv_file = csv.reader(open(file))
     for content in csv_file:
         content = list(map(float, content))
         if len(content) != 0:
             feature.append(content[0:-1])
-            target.append(content[-1]/aim)
+            target.append(content[-1]/aim_ratio)
 
     if transform:
         for i in range(len(feature)):
@@ -324,4 +332,4 @@ def get_dataset(file, aim, transform=True, scaler=True):
         scaler = StandardScaler().fit(feature)
         feature = scaler.transform(feature)
 
-    return np.array(feature), target
+    return feature, target

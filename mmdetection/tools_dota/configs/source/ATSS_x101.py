@@ -61,4 +61,4 @@ test_cfg = dict(
     nms=dict(type='nms', iou_thr=0.6),
     max_per_img=2000)
 # optimizer
-optimizer = dict(type='SGD', lr=0.0005, momentum=0.9, weight_decay=0.0001)
+optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)

@@ -1,4 +1,5 @@
 import os
+import zipfile
 import argparse
 import numpy as np
 import os.path as osp
@@ -8,8 +9,8 @@ from tqdm import tqdm
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Test chip')
-    parser.add_argument('--checkpoint', default="/home/twsf/work/CRGNet/mmdetection/tools_dota/work_dirs/retinanet_x101/epoch_52.pth", help='model')
-    parser.add_argument('--config', default='/home/twsf/work/CRGNet/mmdetection/tools_dota/configs/source/retinanet_x101.py')
+    parser.add_argument('--checkpoint', default="/home/twsf/work/CRGNet/mmdetection/tools_dota/work_dirs/ATSS_x101/epoch_53.pth", help='model')
+    parser.add_argument('--config', default='/home/twsf/work/CRGNet/mmdetection/tools_dota/configs/source/ATSS_x101.py')
     parser.add_argument('--test-dir', default='/home/twsf/data/DOTA/test')
     parser.add_argument('--result-path', default='./results')
     args = parser.parse_args()
@@ -62,3 +63,11 @@ if __name__ == "__main__":
         with open(osp.join(args.result_path, 'Task2_'+cls+'.txt'), 'w') as f:
             for line in results[str(i)]:
                 f.writelines(line+'\n')
+
+    # Zip
+    result_files = [osp.join(args.result_path, file) for file in os.listdir(args.result_path)]
+    zip_path = args.checkpoint.split('/')[-2] + '.zip'
+    with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zip:
+        for file in result_files:
+            if ".txt" in file:
+                zip.write(file)
