@@ -1,5 +1,5 @@
 dataset_type = 'DOTADataset'
-data_root = '/home/twsf/data/DOTA/'
+data_root = '/home/twsf/data/DOTA/density_chip/'
 img_norm_cfg = dict(
     mean=[83.38, 84.884, 78.397], std=[37.487, 35.72, 34.775], to_rgb=True)
 train_pipeline = [
@@ -33,12 +33,12 @@ data = dict(
     train=dict(
         type=dataset_type,
         # /home/twsf/data/Visdrone/VisDrone2019-DET-val/annotations_json/
-        ann_file=data_root + "Annotations_json/instances_train_all.json",
+        ann_file=data_root + "Annotations_json/instances_train.json",
         img_prefix=data_root + 'JPEGImages',
         pipeline=train_pipeline),
     val=dict(
         type=dataset_type,
-        ann_file=data_root + "Annotations_json/instances_val_all.json",
+        ann_file=data_root + "Annotations_json/instances_val.json",
         img_prefix=data_root + 'JPEGImages',
         pipeline=test_pipeline),
     test=dict(

@@ -9,12 +9,12 @@ from collections import OrderedDict
 hyp = {
     'dataset': 'VisDrone2019_detect_voc',
     'img_type': '.jpg',
-    'mode': 'train',  # for save instance_train.json
-    'data_dir': '/home/twsf/data/Visdrone/density_chip',
+    'mode': 'val',  # for save instance_train.json
+    'data_dir': '/home/twsf/data/DOTA/density_chip',
 }
 hyp['json_dir'] = osp.join(hyp['data_dir'], 'Annotations_json')
 hyp['xml_dir'] = osp.join(hyp['data_dir'], 'Annotations')
-hyp['img_dir'] = osp.join(hyp['data_dir'], 'images')
+hyp['img_dir'] = osp.join(hyp['data_dir'], 'JPEGImages')
 hyp['set_file'] = osp.join(hyp['data_dir'], 'ImageSets', 'Main', hyp['mode'] + '.txt')
 
 
@@ -23,7 +23,14 @@ class getItem(object):
     def __init__(self):
         # self.classes = ('pedestrian', 'person', 'bicycle', 'car', 'van',
         #                 'truck', 'tricycle', 'awning-tricycle', 'bus', 'motor')
-        self.classes = ("0", "1", "2", "3", "4", "5", "6", "7", "8", "9")
+        # self.classes = ("0", "1", "2", "3", "4", "5", "6", "7", "8", "9")
+        self.classes = ('plane', 'ship', 'storage-tank', 'baseball-diamond',
+               'tennis-court', 'basketball-court', 'ground-track-field',
+               'harbor', 'bridge', 'small-vehicle', 'large-vehicle', 'helicopter',
+               'roundabout', 'soccer-ball-field', 'swimming-pool')
+        self.class2id = dict()
+        for ii, cls in enumerate(self.classes):
+            self.class2id[cls] = ii
 
     def get_img_item(self, file_name, image_id, size):
         """Gets a image item."""
@@ -54,17 +61,17 @@ class getItem(object):
     def get_cat_item(self):
         """Gets an category item."""
         categories = []
-        for idx, cat in enumerate(self.classes):
+        for idx, cat in enumerate(self.class2id):
             cate = {}
-            cate['supercategory'] = cat
-            cate['name'] = cat
+            cate['supercategory'] = str(self.class2id[cat])
+            cate['name'] = str(self.class2id[cat])
             cate['id'] = idx
             categories.append(cate)
 
         return categories
 
 
-def getGTBox(anno_xml, **kwargs):
+def getGTBox(anno_xml, item, **kwargs):
     box_all = []
     gt_cls = []
     xml = ET.parse(anno_xml).getroot()
@@ -77,8 +84,7 @@ def getGTBox(anno_xml, **kwargs):
             cur_pt = int(bbox.find(pt).text) - 1
             bndbox.append(cur_pt)
         box_all += [bndbox]
-        # cls = str2int[obj.find('name').text]
-        gt_cls.append(int(float(obj.find('name').text)))
+        gt_cls.append(item.class2id[obj.find('name').text])
 
     return box_all, gt_cls
 
@@ -119,7 +125,7 @@ def make_json():
 
         # anno info
         anno_xml = osp.join(hyp['xml_dir'], file_name + '.xml')
-        box_all, gt_cls = getGTBox(anno_xml)
+        box_all, gt_cls = getGTBox(anno_xml, item)
         for ii in range(len(box_all)):
             annotations.append(
                 item.get_ann_item(box_all[ii], img_id, gt_cls[ii], anno_id))

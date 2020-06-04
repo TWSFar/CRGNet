@@ -208,7 +208,10 @@ class MakeDataset(object):
             utils.show_image(image, np.array(region_box))
 
         if imgset == 'train':
-            region_box = np.vstack((region_box, np.array([0, 0, width, height])))
+            if len(region_box):
+                region_box = np.vstack((region_box, np.array([0, 0, width, height])))
+            else:
+                region_box = np.array([[0, 0, width, height]])
 
         gt_bboxes, gt_cls = sample['bboxes'], sample['cls']
 

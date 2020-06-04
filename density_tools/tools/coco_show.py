@@ -13,7 +13,7 @@ class CocoDataset(object):
     """Coco dataset."""
     CLASSES = ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14')
     def __init__(self):
-        self.coco = COCO("/home/twsf/data/DOTA/Annotations_json/instances_train_all.json")
+        self.coco = COCO("/home/twsf/data/DOTA/density_chip/Annotations_json/instances_train.json")
         self.image_ids = self.coco.getImgIds()
         self.cat_ids = self.coco.getCatIds(catNms=self.CLASSES)
 
@@ -26,7 +26,7 @@ class CocoDataset(object):
 
     def load_image(self, image_index):
         image_info = self.coco.loadImgs(self.image_ids[image_index])[0]
-        path = os.path.join("/home/twsf/data/DOTA/JPEGImages/", image_info['file_name'])
+        path = os.path.join("/home/twsf/data/DOTA/density_chip/JPEGImages/", image_info['file_name'])
         # read img and BGR to RGB before normalize
         img = cv2.imread(path)[:, :, ::-1] / 255.0
         return img.astype(np.float32)
@@ -59,9 +59,6 @@ class CocoDataset(object):
         return annotations
 
 
-
-
-
 def show_image(img, labels):
     import matplotlib.pyplot as plt
     plt.figure(figsize=(10, 10))
@@ -73,8 +70,8 @@ def show_image(img, labels):
 
 
 dataset = CocoDataset()
-
-for i in range(10):
+import time
+for i in range(100):
     sample = dataset.__getitem__(i)
+    time.sleep(5)
     show_image(sample['img'], sample['annot'])
-    
