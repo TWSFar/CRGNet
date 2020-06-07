@@ -78,12 +78,12 @@ def generate_crop_region(regions, mask, mask_shape, img_shape, gbm):
         obj_num = max(mask_chip.sum(), 1.0)
         chip_area = box_w * box_h
         weight = gbm.predict([[obj_num, obj_area, chip_area, img_shape[0]*img_shape[1]]])[0]
-        # if weight <= 0.6 and (box_w > width * 0.3 or box_h > height * 0.4):
-        if weight <= 0.6 and (box_w > width * 0.3 or box_h > height * 0.3):
+        if weight <= 0.6 and (box_w > width * 0.3 or box_h > height * 0.4):
+        # if weight <= 0.6 and (box_w > width * 0.3 or box_h > height * 0.3):
             # show_image(mask, np.array(box)[None])
             final_regions.extend(region_split(box, mask_shape, weight))
-        # elif weight >= 1 and box_w < width * 0.5 and box_h < height * 0.6:
-        elif weight >= 1 and box_w < width * 0.5 and box_h < height * 0.5:
+        elif weight >= 1 and box_w < width * 0.5 and box_h < height * 0.6:
+        # elif weight >= 1 and box_w < width * 0.5 and box_h < height * 0.5:
             weight = np.clip(weight, 1, 9)
             final_regions.append(region_enlarge(box, mask_shape, weight))
         else:

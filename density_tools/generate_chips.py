@@ -20,10 +20,10 @@ user_dir = osp.expanduser('~')
 
 def parse_args():
     parser = argparse.ArgumentParser(description="convert to voc dataset")
-    parser.add_argument('--dataset', type=str, default='DOTA',
+    parser.add_argument('--dataset', type=str, default='Visdrone',
                         choices=['DOTA', 'Visdrone'], help='dataset name')
     parser.add_argument('--db_root', type=str,
-                        default=user_dir+"/data/DOTA/",
+                        default=user_dir+"/data/Visdrone/",
                         # default="E:\\CV\\data\\visdrone",
                         help="dataset's root path")
     parser.add_argument('--imgsets', type=str, default=['val', 'train'],
@@ -54,7 +54,7 @@ class MakeDataset(object):
         self.anno_dir = self.dest_datadir + '/Annotations'
         self.list_dir = self.dest_datadir + '/ImageSets/Main'
         self.loc_dir = self.dest_datadir + '/Locations'
-        self.gbm = joblib.load('density_tools/gbm_{}_{}.pkl'.format(args.dataset.lower(), args.aim))
+        self.gbm = joblib.load('/home/twsf/work/CRGNet/density_tools/gbm_{}_{}.pkl'.format(args.dataset.lower(), args.aim))
         self._init_path()
 
     def _init_path(self):
@@ -207,11 +207,11 @@ class MakeDataset(object):
         if args.show:
             utils.show_image(image, np.array(region_box))
 
-        if imgset == 'train':
-            if len(region_box):
-                region_box = np.vstack((region_box, np.array([0, 0, width, height])))
-            else:
-                region_box = np.array([[0, 0, width, height]])
+        # if imgset == 'train':
+        #     if len(region_box):
+        #         region_box = np.vstack((region_box, np.array([0, 0, width, height])))
+        #     else:
+        #         region_box = np.array([[0, 0, width, height]])
 
         gt_bboxes, gt_cls = sample['bboxes'], sample['cls']
 

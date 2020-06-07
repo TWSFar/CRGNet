@@ -9,8 +9,9 @@ from collections import OrderedDict
 hyp = {
     'dataset': 'VisDrone2019_detect_voc',
     'img_type': '.jpg',
-    'mode': 'val',  # for save instance_train.json
-    'data_dir': '/home/twsf/data/DOTA/density_chip',
+    'mode': 'train',  # for save instance_train.json
+    'num_class': 10,
+    'data_dir': '/home/twsf/data/Visdrone/density_chip',
 }
 hyp['json_dir'] = osp.join(hyp['data_dir'], 'Annotations_json')
 hyp['xml_dir'] = osp.join(hyp['data_dir'], 'Annotations')
@@ -18,19 +19,10 @@ hyp['img_dir'] = osp.join(hyp['data_dir'], 'JPEGImages')
 hyp['set_file'] = osp.join(hyp['data_dir'], 'ImageSets', 'Main', hyp['mode'] + '.txt')
 
 
-# str2int = {'holothurian': 0, 'echinus': 1, 'scallop': 2, 'starfish': 3}
 class getItem(object):
     def __init__(self):
-        # self.classes = ('pedestrian', 'person', 'bicycle', 'car', 'van',
-        #                 'truck', 'tricycle', 'awning-tricycle', 'bus', 'motor')
-        # self.classes = ("0", "1", "2", "3", "4", "5", "6", "7", "8", "9")
-        self.classes = ('plane', 'ship', 'storage-tank', 'baseball-diamond',
-               'tennis-court', 'basketball-court', 'ground-track-field',
-               'harbor', 'bridge', 'small-vehicle', 'large-vehicle', 'helicopter',
-               'roundabout', 'soccer-ball-field', 'swimming-pool')
-        self.class2id = dict()
-        for ii, cls in enumerate(self.classes):
-            self.class2id[cls] = ii
+        self.classes = [str(i) for i in range(hyp['num_class'])]
+        self.cat2label = {cat_id: i for i, cat_id in enumerate(self.classes)}
 
     def get_img_item(self, file_name, image_id, size):
         """Gets a image item."""
@@ -61,10 +53,10 @@ class getItem(object):
     def get_cat_item(self):
         """Gets an category item."""
         categories = []
-        for idx, cat in enumerate(self.class2id):
+        for idx, cat in enumerate(self.classes):
             cate = {}
-            cate['supercategory'] = str(self.class2id[cat])
-            cate['name'] = str(self.class2id[cat])
+            cate['supercategory'] = str(self.cat2label[cat])
+            cate['name'] = str(self.cat2label[cat])
             cate['id'] = idx
             categories.append(cate)
 
@@ -84,7 +76,8 @@ def getGTBox(anno_xml, item, **kwargs):
             cur_pt = int(bbox.find(pt).text) - 1
             bndbox.append(cur_pt)
         box_all += [bndbox]
-        gt_cls.append(item.class2id[obj.find('name').text])
+        cls = int(float(obj.find('name').text))
+        gt_cls.append(item.class2id[str(cls)])
 
     return box_all, gt_cls
 

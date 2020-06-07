@@ -52,7 +52,7 @@ class VisDrone(object):
             box_all.append(bbox[:4].tolist())
 
         return {'bboxes': np.array(box_all, dtype=np.float64),
-                'cls': bboxes[:, 5] - 1}  # cls id run from 0
+                'cls': np.array(bboxes[:, 5] - 1, dtype=np.int)}  # cls id run from 0
 
     def _load_samples(self, split):
         cache_file = osp.join(self.cache_dir, split + '_samples.pkl')

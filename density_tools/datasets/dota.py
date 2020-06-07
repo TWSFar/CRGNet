@@ -8,6 +8,11 @@ ANNO_ROOT = "Annotations_txt"
 
 
 class DOTA(object):
+    classes = ('plane', 'ship', 'storage-tank', 'baseball-diamond',
+               'tennis-court', 'basketball-court', 'ground-track-field',
+               'harbor', 'bridge', 'small-vehicle', 'large-vehicle', 'helicopter',
+               'roundabout', 'soccer-ball-field', 'swimming-pool')
+
     def __init__(self, db_root):
         self.set_dir = db_root + '/ImageSets'
         self.img_dir = db_root + IMG_ROOT
@@ -15,6 +20,7 @@ class DOTA(object):
         self.density_voc_dir = db_root + '/density_mask'
         self.detect_voc_dir = db_root + '/density_chip'
         self.cache_dir = osp.join(db_root, 'cache')
+        self.cat2label = {cat_id: i for i, cat_id in enumerate(self.classes)}
         self._init_path()
 
     def _init_path(self):
@@ -60,7 +66,7 @@ class DOTA(object):
                     if box[0] >= tsize[0] or box[1] >= tsize[1] or box[0] >= box[2] or box[1] >= box[3]:
                         continue
                     box_all.append(box)
-                    gt_cls.append(str(data[8].strip()))
+                    gt_cls.append(self.cat2label[str(data[8].strip())])
         return {'bboxes': np.array(box_all, dtype=np.float64),
                 'cls': gt_cls}  # cls id run from 0
 

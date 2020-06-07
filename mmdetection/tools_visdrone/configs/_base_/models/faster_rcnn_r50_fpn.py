@@ -43,7 +43,7 @@ model = dict(
             in_channels=256,
             fc_out_channels=1024,
             roi_feat_size=7,
-            num_classes=80,
+            num_classes=10,
             bbox_coder=dict(
                 type='DeltaXYWHBBoxCoder',
                 target_means=[0., 0., 0., 0.],
@@ -103,7 +103,7 @@ test_cfg = dict(
         nms_thr=0.7,
         min_bbox_size=0),
     rcnn=dict(
-        score_thr=0.05, nms=dict(type='nms', iou_thr=0.5), max_per_img=100)
+        score_thr=0.05, nms=dict(type='nms', iou_thr=0.5), max_per_img=500)
     # soft-nms is also supported for rcnn testing
     # e.g., nms=dict(type='soft_nms', iou_thr=0.5, min_score=0.05)
 )

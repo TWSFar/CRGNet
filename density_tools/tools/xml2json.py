@@ -26,9 +26,7 @@ class getItem(object):
                'tennis-court', 'basketball-court', 'ground-track-field',
                'harbor', 'bridge', 'small-vehicle', 'large-vehicle', 'helicopter',
                'roundabout', 'soccer-ball-field', 'swimming-pool')
-        self.class2id = dict()
-        for ii, cls in enumerate(self.classes):
-            self.class2id[cls] = ii
+        self.cat2label = {cat_id: i for i, cat_id in enumerate(self.classes)}
 
     def get_img_item(self, file_name, image_id, size):
         """Gets a image item."""
@@ -61,8 +59,8 @@ class getItem(object):
         categories = []
         for idx, cat in enumerate(self.classes):
             cate = {}
-            cate['supercategory'] = str(self.class2id[cat])
-            cate['name'] = str(self.class2id[cat])
+            cate['supercategory'] = str(self.cat2label[cat])
+            cate['name'] = str(self.cat2label[cat])
             cate['id'] = idx
             categories.append(cate)
 
@@ -111,7 +109,7 @@ def make_json():
         box_all, gt_cls, size = getGTBox(anno_xml)
         for ii in range(len(box_all)):
             annotations.append(
-                item.get_ann_item(box_all[ii], img_id, item.class2id[gt_cls[ii]], anno_id))
+                item.get_ann_item(box_all[ii], img_id, item.cat2label[gt_cls[ii]], anno_id))
             anno_id += 1
 
         # image info
