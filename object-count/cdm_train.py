@@ -6,8 +6,9 @@ import numpy as np
 import os.path as osp
 from tqdm import tqdm
 
-# from configs.crg_visdrone import opt
-from configs.crg_tt100k import opt
+# from configs.cdm_visdrone import opt
+# from configs.cdm_tt100k import opt
+from configs.cdm_dota import opt
 
 from models import CRG2Net
 from models.losses import build_loss
