@@ -73,9 +73,9 @@ class ChipStatistics(object):
             # plt.title('object scale distribution')
             plt.xlabel('object scale')
             plt.ylabel('numbers')
-            plt.ylim((0, 40000))
+            plt.ylim((0, 100000))
             plt.bar(x_axis, y_axis)
-            plt.savefig(osp.join(result_dir, "scale_distribution.png"), dpi=600)
+            plt.savefig(osp.join(result_dir, "{}_dist.png".format(args.dataset)))
             plt.show()
             plt.close()
 
@@ -86,7 +86,7 @@ class ChipStatistics(object):
             median_obj = (box_scale_coco <= 96).sum() - small_obj
             large_obj = (box_scale_coco > 96).sum()
             nor_box_scale = (np.array(self.box_scale) - min(self.box_scale)) / (max(self.box_scale) - min(self.box_scale))
-            with open(result_dir+'/gtArea_mean_std.info', 'a') as f:
+            with open(result_dir+'/{}_stastic.info'.format(arg.dataset), 'a') as f:
                 f.writelines('chip num: '+str(len(chip_scale)) + '\n')
                 f.writelines('chip percent: '+str(chip_scale[:, 1].mean()) + '\n')
                 f.writelines('box num: '+str(len(self.box_scale)) + '\n')
@@ -145,7 +145,7 @@ class ChipStatistics(object):
 
         return chip_gt_list, chip_label_list, chip_neglect_list
 
-    def make_chip(self, sample, imgset, gbm=None):
+    def make_chip(self, sample, imgset):
         image = cv2.imread(sample['image'])
         # utils.show_image(image[..., ::-1])
         height, width = sample['height'], sample['width']
@@ -159,7 +159,7 @@ class ChipStatistics(object):
         # make chip
         region_box = utils.generate_box_from_mask(mask)
 
-        region_box, info = utils.generate_crop_region(region_box, mask, (mask_w, mask_h), (width, height), gbm)
+        region_box, info = utils.generate_crop_region(region_box, mask, (mask_w, mask_h), (width, height), self.gbm)
 
         region_box = utils.resize_box(region_box, (mask_w, mask_h), (width, height))
 
@@ -202,7 +202,7 @@ class ChipStatistics(object):
             self.box_scale.extend(list(area_ratio))
             self.chip_scale.append([area, 1.0*area/(width*height)])
             self.chip_box_scale.append(np.median(area_ratio))
-            self.info.append(info[i] + [image.shape[0]*image.shape[1], np.mean(area_ratio)])
+            # self.info.append(info[i] + [image.shape[0]*image.shape[1], np.mean(area_ratio)])
 
         return chip_loc
 

@@ -19,22 +19,24 @@ def bbox_merge(bbox1, bbox2):
     return np.hstack((left_up, right_down))
 
 
-def delete_inner_region(regions, mask_shape, thresh=0.9):
+def delete_inner_region(regions, mask_shape, thresh=0.95):
     """
     Args:
         regions: xmin, ymin, xmax, ymax
         mask_shape: width, height
     """
-    regions = np.round(regions).astype(np.int)
+    regions = np.array(regions)
+    regions_temp = np.round(regions.copy()).astype(np.int)
     mask_w, mask_h = mask_shape
-    areas = np.product(regions[:, 2:] - regions[:, :2], axis=1)
+    areas = np.product(regions_temp[:, 2:] - regions_temp[:, :2], axis=1)
     sort_idx = (-areas).argsort()
+    regions_temp = regions_temp[sort_idx]
     regions = regions[sort_idx]
     areas = areas[sort_idx]
 
     mask = np.zeros((mask_h, mask_w), dtype=np.int)
-    del_idx = np.ones(len(regions), dtype=np.bool)
-    for i, region in enumerate(regions):
+    del_idx = np.ones(len(regions_temp), dtype=np.bool)
+    for i, region in enumerate(regions_temp):
         if mask[region[1]:region[3], region[0]:region[2]].sum() >= thresh*areas[i]:
             del_idx[i] = False
         else:
