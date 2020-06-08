@@ -7,7 +7,7 @@ user_dir = os.path.expanduser('~')
 class Config:
     # data
     dataset = "Visdrone"
-    anno_type = 'txt'
+    img_type = 'jpg'
     root_dir = user_dir + "/data/Visdrone/density_mask"
     test_dir = ""
     num_classes = 1

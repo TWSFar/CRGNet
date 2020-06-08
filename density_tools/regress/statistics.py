@@ -4,6 +4,7 @@ use rondom array replace objce witch was neglected
 import os
 import cv2
 import h5py
+import joblib
 import argparse
 import numpy as np
 from tqdm import tqdm
@@ -46,6 +47,8 @@ class ChipStatistics(object):
         self.dataset = get_dataset(args.dataset, args.db_root)
         self.density_dir = self.dataset.density_voc_dir
         self.segmentation_dir = self.density_dir + '/SegmentationClass'
+        # self.gbm = joblib.load('/home/twsf/work/CRGNet/density_tools/gbm_dota_100.pkl')
+        self.gbm = None
 
     def __call__(self):
         for imgset in args.imgsets:

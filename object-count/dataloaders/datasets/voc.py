@@ -23,7 +23,7 @@ class VOC(Dataset):
         self.data_dir = opt.root_dir
         self.mode = mode
 
-        self.img_dir = osp.join(self.data_dir, IMG_ROOT, '{}.jpg')
+        self.img_dir = osp.join(self.data_dir, IMG_ROOT, '{}.'+opt.img_type)
         self.label_dir = osp.join(self.data_dir, REGION_ROOT, '{}.hdf5')
         self.img_ids = self._load_image_set_index()
 

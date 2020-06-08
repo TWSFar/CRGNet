@@ -7,7 +7,7 @@ user_dir = os.path.expanduser('~')
 class Config:
     # data
     dataset = "DOTA"
-    anno_type = 'xml'
+    img_type = 'png'
     root_dir = user_dir + "/data/DOTA/density_mask"
     test_dir = ""
     num_classes = 1

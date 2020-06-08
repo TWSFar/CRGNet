@@ -13,7 +13,7 @@ import os.path as osp
 from xml.etree.ElementTree import Element, SubElement, tostring
 from xml.dom.minidom import parseString
 
-import utils3 as utils
+import utils
 from datasets import get_dataset
 user_dir = osp.expanduser('~')
 

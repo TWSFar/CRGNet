@@ -77,7 +77,7 @@ def getGTBox(anno_xml, item, **kwargs):
             bndbox.append(cur_pt)
         box_all += [bndbox]
         # cls = int(float(obj.find('name').text))
-        gt_cls.append(item.class2id[obj.find('name').text])
+        gt_cls.append(item.cat2label[obj.find('name').text])
 
     return box_all, gt_cls
 

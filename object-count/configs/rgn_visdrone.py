@@ -7,7 +7,7 @@ user_dir = os.path.expanduser('~')
 class Config:
     # data
     dataset = "visdrone"
-    anno_type = 'txt'
+    img_type = 'jpg'
     root_dir = user_dir + "/data/Visdrone/region_mask"
     test_dir = ""
     input_size = (640, 480)

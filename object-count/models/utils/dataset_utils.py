@@ -4,11 +4,11 @@ import matplotlib.pyplot as plt
 import xml.etree.ElementTree as ET
 
 
-def get_label_box(img_path, dataset, anno_type):
+def get_label_box(img_path, dataset):
     # if dataset == "visdrone":
     anno_path = img_path.replace('JPEGImages', 'Annotations')
-    anno_path = anno_path.replace('jpg', anno_type)
-    if anno_type.lower() == 'txt':
+    if dataset == 'visdrone':
+        anno_path = anno_path[:-3] + 'txt'
         with open(anno_path, 'r') as f:
             data = [x.strip().split(',')[:8] for x in f.readlines()]
             annos = np.array(data)
@@ -20,8 +20,9 @@ def get_label_box(img_path, dataset, anno_type):
         y[:, 3] = boxes[:, 1] + boxes[:, 3]
         return y
 
-    elif anno_type.lower() == 'xml':
+    elif dataset == 'tt100k':
         box_all = []
+        anno_path = anno_path[:-3] + 'xml'
         xml = ET.parse(anno_path).getroot()
         pts = ['xmin', 'ymin', 'xmax', 'ymax']
         for obj in xml.iter('object'):
@@ -33,7 +34,23 @@ def get_label_box(img_path, dataset, anno_type):
             box_all += [bndbox]
         return np.array(box_all, dtype=np.float32)
 
+    elif dataset == 'dota':
+        box_all = []
+        anno_path = anno_path[:-3] + 'txt'
+        with open(anno_path, 'r') as f:
+            for line in f.readlines():
+                data = line.split()
+                # First, data is a grountruth info
+                if len(data) == 10:
+                    box = [float(data[0]), float(data[1]), float(data[4]), float(data[5])]
+                    # Second, left and top must less than scale
+                    if box[0] >= box[2] or box[1] >= box[3]:
+                        continue
+                    box_all.append(box)
+        return np.array(box_all, dtype=np.float32)
+
     else:
+        print(dataset)
         raise NotImplementedError
 
 

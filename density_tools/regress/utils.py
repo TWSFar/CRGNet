@@ -25,8 +25,8 @@ def delete_inner_region(regions, mask_shape, thresh=0.9):
         regions: xmin, ymin, xmax, ymax
         mask_shape: width, height
     """
+    regions = np.round(regions).astype(np.int)
     mask_w, mask_h = mask_shape
-    regions = np.array(regions)
     areas = np.product(regions[:, 2:] - regions[:, :2], axis=1)
     sort_idx = (-areas).argsort()
     regions = regions[sort_idx]
@@ -35,11 +35,10 @@ def delete_inner_region(regions, mask_shape, thresh=0.9):
     mask = np.zeros((mask_h, mask_w), dtype=np.int)
     del_idx = np.ones(len(regions), dtype=np.bool)
     for i, region in enumerate(regions):
-        temp = np.array(region, dtype=np.int)
-        if mask[temp[1]:temp[3], temp[0]:temp[2]].sum() >= thresh*areas[i]:
+        if mask[region[1]:region[3], region[0]:region[2]].sum() >= thresh*areas[i]:
             del_idx[i] = False
         else:
-            mask[temp[1]:temp[3], temp[0]:temp[2]] = 1
+            mask[region[1]:region[3], region[0]:region[2]] = 1
 
     return regions[del_idx]
 
@@ -49,15 +48,7 @@ def generate_box_from_mask(mask):
     Args:
         mask: 0/1 array
     """
-    temp = mask.copy()
-    # regions = []
-    # mask = (mask > 0).astype(np.uint8)
-    # contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    # for i in range(len(contours)):
-    #     x, y, w, h = cv2.boundingRect(contours[i])
-    #     regions.append([x, y, x+w, y+h])
-    # show_image(temp, np.array(regions))
-
+    # temp = mask.copy()
     regions = []
     mask = (mask > 0).astype(np.uint8)
     mask = region_morphology(mask)
@@ -65,9 +56,6 @@ def generate_box_from_mask(mask):
     for i in range(len(contours)):
         x, y, w, h = cv2.boundingRect(contours[i])
         regions.append([x, y, x+w, y+h])
-        # temp = np.array(regions[-1])
-    # show_image(temp, np.array(regions))
-    # v = mask[temp[1]:temp[3], temp[0]:temp[2]].sum()
     return regions
 
 
@@ -76,50 +64,43 @@ def generate_crop_region(regions, mask, mask_shape, img_shape, gbm=None):
     generate final regions
     enlarge regions < 300
     """
-    width, height = mask_shape
-    # regions = delete_inner_region(regions, mask_shape)
-    # show_image(mask, np.array(regions))
+    mask_w, mask_h = mask_shape
+    img_h, img_w = img_shape
     final_regions = []
     info = []
+    split = 0
+    enlarge = 0
     for box in regions:
-        # show_image(mask, np.array(box)[None])
+        # get weight
         mask_chip = mask[box[1]:box[3], box[0]:box[2]]
         box_w, box_h = box[2] - box[0], box[3] - box[1]
         obj_area = max(np.where(mask_chip > 0, 1, 0).sum(), 1)
         obj_num = max(mask_chip.sum(), 1.0)
         chip_area = box_w * box_h
-        info.append([obj_num, obj_area, chip_area])
-        final_regions.append(box)
-    """
         weight = gbm.predict([[obj_num, obj_area, chip_area, img_shape[0]*img_shape[1]]])[0]
-        if weight <= 0.6 and (box_w > width * 0.3 or box_h > height * 0.4):
-            # show_image(mask, np.array(box)[None])
+        # info.append([obj_num, obj_area, chip_area])
+
+        # resize
+        det_w = box_w * img_w / mask_w
+        det_h = box_h * img_h / mask_h
+        det_area = det_w * det_h
+        weight = max(weight, 65536 / det_area)  # enlarge minsize: 256*256
+        # if weight <= 0.6 and (box_w > mask_w * 0.3 or box_h > mask_h * 0.4):
+        if weight <= 0.6 and (det_w > 512 or det_h > 512):
+            split += 1
             final_regions.extend(region_split(box, mask_shape, weight))
-        elif weight >= 1 and box_w < width * 0.5 and box_h < height * 0.6:
-            weight = np.clip(weight, 1, 9)
+        elif weight > 1 and (det_w < 0.5 * img_w or det_h < 0.5 * img_h):
+            enlarge += 1
+            weight = min(weight, 4)
             final_regions.append(region_enlarge(box, mask_shape, weight))
         else:
             final_regions.append(region_enlarge(box, mask_shape, 1))
 
     final_regions = np.array(final_regions)
-    # show_image(mask, final_regions)
+    if len(final_regions) > 0:
+        final_regions = delete_inner_region(final_regions.copy(), mask_shape)
 
-    while(0):
-        idx = np.zeros((len(final_regions)))
-        for i in range(len(final_regions)):
-            for j in range(len(final_regions)):
-                if i == j or idx[i] == 1 or idx[j] == 1:
-                    continue
-                if overlap(final_regions[i], final_regions[j], thresh=0.8):
-                    final_regions[i] = bbox_merge(final_regions[i], final_regions[j])
-                    idx[j] = 1
-        if sum(idx) == 0:
-            break
-        final_regions = final_regions[idx == 0]
-    final_regions = delete_inner_region(final_regions, mask_shape)
-    # show_image(mask, final_regions)
-    """
-    return np.array(final_regions), info
+    return np.array(final_regions), (info, split, enlarge)
 
 
 def region_morphology(mask):
@@ -194,11 +175,11 @@ def region_split(region, mask_shape, weight):
         new_region.append([mid_w - alpha, region[1], region[2], mid_h + alpha])
         new_region.append([region[0], mid_h - alpha, mid_w + alpha, region[3]])
         new_region.append([mid_w - alpha, mid_h - alpha, region[2], region[3]])
-    elif width / height > 1.5:
+    elif width / height >= 1.5:
         mid = int(region[0] + width / 2.0)
         new_region.append([region[0], region[1], mid + alpha, region[3]])
         new_region.append([mid - alpha, region[1], region[2], region[3]])
-    elif height / width > 1.5:
+    elif height / width >= 1.5:
         mid = int(region[1] + height / 2.0)
         new_region.append([region[0], region[1], region[2], mid + alpha])
         new_region.append([region[0], mid - alpha, region[2], region[3]])

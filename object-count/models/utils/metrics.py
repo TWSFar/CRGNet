@@ -5,9 +5,9 @@ from .dataset_utils import (get_label_box, generate_box_from_mask,
 
 
 class Evaluator(object):
-    def __init__(self, num_classes=2, anno_type='txt'):
+    def __init__(self, num_classes=2, dataset='visdrone'):
+        self.dataset = dataset.lower()
         self.num_class = num_classes
-        self.anno_type = anno_type
         self.confusion_matrix = np.zeros((self.num_class,)*2)
         self.label_object = []
         self.detect_object = []
@@ -52,12 +52,12 @@ class Evaluator(object):
         confusion_matrix = count.reshape(self.num_class, self.num_class)
         return confusion_matrix
 
-    def _generate_count(self, pre_image, paths, dataset):
+    def _generate_count(self, pre_image, paths):
         for mask_img, img_path in zip(pre_image, paths):
             img = cv2.imread(img_path)
             height, width = img.shape[:2]
 
-            label_box = get_label_box(img_path, dataset, self.anno_type)
+            label_box = get_label_box(img_path, self.dataset)
 
             mask_h, mask_w = mask_img.shape[:2]
             mask_box = generate_box_from_mask(mask_img.astype(np.uint8))
@@ -77,10 +77,10 @@ class Evaluator(object):
             self.detect_object.append(count)
             self.mask_object.append(len(mask_box))
 
-    def add_batch(self, gt_image, pre_image, paths, dataset):
+    def add_batch(self, gt_image, pre_image, paths):
         assert gt_image.shape == pre_image.shape
         self.confusion_matrix += self._generate_matrix(gt_image, pre_image)
-        self._generate_count(pre_image, paths, dataset)
+        self._generate_count(pre_image, paths)
 
     def reset(self):
         self.confusion_matrix = np.zeros((self.num_class,) * 2)

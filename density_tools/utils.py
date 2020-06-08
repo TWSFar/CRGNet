@@ -1,7 +1,6 @@
 import cv2
 import json
 import numpy as np
-from sklearn.cluster import AgglomerativeClustering
 
 
 def bbox_merge(bbox1, bbox2):
@@ -18,14 +17,14 @@ def bbox_merge(bbox1, bbox2):
     return np.hstack((left_up, right_down))
 
 
-def delete_inner_region(regions, mask_shape, thresh=0.9):
+def delete_inner_region(regions, mask_shape, thresh=0.95):
     """
     Args:
         regions: xmin, ymin, xmax, ymax
         mask_shape: width, height
     """
+    regions = np.round(regions.copy()).astype(np.int)
     mask_w, mask_h = mask_shape
-    regions = np.array(regions)
     areas = np.product(regions[:, 2:] - regions[:, :2], axis=1)
     sort_idx = (-areas).argsort()
     regions = regions[sort_idx]
@@ -34,7 +33,7 @@ def delete_inner_region(regions, mask_shape, thresh=0.9):
     mask = np.zeros((mask_h, mask_w), dtype=np.int)
     del_idx = np.ones(len(regions), dtype=np.bool)
     for i, region in enumerate(regions):
-        if mask[region[1]:region[3], region[0]:region[2]].sum() > thresh*areas[i]:
+        if mask[region[1]:region[3], region[0]:region[2]].sum() >= thresh*areas[i]:
             del_idx[i] = False
         else:
             mask[region[1]:region[3], region[0]:region[2]] = 1
@@ -42,110 +41,67 @@ def delete_inner_region(regions, mask_shape, thresh=0.9):
     return regions[del_idx]
 
 
-def enlarge_box(mask_box, image_size, ratio=2):
-    """
-    Args:
-        mask_box: list of box
-        image_size: (width, height)
-        ratio: int
-    """
-    new_mask_box = []
-    for box in mask_box:
-        w = box[2] - box[0]
-        h = box[3] - box[1]
-        center_x = w / 2 + box[0]
-        center_y = h / 2 + box[1]
-        w = w * ratio / 2
-        h = h * ratio / 2
-        new_box = [center_x-w if center_x-w > 0 else 0,
-                   center_y-h if center_y-h > 0 else 0,
-                   center_x+w if center_x+w < image_size[0] else image_size[0]-1,
-                   center_y+h if center_y+h < image_size[1] else image_size[1]-1]
-        new_box = [int(x) for x in new_box]
-        new_mask_box.append(new_box)
-    return new_mask_box
-
-
 def generate_box_from_mask(mask):
     """
     Args:
         mask: 0/1 array
     """
+    # temp = mask.copy()
     regions = []
     mask = (mask > 0).astype(np.uint8)
+    mask = region_morphology(mask)
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     for i in range(len(contours)):
         x, y, w, h = cv2.boundingRect(contours[i])
         regions.append([x, y, x+w, y+h])
         # temp = np.array(regions[-1])
-    # show_image(mask, temp[None])
+    # show_image(temp, np.array(regions))
     # v = mask[temp[1]:temp[3], temp[0]:temp[2]].sum()
     return regions, contours
 
 
-def generate_crop_region(regions, mask, mask_size):
+def generate_crop_region(regions, mask, mask_shape, img_shape, gbm=None):
     """
     generate final regions
     enlarge regions < 300
     """
-    width, height = mask_size
+    mask_w, mask_h = mask_shape
+    img_h, img_w = img_shape
     final_regions = []
     for box in regions:
-        # show_image(mask, np.array(box)[None])
-        box_w, box_h = box[2] - box[0], box[3] - box[1]
-        center_x, center_y = box[0] + box_w / 2.0, box[1] + box_h / 2.0
-
+        # get weight
         mask_chip = mask[box[1]:box[3], box[0]:box[2]]
+        box_w, box_h = box[2] - box[0], box[3] - box[1]
         obj_area = max(np.where(mask_chip > 0, 1, 0).sum(), 1)
         obj_num = max(mask_chip.sum(), 1.0)
         chip_area = box_w * box_h
-        if box_w < min(mask_size) * 0.4 and box_h < min(mask_size) * 0.4:
-            weight = np.clip(9*obj_area/(obj_num*chip_area), 1.1, 2.5)
+        weight = gbm.predict([[obj_num, obj_area, chip_area, img_shape[0]*img_shape[1]]])[0]
+        # info.append([obj_num, obj_area, chip_area])
+
+        # resize
+        det_w = box_w * img_w / mask_w
+        det_h = box_h * img_h / mask_h
+        det_area = det_w * det_h
+        weight = min(max(weight, 65536 / det_area), 4)  # enlarge minsize: 256*256
+        # if weight <= 0.6 and (box_w > mask_w * 0.3 or box_h > mask_h * 0.4):
+        if weight <= 0.6 and (det_w > 512 or det_h > 512):
+            final_regions.extend(region_split(box, mask_shape, weight))
+        elif weight > 1 and (det_w < 0.5 * img_w or det_h < 0.5 * img_h):
+            final_regions.append(region_enlarge(box, mask_shape, weight))
         else:
-            weight = 1
-            # weight = np.clip(16.0*obj_area/(obj_num*chip_area), 1, 4)
+            final_regions.append(box)
 
-        rect = np.sqrt(chip_area * weight)
-        if max(box_w, box_h) <= rect:
-            half_w = 0.5 * rect
-            half_h = 0.5 * rect
-        elif box_w > rect:
-            half_w = 0.5 * box_w
-            half_h = 0.5 * chip_area * weight / box_w
-        else:
-            half_h = 0.5 * box_h
-            half_w = 0.5 * chip_area * weight / box_h
-        half_w = min(half_w, width/2.0)
-        half_h = min(half_h, height/2.0)
+    if len(final_regions) > 0:
+        final_regions = delete_inner_region(final_regions.copy(), mask_shape)
 
-        center_x = half_w if center_x < half_w else center_x
-        center_y = half_h if center_y < half_h else center_y
-        center_x = width - half_w if center_x > width - half_w else center_x
-        center_y = height - half_h if center_y > height - half_h else center_y
+    return np.array(final_regions)
 
-        new_box = [center_x - half_w if center_x - half_w > 0 else 0,
-                   center_y - half_h if center_y - half_h > 0 else 0,
-                   center_x + half_w if center_x + half_w < width else width,
-                   center_y + half_h if center_y + half_h < height else height]
 
-        final_regions.append(new_box)
-        # show_image(mask, np.array(final_regions)[None, -1])
+def region_morphology(mask):
+    kernel = cv2.getStructuringElement(cv2.MORPH_CROSS, (3, 3))
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)  # 闭操作
 
-    regions = np.array(final_regions)
-    while(1):
-        idx = np.zeros((len(regions)))
-        for i in range(len(regions)):
-            for j in range(len(regions)):
-                if i == j or idx[i] == 1 or idx[j] == 1:
-                    continue
-                if overlap(regions[i], regions[j]):
-                    regions[i] = bbox_merge(regions[i], regions[j])
-                    idx[j] = 1
-        if sum(idx) == 0:
-            break
-        regions = regions[idx == 0]
-
-    return regions
+    return mask
 
 
 def resize_box(box, original_size, dest_size):
@@ -163,116 +119,70 @@ def resize_box(box, original_size, dest_size):
     return list(box.astype(np.int32))
 
 
-def region_cluster(regions, mask_shape):
+def region_enlarge(region, mask_shape, weight):
     """
-    层次聚类
+    Args:
+        mask_box: list of box
+        image_size: (width, hight)
+        ratio: int
     """
-    regions = np.array(regions)
-    centers = (regions[:, [2, 3]] + regions[:, [0, 1]]) / 2.0
+    width, hight = mask_shape
+    rgn_w, rgn_h = region[2] - region[0], region[3] - region[1]
+    center_x, center_y = region[0] + rgn_w / 2.0, region[1] + rgn_h / 2.0
+    chip_area = rgn_w * rgn_h
+    rect = np.sqrt(chip_area * weight)
+    if max(rgn_w, rgn_h) <= rect:
+        half_w = 0.5 * rect
+        half_h = 0.5 * rect
+    elif rgn_w > rect:
+        half_w = 0.5 * rgn_w
+        half_h = 0.5 * chip_area * weight / rgn_w
+    else:
+        half_h = 0.5 * rgn_h
+        half_w = 0.5 * chip_area * weight / rgn_h
+    half_w = min(half_w, width/2.0)
+    half_h = min(half_h, hight/2.0)
 
-    model = AgglomerativeClustering(
-                n_clusters=None,
-                linkage='complete',
-                distance_threshold=min(mask_shape) * 0.4,
-                compute_full_tree=True)
+    center_x = half_w if center_x < half_w else center_x
+    center_y = half_h if center_y < half_h else center_y
+    center_x = width - half_w if center_x > width - half_w else center_x
+    center_y = hight - half_h if center_y > hight - half_h else center_y
 
-    labels = model.fit_predict(centers)
+    new_box = [center_x - half_w if center_x - half_w > 0 else 0,
+               center_y - half_h if center_y - half_h > 0 else 0,
+               center_x + half_w if center_x + half_w < width else width,
+               center_y + half_h if center_y + half_h < hight else hight]
 
-    cluster_regions = []
-    for idx in np.unique(labels):
-        boxes = regions[labels == idx]
-        new_box = [min(boxes[:, 0]), min(boxes[:, 1]),
-                   max(boxes[:, 2]), max(boxes[:, 3])]
-        cluster_regions.append(new_box)
-
-    return cluster_regions
-
-
-def region_morphology(contours, mask_shape):
-    mask_w, mask_h = mask_shape
-    binary = np.zeros((mask_h, mask_w)).astype(np.uint8)
-    cv2.drawContours(binary, contours, -1, 1, cv2.FILLED)
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-    binary_open = cv2.morphologyEx(binary, cv2.MORPH_OPEN, kernel)  # 开操作
-    region_open, _ = generate_box_from_mask(binary_open)
-
-    binary_rest = binary ^ binary_open
-    region_rest, _ = generate_box_from_mask(binary_rest)
-
-    regions = []
-    alpha = 1
-    for box in region_open:
-        box = [max(0, box[0] - alpha), max(0, box[1] - alpha),
-               min(mask_w, box[2] + alpha), min(mask_h, box[3] + alpha)]
-        regions.append(box)
-    return regions + region_rest
+    return new_box
 
 
-def region_postprocess(regions, contours, mask_shape):
-    mask_w, mask_h = mask_shape
-
-    # 1. get big contours
-    small_regions = []
-    big_contours = []
-    for i, box in enumerate(regions):
-        w, h = box[2] - box[0], box[3] - box[1]
-        if w > mask_w / 2 or h > mask_h / 2:
-            big_contours.append(contours[i])
-        else:
-            small_regions.append(box)
-
-    # 2. image open
-    regions = region_morphology(big_contours, mask_shape) + small_regions
-
-    # 3. merge inner box
-    regions = delete_inner_region(regions, mask_shape)
-
-    # 4. process small regions and big regions
-    small_regions = []
-    big_regions = []
-    for box in regions:
-        w, h = box[2] - box[0], box[3] - box[1]
-        if max(w, h) > min(mask_w, mask_h) * 0.4:
-            big_regions.append(box)
-        else:
-            small_regions.append(box)
-    if len(big_regions) > 0:
-        big_regions = region_split(big_regions, mask_shape)
-    if len(small_regions) > 1:
-        small_regions = region_cluster(small_regions, mask_shape)
-
-    regions = np.array(small_regions + big_regions)
-
-    return regions
-
-
-def region_split(regions, mask_shape):
+def region_split(region, mask_shape, weight):
     alpha = 1
     mask_w, mask_h = mask_shape
-    new_regions = []
-    for box in regions:
-        width, height = box[2] - box[0], box[3] - box[1]
-        if width / height > 1.5:
-            mid = int(box[0] + width / 2.0)
-            new_regions.append([box[0], box[1], mid + alpha, box[3]])
-            new_regions.append([mid - alpha, box[1], box[2], box[3]])
-        elif height / width > 1.5:
-            mid = int(box[1] + height / 2.0)
-            new_regions.append([box[0], box[1], box[2], mid + alpha])
-            new_regions.append([box[0], mid - alpha, box[2], box[3]])
-        elif width > mask_w * 0.6 and height > mask_h * 0.7:
-            mid_w = int(box[0] + width / 2.0)
-            mid_h = int(box[1] + height / 2.0)
-            new_regions.append([box[0], box[1], mid_w + alpha, mid_h + alpha])
-            new_regions.append([mid_w - alpha, box[1], box[2], mid_h + alpha])
-            new_regions.append([box[0], mid_h - alpha, mid_w - alpha, box[3]])
-            new_regions.append([mid_w - alpha, mid_h - alpha, box[2], box[3]])
-        else:
-            new_regions.append(box)
-    return new_regions
+    new_region = []
+    width, height = region[2] - region[0], region[3] - region[1]
+    #  and max(width, height) / min(width, height) < 1.5
+    if weight <= 0.3 and max(width, height) / min(width, height) < 1.5:
+        mid_w = int(region[0] + width / 2.0)
+        mid_h = int(region[1] + height / 2.0)
+        new_region.append([region[0], region[1], mid_w + alpha, mid_h + alpha])
+        new_region.append([mid_w - alpha, region[1], region[2], mid_h + alpha])
+        new_region.append([region[0], mid_h - alpha, mid_w + alpha, region[3]])
+        new_region.append([mid_w - alpha, mid_h - alpha, region[2], region[3]])
+    elif width / height >= 1.5:
+        mid = int(region[0] + width / 2.0)
+        new_region.append([region[0], region[1], mid + alpha, region[3]])
+        new_region.append([mid - alpha, region[1], region[2], region[3]])
+    elif height / width >= 1.5:
+        mid = int(region[1] + height / 2.0)
+        new_region.append([region[0], region[1], region[2], mid + alpha])
+        new_region.append([region[0], mid - alpha, region[2], region[3]])
+    else:
+        new_region.append(region)
+    return new_region
 
 
-def overlap(box1, box2, thresh=0.75):
+def overlap(box1, box2, thresh=0.9):
     """ (box1 cup box2) / box2
     Args:
         box1: [xmin, ymin, xmax, ymax]
@@ -385,12 +295,20 @@ def nms(prediction, score_threshold=0.05, iou_threshold=0.5, overlap_threshold=0
 
 def show_image(img, labels=None):
     import matplotlib.pyplot as plt
+    import matplotlib.cm as cm
     # plt.figure(figsize=(10, 10))
-    plt.imshow(img)
+    fig = plt.figure(frameon=False)
+    ax = plt.Axes(fig, [0., 0., 1., 1.])
+    ax.set_axis_off()
+    fig.add_axes(ax)
+    plt.imshow(img, cmap=cm.jet)
     if labels is not None:
         if labels.shape[0] > 0:
             plt.plot(labels[:, [0, 2, 2, 0, 0]].T, labels[:, [1, 1, 3, 3, 1]].T, '-')
+    plt.savefig("test.png", dpi=600)
     plt.show()
+    ax.set_axis_off()
+
     pass
 
 
@@ -432,22 +350,6 @@ def plot_img(img, bboxes, id2name):
             continue
 
     return img
-
-
-def save_image(img, img_path, label=None):
-    import matplotlib.pyplot as plt
-    import matplotlib.cm as cm
-    plt.axis('off')
-    fig = plt.gcf()
-    # fig.set_size_inches(7.0/3,7.0/3) #dpi = 300, output = 700*700 pixels
-    plt.gca().xaxis.set_major_locator(plt.NullLocator())
-    plt.gca().yaxis.set_major_locator(plt.NullLocator())
-    plt.imshow(img)
-    if label is not None:
-        plt.plot(label[:, [0, 2, 2, 0, 0]].T, label[:, [1, 1, 3, 3, 1]].T, '-')
-    plt.margins(0, 0)
-    fig.savefig(img_path, format='png', transparent=True, dpi=600, pad_inches=0, bbox_inches='tight')
-    plt.close()
 
 
 class MyEncoder(json.JSONEncoder):

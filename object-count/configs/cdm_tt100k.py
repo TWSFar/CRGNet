@@ -7,7 +7,7 @@ user_dir = os.path.expanduser('~')
 class Config:
     # data
     dataset = "TT100K"
-    anno_type = 'xml'
+    img_type = 'jpg'
     root_dir = user_dir + "/data/TT100K/density_mask"
     test_dir = ""
     num_classes = 1
