@@ -198,10 +198,9 @@ class MakeDataset(object):
 
         # make chip
         region_box, contours = utils.generate_box_from_mask(mask)
-        # region_box = utils.region_postprocess(region_box, contours, (mask_w, mask_h))
-        # utils.show_image(mask, np.array(region_box))
+
         region_box = utils.generate_crop_region(region_box, mask, (mask_w, mask_h), (width, height), self.gbm)
-        # utils.show_image(mask, np.array(region_box))
+
         region_box = utils.resize_box(region_box, (mask_w, mask_h), (width, height))
 
         if args.show:

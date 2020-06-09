@@ -28,8 +28,6 @@ def parse_args():
                         default=user_dir+"/data/DOTA/",
                         # default="G:\\CV\\Dataset\\Detection\\Visdrone",
                         help="dataset's root path")
-    parser.add_argument('--mask_size', type=list, default=[40, 40],
-                        help="Size of production target mask")
     parser.add_argument('--method', type=str, default='gauss',
                         choices=['centerness', 'gauss', 'default'])
     parser.add_argument('--maximum', type=int, default=999,
@@ -37,7 +35,16 @@ def parse_args():
     parser.add_argument('--show', type=bool, default=False,
                         help="show image and region mask")
     args = parser.parse_args()
-    args.copyImg = True if args.dataset.lower() == 'visdrone' else False
+    args.copyImg = False
+    if args.dataset.lower() == "visdrone":
+        args.mask_size = [30, 40]
+    elif args.dataset.lower() == "tt100k":
+        args.mask_size = [30, 30]
+    elif args.dataset.lower() == "dota":
+        args.mask_size = [40, 40]
+    else:
+        raise NotImplementedError
+
     return args
 
 

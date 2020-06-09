@@ -19,13 +19,13 @@ user_dir = os.path.expanduser('~')
 
 def parse_args():
     parser = argparse.ArgumentParser(description="convert to voc dataset")
-    parser.add_argument('--dataset', type=str, default='DOTA',
-                        choices=['VisDrone', 'DOTA'], help='dataset name')
+    parser.add_argument('--dataset', type=str, default='Visdrone',
+                        choices=['Visdrone', 'DOTA'], help='dataset name')
     parser.add_argument('--db_root', type=str,
                         # default="G:\\CV\\Dataset\\Detection\\Visdrone",
-                        default="/home/twsf/data/DOTA",
+                        default="/home/twsf/data/Visdrone",
                         help="dataset's root path")
-    parser.add_argument('--imgsets', type=str, default=['val'],
+    parser.add_argument('--imgsets', type=str, default=['train'],
                         nargs='+', help='for train or val')
     parser.add_argument('--aim', type=int, default=100,
                         help='gt aim scale in chip')
@@ -47,8 +47,8 @@ class ChipStatistics(object):
         self.dataset = get_dataset(args.dataset, args.db_root)
         self.density_dir = self.dataset.density_voc_dir
         self.segmentation_dir = self.density_dir + '/SegmentationClass'
-        # self.gbm = joblib.load('/home/twsf/work/CRGNet/density_tools/gbm_dota_100.pkl')
-        self.gbm = None
+        self.gbm = joblib.load('/home/twsf/work/CRGNet/density_tools/gbm_visdrone_100.pkl')
+        # self.gbm = None
 
     def __call__(self):
         for imgset in args.imgsets:
@@ -57,11 +57,14 @@ class ChipStatistics(object):
             self.chip_percent = []
             self.chip_box_scale = []
             self.info = []
+            splits, enlarges = 0, 0
             print("make {} detect dataset...".format(imgset))
             samples = self.dataset._load_samples(imgset)
             for i, sample in enumerate(tqdm(samples)):
                 # if i < 5000 and i % 10 != 0: continue
-                self.make_chip(sample, imgset)
+                split, enlarge = self.make_chip(sample, imgset)
+                splits += split
+                enlarges += enlarge
 
             # plot
             box_scale_coco = np.round(np.sqrt(np.array(self.box_scale)*640*480))
@@ -86,7 +89,7 @@ class ChipStatistics(object):
             median_obj = (box_scale_coco <= 96).sum() - small_obj
             large_obj = (box_scale_coco > 96).sum()
             nor_box_scale = (np.array(self.box_scale) - min(self.box_scale)) / (max(self.box_scale) - min(self.box_scale))
-            with open(result_dir+'/{}_stastic.info'.format(arg.dataset), 'a') as f:
+            with open(result_dir+'/{}_stastic.info'.format(args.dataset), 'a') as f:
                 f.writelines('chip num: '+str(len(chip_scale)) + '\n')
                 f.writelines('chip percent: '+str(chip_scale[:, 1].mean()) + '\n')
                 f.writelines('box num: '+str(len(self.box_scale)) + '\n')
@@ -102,13 +105,14 @@ class ChipStatistics(object):
                 for i in range(0, 20):
                     f.writelines('scale {} sum: {}'.format(x_axis[i], scale_distribution[i:i+1].sum()) + '\n')
 
-            with open(result_dir+'/{}_{}.csv'.format(args.dataset, imgset), 'w') as f:
-                for line in self.info:
-                    for i, v in enumerate(line):
-                        if i > 0:
-                            f.writelines(',')
-                        f.writelines(str(v))
-                    f.writelines('\n')
+            # with open(result_dir+'/{}_{}.csv'.format(args.dataset, imgset), 'w') as f:
+            #     for line in self.info:
+            #         for i, v in enumerate(line):
+            #             if i > 0:
+            #                 f.writelines(',')
+            #             f.writelines(str(v))
+            #         f.writelines('\n')
+        print(splits, enlarges)
 
     def generate_region_gt(self, region_box, gt_bboxes, labels):
         chip_list = []
@@ -160,6 +164,7 @@ class ChipStatistics(object):
         region_box = utils.generate_box_from_mask(mask)
 
         region_box, info = utils.generate_crop_region(region_box, mask, (mask_w, mask_h), (width, height), self.gbm)
+        info, split, enlarge = info
 
         region_box = utils.resize_box(region_box, (mask_w, mask_h), (width, height))
 
@@ -176,7 +181,7 @@ class ChipStatistics(object):
         chip_loc = self.write_chip_and_anno(info,
             image, img_id, region_box, chip_gt_list, chip_label_list, neglect_list, imgset)
 
-        return chip_loc
+        return split, enlarge
 
     def write_chip_and_anno(self, info, image, img_id,
                             chip_list, chip_gt_list,

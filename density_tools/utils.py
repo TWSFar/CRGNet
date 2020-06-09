@@ -84,14 +84,27 @@ def generate_crop_region(regions, mask, mask_shape, img_shape, gbm=None):
         det_w = box_w * img_w / mask_w
         det_h = box_h * img_h / mask_h
         det_area = det_w * det_h
-        weight = min(max(weight, 65536 / det_area), 4)  # enlarge minsize: 256*256
-        # if weight <= 0.6 and (box_w > mask_w * 0.3 or box_h > mask_h * 0.4):
-        if weight <= 0.6 and (det_w > 512 or det_h > 512):
+        weight = max(min(weight, 4), 65536 / det_area)  # enlarge minsize: 65536=256*256
+        if weight <= 0.6:
             final_regions.extend(region_split(box, mask_shape, weight))
-        elif weight > 1 and (det_w < 0.5 * img_w or det_h < 0.5 * img_h):
+        elif weight > 1:
             final_regions.append(region_enlarge(box, mask_shape, weight))
         else:
             final_regions.append(box)
+
+    final_regions = np.array(final_regions)
+    while(1):
+        idx = np.zeros((len(final_regions)))
+        for i in range(len(final_regions)):
+            for j in range(len(final_regions)):
+                if i == j or idx[i] == 1 or idx[j] == 1:
+                    continue
+                if overlap(final_regions[i], final_regions[j], thresh=0.8):
+                    final_regions[i] = bbox_merge(final_regions[i], final_regions[j])
+                    idx[j] = 1
+        if sum(idx) == 0:
+            break
+        final_regions = final_regions[idx == 0]
 
     if len(final_regions) > 0:
         final_regions = delete_inner_region(final_regions.copy(), mask_shape)
@@ -184,7 +197,7 @@ def region_split(region, mask_shape, weight):
     return new_region
 
 
-def overlap(box1, box2, thresh=0.9):
+def overlap(box1, box2, thresh=0.75):
     """ (box1 cup box2) / box2
     Args:
         box1: [xmin, ymin, xmax, ymax]
