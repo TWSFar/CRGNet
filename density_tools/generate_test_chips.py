@@ -6,6 +6,7 @@ import cv2
 import sys
 import h5py
 import json
+import joblib
 import argparse
 import numpy as np
 import os.path as osp
@@ -16,9 +17,13 @@ user_dir = osp.expanduser('~')
 
 def parse_args():
     parser = argparse.ArgumentParser(description="convert to chip dataset")
+    parser.add_argument('--dataset', type=str, default='Visdrone',
+                        choices=['DOTA', 'Visdrone'], help='dataset name')
     parser.add_argument('--test_dir', type=str,
                         default=user_dir+"/data/UnderWater/test")
                         # default="E:\\CV\\data\\Underwater\\test")
+    parser.add_argument('--aim', type=int, default=100,
+                        help='gt aim scale in chip')
     parser.add_argument('--show', type=bool, default=False,
                         help="show image and chip box")
     args = parser.parse_args()
@@ -35,6 +40,7 @@ class MakeDataset(object):
         self.mask_dir = osp.join(args.test_dir, "density_mask")
         self.chip_dir = osp.join(args.test_dir, "density_chip")
         self.loc_dir = osp.join(args.test_dir, "density_loc")
+        self.gbm = joblib.load('/home/twsf/work/CRGNet/density_tools/gbm_{}_{}.pkl'.format(args.dataset.lower(), args.aim))
         self._init_path()
 
     def _init_path(self):
@@ -55,8 +61,8 @@ class MakeDataset(object):
                              .format(i + 1, len(img_list), img_id))
             sys.stdout.flush()
 
-            chiplen, loc = self.make_chip(img_name)
-            for i in range(chiplen):
+            loc = self.make_chip(img_name)
+            for i in range(len(loc)):
                 chip_ids.append('{}_{}'.format(img_id, i))
             chip_loc.update(loc)
 
@@ -77,9 +83,8 @@ class MakeDataset(object):
 
         # make chip
         region_box, contours = utils.generate_box_from_mask(mask)
-        region_box = utils.region_postprocess(region_box, contours, (mask_w, mask_h))
         # utils.show_image(mask, np.array(region_box))
-        region_box = utils.generate_crop_region(region_box, mask, (mask_w, mask_h))
+        region_box = utils.generate_crop_region(region_box, mask, (mask_w, mask_h), (width, height), self.gbm)
         # utils.show_image(mask, np.array(region_box))
         region_box = utils.resize_box(region_box, (mask_w, mask_h), (width, height))
 
@@ -88,7 +93,7 @@ class MakeDataset(object):
 
         chip_loc = self.write_chip_and_anno(image, img_id, region_box)
 
-        return len(region_box), chip_loc
+        return chip_loc
 
     def write_chip_and_anno(self, image, img_id, chip_list):
         """write chips of one image to disk and make xml annotations

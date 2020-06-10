@@ -9,7 +9,6 @@ class Config:
     dataset = "DOTA"
     img_type = 'png'
     root_dir = user_dir + "/data/DOTA/density_mask"
-    test_dir = ""
     num_classes = 1
     input_size = (640, 640)
     norm_cfg = dict(mean=[0.51, 0.535, 0.556], std=[0.196, 0.208, 0.246], para=1)

@@ -9,7 +9,6 @@ class Config:
     dataset = "visdrone"
     img_type = 'jpg'
     root_dir = user_dir + "/data/Visdrone/region_mask"
-    test_dir = ""
     input_size = (640, 480)
     norm_cfg = dict(mean=[0.382, 0.383, 0.367], std=[0.164, 0.156, 0.164])
     num_classes = 2
