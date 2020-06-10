@@ -26,7 +26,7 @@ def parse_args():
                         default=user_dir+"/data/Visdrone/",
                         # default="E:\\CV\\data\\visdrone",
                         help="dataset's root path")
-    parser.add_argument('--imgsets', type=str, default=['val', 'train'],
+    parser.add_argument('--imgsets', type=str, default=['val', 'train', 'test'],
                         nargs='+', help='for train or val')
     parser.add_argument('--aim', type=int, default=100,
                         help='gt aim scale in chip')
@@ -129,9 +129,13 @@ class MakeDataset(object):
         with open(osp.join(self.list_dir, imgset+'.txt'), 'w') as f:
             f.writelines([x + '\n' for x in img_list])
         print('\n%d images in %s set.' % (len(img_list), imgset))
-        with open(osp.join(self.list_dir, 'trainval.txt'), 'a') as f:
-            f.writelines([x + '\n' for x in img_list])
-        print('\n%d images in trainval set.' % len(img_list))
+        if imgset.lower() != 'test':
+            op = 'a'
+            if args.imgsets[0] == imgset:
+                op = 'w'
+            with open(osp.join(self.list_dir, 'trainval.txt'), op) as f:
+                f.writelines([x + '\n' for x in img_list])
+            print('\n%d images in trainval set.' % len(img_list))
 
     def make_xml(self, chip, bboxes, labels, image_name, chip_size):
         node_root = Element('annotation')
