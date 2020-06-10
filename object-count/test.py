@@ -7,8 +7,8 @@ import os.path as osp
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
-from configs.crgnet_double_float import opt
-from models import DeepLab
+from configs.cdm_visdrone import opt
+from models import CRG2Net as Model
 from dataloaders import deeplab_transforms as dtf
 
 import torch
@@ -30,6 +30,7 @@ def parse_args():
 
 
 args = parse_args()
+opt._parse()
 
 
 def test():
@@ -42,11 +43,11 @@ def test():
     imgs_name = os.listdir(args.img_dir)
     transform = transforms.Compose([
         dtf.FixedNoMaskResize(size=opt.input_size),  # 513
-        dtf.Normalize(opt.mean, opt.std),
+        dtf.Normalize(**opt.norm_cfg),
         dtf.ToTensor()])
 
     # model
-    model = DeepLab(opt).to(opt.device)
+    model = Model(opt).to(opt.device)
 
     # resume
     if osp.isfile(args.chekpoint):

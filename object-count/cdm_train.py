@@ -6,9 +6,9 @@ import numpy as np
 import os.path as osp
 from tqdm import tqdm
 
-# from configs.cdm_visdrone import opt
+from configs.cdm_visdrone import opt
 # from configs.cdm_tt100k import opt
-from configs.cdm_dota import opt
+# from configs.cdm_dota import opt
 
 from models import CRG2Net
 from models.losses import build_loss
@@ -63,7 +63,7 @@ class Trainer(object):
         self.loss_density = build_loss(opt.loss_density)
 
         # Define Evaluator
-        self.evaluator = Evaluator(anno_type=opt.anno_type)  # use region to eval: class_num is 2
+        self.evaluator = Evaluator(dataset=opt.dataset)  # use region to eval: class_num is 2
 
         # Resuming Checkpoint
         self.best_pred = 0.0
@@ -108,7 +108,7 @@ class Trainer(object):
         last_time = time.time()
         epoch_loss = []
         for iter_num, sample in enumerate(self.train_loader):
-            # if iter_num >= 1: break
+            if iter_num >= 1: break
             try:
                 imgs = sample["image"].to(opt.device)
                 density_gt = sample["label"].to(opt.device)
@@ -161,20 +161,17 @@ class Trainer(object):
     def validate(self, epoch):
         self.model.eval()
         self.evaluator.reset()
-        smae = 0
+        SMAE = 0
         with torch.no_grad():
             tbar = tqdm(self.val_loader, desc='\r')
             for i, sample in enumerate(tbar):
                 # if i > 3: break
                 imgs = sample['image'].to(opt.device)
-                density_gt = sample["label"]
+                density_gt = sample["label"].to(opt.device)
                 region_gt = (sample["label"] > 0).float()
                 path = sample["path"]
 
                 region_pred, density_pred = self.model(imgs)
-                pred_count = np.sum(density_pred.cpu().numpy())
-                gt_count = np.sum(density_gt.numpy())
-                smae += np.abs(pred_count - gt_count)
 
                 # Visualize
                 global_step = i + self.nbatch_val * epoch + 1
@@ -192,10 +189,12 @@ class Trainer(object):
                 target = region_gt.numpy()
                 pred = region_pred.data.cpu().numpy()
                 pred = np.argmax(pred, axis=1).reshape(target.shape)
-                self.evaluator.add_batch(target, pred, path, opt.dataset)
+                self.evaluator.add_batch(target, pred, path)
+                density_pred *= torch.tensor(pred).to(opt.device)
+                SMAE += (density_gt - density_pred).abs().sum().item()
 
             # Fast test during the training
-            MAE = smae / (len(self.val_dataset) * opt.norm_cfg['para'])
+            MAE = SMAE / (len(self.val_dataset) * opt.norm_cfg['para'])
             Acc = self.evaluator.Pixel_Accuracy()
             Acc_class = self.evaluator.Pixel_Accuracy_Class()
             mIoU = self.evaluator.Mean_Intersection_over_Union()

@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.model_zoo as model_zoo
-from models.necks import ContextBlock2d
+from models.necks import SELayer
 
 
 def conv_bn(inp, oup, stride, BatchNorm):
@@ -58,7 +58,7 @@ class InvertedResidual(nn.Module):
                 BatchNorm(oup),
             )
         if oup >= 64:
-            self.contextBlock = ContextBlock2d(oup)
+            self.contextBlock = SELayer(oup)
         else:
             self.contextBlock = None
 
@@ -69,8 +69,8 @@ class InvertedResidual(nn.Module):
         else:
             x = self.conv(x_pad)
 
-        # if self.contextBlock is not None:
-        #     x = self.contextBlock(x)
+        if self.contextBlock is not None:
+            x = self.contextBlock(x)
 
         return x
 
