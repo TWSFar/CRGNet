@@ -317,11 +317,11 @@ def show_image(img, labels=None):
     ax = plt.Axes(fig, [0., 0., 1., 1.])
     ax.set_axis_off()
     fig.add_axes(ax)
-    plt.imshow(img, cmap=cm.jet)
+    plt.imshow(img[..., ::-1], cmap=cm.jet)
     if labels is not None:
         if labels.shape[0] > 0:
             plt.plot(labels[:, [0, 2, 2, 0, 0]].T, labels[:, [1, 1, 3, 3, 1]].T, '-')
-    plt.savefig("test.png", dpi=600)
+    plt.savefig("test.png")
     plt.show()
     ax.set_axis_off()
 
