@@ -190,7 +190,7 @@ class Trainer(object):
                 pred = region_pred.data.cpu().numpy()
                 pred = np.argmax(pred, axis=1).reshape(target.shape)
                 self.evaluator.add_batch(target, pred, path)
-                density_pred *= torch.tensor(pred).to(opt.device)
+                density_pred = density_pred.clamp(min=0.00018) * region_pred.argmax(1, keepdim=True)
                 SMAE += (density_gt - density_pred).abs().sum().item()
 
             # Fast test during the training

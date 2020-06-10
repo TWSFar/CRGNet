@@ -155,7 +155,8 @@ if __name__ == "__main__":
         os.mkdir(list_folder)
         # link image
     if args.copyImg:
-        os.mkdir(image_dir)
+        if osp.exists(image_dir):
+            os.mkdir(image_dir)
     else:
         if osp.exists(image_dir):
             os.remove(image_dir)

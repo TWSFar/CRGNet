@@ -12,6 +12,7 @@ class VisDrone(object):
     def __init__(self, db_root):
         self.src_traindir = db_root + '/VisDrone2019-DET-train'
         self.src_valdir = db_root + '/VisDrone2019-DET-val'
+        self.src_testdir = db_root + '/test'
         self.density_voc_dir = db_root + '/density_mask'
         self.detect_voc_dir = db_root + '/density_chip'
         self.cache_dir = osp.join(db_root, 'cache')
@@ -25,11 +26,14 @@ class VisDrone(object):
         """ return list of all image paths
         """
         if split == 'train':
-            return glob.glob(self.src_traindir + '/{}/*.jpg'.format(IMG_ROOT))
+            self.img_dir = osp.join(self.src_traindir, IMG_ROOT)
         elif split == 'val':
-            return glob.glob(self.src_valdir + '/{}/*.jpg'.format(IMG_ROOT))
+            self.img_dir = osp.join(self.src_valdir, IMG_ROOT)
+        elif split == 'test':
+            self.img_dir = osp.join(self.src_testdir, IMG_ROOT)
         else:
             raise('error')
+        return glob.glob(self.img_dir + '/*.jpg')
 
     def _get_annolist(self, split):
         """ annotation type is '.txt'
@@ -56,7 +60,6 @@ class VisDrone(object):
 
     def _load_samples(self, split):
         cache_file = osp.join(self.cache_dir, split + '_samples.pkl')
-
         # load bbox and save to cache
         if osp.exists(cache_file):
             with open(cache_file, 'rb') as fid:
