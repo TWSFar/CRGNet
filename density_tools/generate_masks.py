@@ -22,10 +22,10 @@ def parse_args():
     parser = argparse.ArgumentParser(description="convert to voc dataset")
     parser.add_argument('--dataset', type=str, default='Visdrone',
                         choices=['Visdrone', 'TT100K', 'DOTA'], help='dataset name')
-    parser.add_argument('--mode', type=str, default=['train', 'val'],
+    parser.add_argument('--mode', type=str, default=['test', 'train', 'val'],
                         nargs='+', help='for train or val')
     parser.add_argument('--db_root', type=str,
-                        default=user_dir+"/data/DOTA/",
+                        default=user_dir+"/data/Visdrone/",
                         # default="G:\\CV\\Dataset\\Detection\\Visdrone",
                         help="dataset's root path")
     parser.add_argument('--method', type=str, default='gauss',
@@ -154,12 +154,12 @@ if __name__ == "__main__":
         os.mkdir(annotation_dir)
         os.mkdir(list_folder)
         # link image
-        if args.copyImg:
-            os.mkdir(image_dir)
-        else:
-            if osp.exists(image_dir):
-                os.remove(image_dir)
-            os.symlink(dataset.img_dir, image_dir)
+    if args.copyImg:
+        os.mkdir(image_dir)
+    else:
+        if osp.exists(image_dir):
+            os.remove(image_dir)
+        os.symlink(dataset.img_dir, image_dir)
 
     for split in args.mode:
         img_list = dataset._get_imglist(split)
