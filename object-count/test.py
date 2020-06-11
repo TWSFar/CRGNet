@@ -21,16 +21,16 @@ def parse_args():
     parser = argparse.ArgumentParser(description="convert to voc dataset")
     parser.add_argument('--dataset', type=str, default='Visdrone',
                         choices=['Visdrone', 'TT100K', 'DOTA'], help='dataset name')
-    parser.add_argument('--chekpoint', type=str, default="/home/twsf/cache/visdrone_906.pth.tar")
-    parser.add_argument('--img_dir', type=str, default="/home/twsf/data/Visdrone/test/images")
-    parser.add_argument('--results_dir', type=str, default="/home/twsf/data/Visdrone/test/density_mask")
+    parser.add_argument('--chekpoint', type=str, default="/home/twsf/cache/90.9.tar")
+    parser.add_argument('--img_dir', type=str, default="/home/twsf/data/Visdrone/challenge/images/")
+    parser.add_argument('--results_dir', type=str, default="/home/twsf/data/Visdrone//challenge/density_mask")
     parser.add_argument('--show', type=bool, default=False)
     args = parser.parse_args()
     return args
 
 
 args = parse_args()
-opt._parse()
+opt._parse({})
 
 
 def test():

@@ -17,7 +17,7 @@ def bbox_merge(bbox1, bbox2):
     return np.hstack((left_up, right_down))
 
 
-def delete_inner_region(regions, mask_shape, thresh=0.95):
+def delete_inner_region(regions, mask_shape, thresh=0.99):
     """
     Args:
         regions: xmin, ymin, xmax, ymax
@@ -85,8 +85,9 @@ def generate_crop_region(regions, mask, mask_shape, img_shape, gbm=None):
         det_h = box_h * img_h / mask_h
         det_area = det_w * det_h
         alpha = mask_w / mask_h
-        weight = min(max(weight, 65536 / det_area), 9)  # enlarge minsize: 65536=256*256
-        if weight <= 0.6 and (box_w > 0.2 * mask_w or box_h > 0.2 * alpha * mask_h):
+        # weight = min(max(weight, 65536 / det_area), 9)  # enlarge minsize: 65536=256*256
+        weight = min(weight, 9)
+        if weight <= 0.6 and (box_w > 0.3 * mask_w or box_h > 0.3 * alpha * mask_h):
             final_regions.extend(region_split(box, mask_shape, weight))
         elif weight > 1 and (box_w < 0.5 * mask_w and box_h < 0.5 * alpha * mask_h):
             final_regions.append(region_enlarge(box, mask_shape, weight))
@@ -272,7 +273,7 @@ def iou_calc2(boxes1, boxes2):
     return IOU
 
 
-def nms(prediction, score_threshold=0.05, iou_threshold=0.5, overlap_threshold=0.95, topN=500):
+def nms(prediction, score_threshold=0.05, iou_threshold=0.5, overlap_threshold=0.95, topN=1000):
     """
     :param prediction:
     (x, y, w, h, conf, cls)
@@ -280,7 +281,7 @@ def nms(prediction, score_threshold=0.05, iou_threshold=0.5, overlap_threshold=0
     """
     prediction = np.array(prediction)
     detections = prediction[(-prediction[:,4]).argsort()]
-    detections = detections[:500]
+    detections = detections[:topN]
     # Iterate through all predicted classes
     unique_labels = np.unique(detections[:, -1])
 

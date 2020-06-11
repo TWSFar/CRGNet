@@ -20,7 +20,7 @@ def parse_args():
     parser.add_argument('--dataset', type=str, default='Visdrone',
                         choices=['DOTA', 'Visdrone'], help='dataset name')
     parser.add_argument('--test_dir', type=str,
-                        default=user_dir+"/data/UnderWater/test")
+                        default=user_dir+"/data/Visdrone/challenge")
                         # default="E:\\CV\\data\\Underwater\\test")
     parser.add_argument('--aim', type=int, default=100,
                         help='gt aim scale in chip')

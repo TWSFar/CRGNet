@@ -9,7 +9,7 @@ from collections import OrderedDict
 hyp = {
     'dataset': 'VisDrone2019_detect_voc',
     'img_type': '.jpg',
-    'mode': 'train',  # for save instance_train.json
+    'mode': 'val',  # for save instance_train.json
     'num_class': 10,
     'data_dir': '/home/twsf/data/Visdrone/density_chip',
 }

@@ -108,7 +108,7 @@ class Trainer(object):
         last_time = time.time()
         epoch_loss = []
         for iter_num, sample in enumerate(self.train_loader):
-            if iter_num >= 1: break
+            if iter_num >= 0: break
             try:
                 imgs = sample["image"].to(opt.device)
                 density_gt = sample["label"].to(opt.device)
@@ -191,7 +191,7 @@ class Trainer(object):
                 pred = np.argmax(pred, axis=1).reshape(target.shape)
                 self.evaluator.add_batch(target, pred, path)
                 density_pred = density_pred.clamp(min=0.00018) * region_pred.argmax(1, keepdim=True)
-                SMAE += (density_gt - density_pred).abs().sum().item()
+                SMAE += (density_gt.sum() - density_pred.sum()).abs().item()
 
             # Fast test during the training
             MAE = SMAE / (len(self.val_dataset) * opt.norm_cfg['para'])

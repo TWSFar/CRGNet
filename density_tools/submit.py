@@ -9,16 +9,17 @@ from tqdm import tqdm
 
 hyp = {
     'result': "/home/twsf/work/CRGNet/chip_results.json",
-    'local': "/home/twsf/data/Visdrone/density_chip/Locations/test_chip.json",
+    'local': "/home/twsf/data/Visdrone/challenge/density_loc/test_chip.json",
     'submit_dir': './results',
     'show': False,
-    'srcimg_dir': "/home/twsf/data/Visdrone/test/images/"
+    'srcimg_dir': "/home/twsf/data/Visdrone/challenge/images/"
 }
 
 
 class Submit(object):
     def __init__(self):
         self.srcimg_dir = hyp['srcimg_dir']
+        self.img_list = os.listdir(hyp['srcimg_dir'])
         if not osp.exists(hyp['submit_dir']):
             os.mkdir(hyp['submit_dir'])
 
@@ -44,15 +45,20 @@ class Submit(object):
 
         # merge
         results = []
-        for img_name, det in tqdm(detecions.items()):
-            det = utils.nms(det, score_threshold=0.05, iou_threshold=0.6, overlap_threshold=1).astype(np.float32)
+        for img_name in tqdm(self.img_list):
+            det = []
+            if img_name in detecions:
+                det = detecions[img_name]
+                det = utils.nms(det, score_threshold=0.05, iou_threshold=0.6, overlap_threshold=1).astype(np.float32)
 
             # save
             with open(osp.join(hyp['submit_dir'], img_name[:-4]+'.txt'), "w") as f:
-                det[:, 5] += 1
                 for box in det:
-                    bbox = [str(x) for x in (list(box[0:6]) + [-1, -1])]
-                    f.write(','.join(bbox) + '\n')
+                    box[2:4] -= box[:2]
+                    line = []
+                    for idx, v in enumerate(list(box[0:5]) + [box[5]+1] + [-1, -1]):
+                        line.append(str(int(v)) if idx != 4 else str(v))
+                    f.write(','.join(line) + '\n')
 
             # show
             if hyp['show']:
