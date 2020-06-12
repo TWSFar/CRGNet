@@ -6,7 +6,7 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
-from utils import nms, plot_img, MyEncoder, iou_calc1
+from utils import nms, show_image, MyEncoder, iou_calc1
 hyp = {
     'gt': "/home/twsf/data/Visdrone/VisDrone2019-DET-val/annotations_json/instances_val.json",
     'result': "/home/twsf/work/CRGNet/chip_results.json",
@@ -55,13 +55,7 @@ class DET_toolkit(object):
             # det = nms2(det)
             if hyp['show']:
                 img = cv2.imread(osp.join(self.srcimg_dir, img_info['file_name']))[:, :, ::-1]
-                gt_img = plot_img(img, gt, self.cat_ids)
-                pred_img = plot_img(img, det, self.cat_ids)
-                plt.figure(figsize=(10, 10))
-                plt.subplot(1, 1, 1).imshow(gt_img)
-                plt.show()
-                plt.subplot(1, 1, 1).imshow(pred_img)
-                plt.show()
+                show_image(img, det)
 
             for bbox in det:
                 bbox[2:4] = bbox[2:4] - bbox[:2]

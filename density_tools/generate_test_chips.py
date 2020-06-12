@@ -7,6 +7,7 @@ import sys
 import h5py
 import json
 import joblib
+import shutil
 import argparse
 import numpy as np
 import os.path as osp
@@ -40,12 +41,13 @@ class MakeDataset(object):
         self.mask_dir = osp.join(args.test_dir, "density_mask")
         self.chip_dir = osp.join(args.test_dir, "density_chip")
         self.loc_dir = osp.join(args.test_dir, "density_loc")
-        self.gbm = joblib.load('/home/twsf/work/CRGNet/density_tools/gbm_{}_{}.pkl'.format(args.dataset.lower(), args.aim))
+        self.gbm = joblib.load('/home/twsf/work/CRGNet/density_tools/gbm_{}_{}_2.pkl'.format(args.dataset.lower(), args.aim))
         self._init_path()
 
     def _init_path(self):
-        if not osp.exists(self.chip_dir):
-            os.makedirs(self.chip_dir)
+        if osp.exists(self.chip_dir):
+            shutil.rmtree(self.chip_dir)
+        os.makedirs(self.chip_dir)
         if not osp.exists(self.loc_dir):
             os.makedirs(self.loc_dir)
 
@@ -88,6 +90,8 @@ class MakeDataset(object):
         # utils.show_image(mask, np.array(region_box))
         region_box = utils.resize_box(region_box, (mask_w, mask_h), (width, height))
 
+        if len(region_box) == 0:
+            region_box = np.array([[0, 0, width, height]])
         if args.show:
             utils.show_image(image, region_box)
 

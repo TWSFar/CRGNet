@@ -310,22 +310,23 @@ def nms(prediction, score_threshold=0.05, iou_threshold=0.5, overlap_threshold=0
     return best_bboxes
 
 
-def show_image(img, labels=None):
+def show_image(img, labels=None, img_name=None):
     import matplotlib.pyplot as plt
     import matplotlib.cm as cm
     # plt.figure(figsize=(10, 10))
     fig = plt.figure(frameon=False)
+    if img_name is not None:
+        plt.title(img_name) 
     ax = plt.Axes(fig, [0., 0., 1., 1.])
     ax.set_axis_off()
     fig.add_axes(ax)
     plt.imshow(img[..., ::-1], cmap=cm.jet)
     if labels is not None:
         if labels.shape[0] > 0:
-            plt.plot(labels[:, [0, 2, 2, 0, 0]].T, labels[:, [1, 1, 3, 3, 1]].T, '-')
-    plt.savefig("test.png")
+            plt.plot(labels[:, [0, 2, 2, 0, 0]].T, labels[:, [1, 1, 3, 3, 1]].T, '-', color='green', linewidth=1)
+    plt.savefig("chip_utils.png")
     plt.show()
     ax.set_axis_off()
-
     pass
 
 
