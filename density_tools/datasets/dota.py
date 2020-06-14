@@ -3,7 +3,7 @@ import pickle
 import numpy as np
 import os.path as osp
 from PIL import Image
-IMG_ROOT = "source_images"
+IMG_ROOT = "JPEGImages"
 ANNO_ROOT = "Annotations_txt"
 
 
@@ -15,8 +15,8 @@ class DOTA(object):
 
     def __init__(self, db_root):
         self.set_dir = db_root + '/ImageSets'
-        self.img_dir = db_root + IMG_ROOT
-        self.anno_dir = db_root + ANNO_ROOT
+        self.img_dir = osp.join(db_root, IMG_ROOT)
+        self.anno_dir = osp.join(db_root, ANNO_ROOT)
         self.density_voc_dir = db_root + '/density_mask'
         self.detect_voc_dir = db_root + '/density_chip'
         self.cache_dir = osp.join(db_root, 'cache')
@@ -30,7 +30,7 @@ class DOTA(object):
     def _get_imglist(self, split='train'):
         """ return list of all image paths
         """
-        set_file = osp.join(self.set_dir, split+'_sall.txt')
+        set_file = osp.join(self.set_dir, split+'_all.txt')
         img_list = []
         with open(set_file) as f:
             for line in f.readlines():

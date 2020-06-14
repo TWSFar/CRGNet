@@ -7,9 +7,9 @@ import xml.etree.ElementTree as ET
 from collections import OrderedDict
 
 hyp = {
-    'dataset': 'VisDrone2019_detect_voc',
+    'help': 'voc type transform to coco type',
     'img_type': '.jpg',
-    'mode': 'val',  # for save instance_train.json
+    'mode': 'train',  # for save instance_train.json
     'num_class': 10,
     'data_dir': '/home/twsf/data/Visdrone/density_chip',
 }

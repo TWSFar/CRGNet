@@ -25,14 +25,15 @@ import matplotlib.pyplot as plt
 hyp = {
     'dataset': 'DOTA',
     'img_type': '.png',
-    'mode': 'train',  # for save Set: train.txt
+    'mode': 'val',  # for save Set: train.txt
+    'resize': False,
     'data_dir': '/home/twsf/data/DOTA/',
     'show': False
 }
-hyp['xml_dir'] = osp.join(hyp['data_dir'], 'Annotations_all')
+hyp['xml_dir'] = osp.join(hyp['data_dir'], 'Annotations')
 hyp['txt_dir'] = osp.join(hyp['data_dir'], 'Annotations_txt')
-hyp['img_dir'] = osp.join(hyp['data_dir'], 'source_images')
-hyp['dstimg_dir'] = osp.join(hyp['data_dir'], 'JPEGImages')
+hyp['img_dir'] = osp.join(hyp['data_dir'], 'JPEGImages')
+hyp['dstimg_dir'] = osp.join(hyp['data_dir'], 'images_trans')
 hyp['set_dir'] = osp.join(hyp['data_dir'], 'ImageSets')
 
 classes = ('plane', 'ship', 'storage-tank', 'baseball-diamond',
@@ -123,7 +124,7 @@ if __name__ == '__main__':
 
     # txt_files = os.listdir(hyp['txt_dir'])
     set_list = []
-    with open(hyp['set_dir']+'/{}_sall.txt'.format(hyp['mode'])) as f:
+    with open(hyp['set_dir']+'/{}_all.txt'.format(hyp['mode'])) as f:
         for line in f.readlines():
             set_list.append(line.strip())
 
@@ -140,7 +141,8 @@ if __name__ == '__main__':
         img = plt.imread(img_path)
 
         # transform
-        img, box_all = resizer(img, box_all)
+        if hyp['resize']:
+            img, box_all = resizer(img, box_all)
         tsize = img.shape[:2]
 
         # del
@@ -165,7 +167,8 @@ if __name__ == '__main__':
         anno_xml = os.path.join(hyp['xml_dir'], file_name[:-4] + '.xml')
         with open(anno_xml, 'w') as fx:
             fx.write(dom.toprettyxml(indent='\t', encoding='utf-8').decode('utf-8'))
-        mmcv.imwrite((img[..., ::-1]*255).astype(np.uint8), osp.join(hyp['dstimg_dir'], file_name[:-4]+'.jpg'))
+        if hyp['resize']:
+            mmcv.imwrite((img[..., ::-1]*255).astype(np.uint8), osp.join(hyp['dstimg_dir'], file_name[:-4]+'.jpg'))
 
         if hyp['show']:
             show_image(img, np.array(box_all))

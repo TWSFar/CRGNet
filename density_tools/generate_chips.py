@@ -26,7 +26,7 @@ def parse_args():
                         default=user_dir+"/data/Visdrone/",
                         # default="E:\\CV\\data\\visdrone",
                         help="dataset's root path")
-    parser.add_argument('--imgsets', type=str, default=['val', 'train', 'test'],
+    parser.add_argument('--imgsets', type=str, default=['val', 'train'],
                         nargs='+', help='for train or val')
     parser.add_argument('--aim', type=int, default=100,
                         help='gt aim scale in chip')

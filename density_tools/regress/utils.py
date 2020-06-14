@@ -19,7 +19,7 @@ def bbox_merge(bbox1, bbox2):
     return np.hstack((left_up, right_down))
 
 
-def delete_inner_region(regions, mask_shape, thresh=0.95):
+def delete_inner_region(regions, mask_shape, thresh=0.99):
     """
     Args:
         regions: xmin, ymin, xmax, ymax
@@ -70,6 +70,7 @@ def generate_crop_region(regions, mask, mask_shape, img_shape, gbm=None):
     img_h, img_w = img_shape
     final_regions = []
     info = []
+    # info = False
     split = 0
     enlarge = 0
     for box in regions:
@@ -80,25 +81,40 @@ def generate_crop_region(regions, mask, mask_shape, img_shape, gbm=None):
         obj_num = max(mask_chip.sum(), 1.0)
         chip_area = box_w * box_h
         weight = gbm.predict([[obj_num, obj_area, chip_area, img_shape[0]*img_shape[1]]])[0]
-        # info.append([obj_num, obj_area, chip_area])
+        # info.append([obj_num, obj_area, chip_area])  # 1
+        # final_regions.append(box)  # 2
 
         # resize
         det_w = box_w * img_w / mask_w
         det_h = box_h * img_h / mask_h
         det_area = det_w * det_h
-        weight = max(min(weight, 9), 65536 / det_area)  # enlarge minsize: 256*256
-        # if weight <= 0.6 and (box_w > mask_w * 0.3 or box_h > mask_h * 0.4):
-        if weight <= 0.6:
+        alpha = mask_w / mask_h
+        weight = min(max(weight, 65536 / det_area), 9)  # enlarge minsize: 65536=256*256
+        # weight = min(weight, 9)
+        if weight <= 0.6 and (box_w > 0.3 * mask_w or box_h > 0.3 * alpha * mask_h):
             split += 1
+            # show_image(mask, np.array([box]))
             final_regions.extend(region_split(box, mask_shape, weight))
-        elif weight > 1 and (det_w < 0.5 * img_w or det_h < 0.5 * img_h):
+        elif weight > 1 and (box_w < 0.5 * mask_w and box_h < 0.5 * alpha * mask_h):
             enlarge += 1
-            weight = min(weight, 4)
             final_regions.append(region_enlarge(box, mask_shape, weight))
         else:
-            final_regions.append(region_enlarge(box, mask_shape, 1))
+            final_regions.append(box)
 
     final_regions = np.array(final_regions)
+    while(1):
+        idx = np.zeros((len(final_regions)))
+        for i in range(len(final_regions)):
+            for j in range(len(final_regions)):
+                if i == j or idx[i] == 1 or idx[j] == 1:
+                    continue
+                if overlap(final_regions[i], final_regions[j], thresh=0.8):
+                    final_regions[i] = bbox_merge(final_regions[i], final_regions[j])
+                    idx[j] = 1
+        if sum(idx) == 0:
+            break
+        final_regions = final_regions[idx == 0]
+
     if len(final_regions) > 0:
         final_regions = delete_inner_region(final_regions.copy(), mask_shape)
 
@@ -264,22 +280,23 @@ def iou_calc2(boxes1, boxes2):
     return IOU
 
 
-def show_image(img, labels=None):
+def show_image(img, labels=None, img_name=None):
     import matplotlib.pyplot as plt
     import matplotlib.cm as cm
     # plt.figure(figsize=(10, 10))
     fig = plt.figure(frameon=False)
+    if img_name is not None:
+        plt.title(img_name) 
     ax = plt.Axes(fig, [0., 0., 1., 1.])
     ax.set_axis_off()
     fig.add_axes(ax)
-    plt.imshow(img, cmap=cm.jet)
+    plt.imshow(img[..., ::-1], cmap=cm.jet)
     if labels is not None:
         if labels.shape[0] > 0:
-            plt.plot(labels[:, [0, 2, 2, 0, 0]].T, labels[:, [1, 1, 3, 3, 1]].T, '-')
-    plt.savefig("test.png", dpi=600)
+            plt.plot(labels[:, [0, 2, 2, 0, 0]].T, labels[:, [1, 1, 3, 3, 1]].T, '-', color='green', linewidth=1)
+    plt.savefig("chip_utils.png")
     plt.show()
     ax.set_axis_off()
-
     pass
 
 

@@ -85,8 +85,8 @@ def generate_crop_region(regions, mask, mask_shape, img_shape, gbm=None):
         det_h = box_h * img_h / mask_h
         det_area = det_w * det_h
         alpha = mask_w / mask_h
-        # weight = min(max(weight, 65536 / det_area), 9)  # enlarge minsize: 65536=256*256
-        weight = min(weight, 9)
+        weight = min(max(weight, 65536 / det_area), 9)  # enlarge minsize: 65536=256*256
+        # weight = min(weight, 9)
         if weight <= 0.6 and (box_w > 0.3 * mask_w or box_h > 0.3 * alpha * mask_h):
             final_regions.extend(region_split(box, mask_shape, weight))
         elif weight > 1 and (box_w < 0.5 * mask_w and box_h < 0.5 * alpha * mask_h):

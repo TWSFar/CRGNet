@@ -21,7 +21,7 @@ def parse_args():
     parser.add_argument('--dataset', type=str, default='Visdrone',
                         choices=['DOTA', 'Visdrone'], help='dataset name')
     parser.add_argument('--test_dir', type=str,
-                        default=user_dir+"/data/Visdrone/challenge")
+                        default=user_dir+"/data/Visdrone/VisDrone2019-DET-val")
                         # default="E:\\CV\\data\\Underwater\\test")
     parser.add_argument('--aim', type=int, default=100,
                         help='gt aim scale in chip')
@@ -41,7 +41,7 @@ class MakeDataset(object):
         self.mask_dir = osp.join(args.test_dir, "density_mask")
         self.chip_dir = osp.join(args.test_dir, "density_chip")
         self.loc_dir = osp.join(args.test_dir, "density_loc")
-        self.gbm = joblib.load('/home/twsf/work/CRGNet/density_tools/gbm_{}_{}_2.pkl'.format(args.dataset.lower(), args.aim))
+        self.gbm = joblib.load('/home/twsf/work/CRGNet/density_tools/gbm_{}_{}.pkl'.format(args.dataset.lower(), args.aim))
         self._init_path()
 
     def _init_path(self):

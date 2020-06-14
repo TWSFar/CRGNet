@@ -51,7 +51,7 @@ class DET_toolkit(object):
             det = detecions[img_info['file_name']]
             gt = self.load_annotations(img_info['file_name'])
             gt, det = self.dropObjectsInIgr(gt, det)
-            det = nms(det, score_threshold=0.05, iou_threshold=0.5, overlap_threshold=1)[:, [0, 1, 2, 3, 5, 4]].astype(np.float32)
+            det = nms(det, score_threshold=0.05, iou_threshold=0.6, overlap_threshold=1)[:, [0, 1, 2, 3, 5, 4]].astype(np.float32)
             # det = nms2(det)
             if hyp['show']:
                 img = cv2.imread(osp.join(self.srcimg_dir, img_info['file_name']))[:, :, ::-1]

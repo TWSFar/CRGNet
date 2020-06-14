@@ -19,19 +19,25 @@ user_dir = os.path.expanduser('~')
 
 def parse_args():
     parser = argparse.ArgumentParser(description="convert to voc dataset")
-    parser.add_argument('--dataset', type=str, default='Visdrone',
-                        choices=['Visdrone', 'DOTA'], help='dataset name')
+    parser.add_argument('--dataset', type=str, default='TT100K',
+                        choices=['Visdrone', 'DOTA', 'TT100K'], help='dataset name')
     parser.add_argument('--db_root', type=str,
                         # default="G:\\CV\\Dataset\\Detection\\Visdrone",
-                        default="/home/twsf/data/Visdrone",
+                        default="/home/twsf/data/TT100K",
                         help="dataset's root path")
-    parser.add_argument('--imgsets', type=str, default=['train'],
+    parser.add_argument('--imgsets', type=str, default=['train', 'val'],
                         nargs='+', help='for train or val')
     parser.add_argument('--aim', type=int, default=100,
                         help='gt aim scale in chip')
     parser.add_argument('--show', type=bool, default=False,
                         help="show image and chip box")
     args = parser.parse_args()
+    if args.dataset.lower() == 'visdrone':
+        args.y_axis_max = 100000
+    elif args.dataset.lower() == 'tt100k':
+        args.y_axis_max = 7000
+    elif args.dataset.lower() == 'dota':
+        args.y_axis_max = 40000
     return args
 
 
@@ -47,7 +53,7 @@ class ChipStatistics(object):
         self.dataset = get_dataset(args.dataset, args.db_root)
         self.density_dir = self.dataset.density_voc_dir
         self.segmentation_dir = self.density_dir + '/SegmentationClass'
-        self.gbm = joblib.load('/home/twsf/work/CRGNet/density_tools/gbm_visdrone_100.pkl')
+        self.gbm = joblib.load('/home/twsf/work/CRGNet/density_tools/gbm_{}_100.pkl'.format(args.dataset.lower()))
         # self.gbm = None
 
     def __call__(self):
@@ -76,7 +82,7 @@ class ChipStatistics(object):
             # plt.title('object scale distribution')
             plt.xlabel('object scale')
             plt.ylabel('numbers')
-            plt.ylim((0, 100000))
+            plt.ylim((0, args.y_axis_max))
             plt.bar(x_axis, y_axis)
             plt.savefig(osp.join(result_dir, "{}_dist.png".format(args.dataset)))
             plt.show()
@@ -105,13 +111,14 @@ class ChipStatistics(object):
                 for i in range(0, 20):
                     f.writelines('scale {} sum: {}'.format(x_axis[i], scale_distribution[i:i+1].sum()) + '\n')
 
-            # with open(result_dir+'/{}_{}.csv'.format(args.dataset, imgset), 'w') as f:
+            # with open(result_dir+'/{}_{}_2.csv'.format(args.dataset, imgset), 'w') as f:
             #     for line in self.info:
             #         for i, v in enumerate(line):
             #             if i > 0:
             #                 f.writelines(',')
             #             f.writelines(str(v))
             #         f.writelines('\n')
+
         print(splits, enlarges)
 
     def generate_region_gt(self, region_box, gt_bboxes, labels):
@@ -182,6 +189,7 @@ class ChipStatistics(object):
             image, img_id, region_box, chip_gt_list, chip_label_list, neglect_list, imgset)
 
         return split, enlarge
+        # return 0, 0
 
     def write_chip_and_anno(self, info, image, img_id,
                             chip_list, chip_gt_list,
