@@ -25,7 +25,7 @@ model = dict(
         num_outs=5),
     bbox_head=dict(
         type='ATSSHead',
-        num_classes=10,
+        num_classes=45,
         in_channels=256,
         stacked_convs=4,
         feat_channels=256,
@@ -55,10 +55,10 @@ train_cfg = dict(
     pos_weight=-1,
     debug=False)
 test_cfg = dict(
-    nms_pre=4000,
+    nms_pre=1000,
     min_bbox_size=0,
     score_thr=0.05,
     nms=dict(type='nms', iou_thr=0.6),
-    max_per_img=1000)
+    max_per_img=100)
 # optimizer
 optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)

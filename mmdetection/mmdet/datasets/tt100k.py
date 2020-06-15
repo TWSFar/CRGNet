@@ -18,10 +18,10 @@ from .custom import CustomDataset
 @DATASETS.register_module()
 class TT100KDataset(CustomDataset):
 
-    CLASSES = ('i2', 'i4', 'i5', 'il100', 'il60', 'il80', 'io', 'ip', 'p10', 'p11', 'p12', 'p19',
-               'p23', 'p26', 'p27', 'p3', 'p5', 'p6', 'pg', 'ph4', 'ph4.5', 'ph5', 'pl100', 'pl120',
-               'pl20', 'pl30', 'pl40', 'pl5', 'pl50', 'pl60', 'pl70', 'pl80', 'pm20', 'pm30',
-               'pm55', 'pn', 'pne', 'po', 'pr40', 'w13', 'w32', 'w55', 'w57', 'w59', 'wo')
+    CLASSES = ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12',
+               '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23',
+               '24', '25', '26', '27', '28', '29', '30', '31', '32', '33', '34',
+               '35', '36', '37', '38', '39', '40', '41', '42', '43', '44')
 
     def load_annotations(self, ann_file):
         self.coco = COCO(ann_file)
