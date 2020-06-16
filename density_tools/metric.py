@@ -17,7 +17,7 @@ hyp = {
 }
 
 
-class DET_toolkit(object):
+class Metric(object):
     def __init__(self):
         self.coco = COCO(hyp['gt'])
         self.srcimg_dir = hyp['srcimg_dir']
@@ -97,5 +97,5 @@ class DET_toolkit(object):
 
 
 if __name__ == '__main__':
-    det = DET_toolkit()
+    det = Metric()
     det()

@@ -32,7 +32,7 @@ def parse_args():
                         help='gt aim scale in chip')
     parser.add_argument('--padding', type=str, default=[],
                         nargs='+', help='random padding neglect box')
-    parser.add_argument('--show', type=bool, default=False,
+    parser.add_argument('--show', type=bool, default=True,
                         help="show image and chip box")
     args = parser.parse_args()
     return args

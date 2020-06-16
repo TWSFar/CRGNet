@@ -363,7 +363,7 @@ def eval_map(det_results,
             'num_dets': num_dets,
             'recall': recalls,
             'precision': precisions,
-            'ap': ap
+            'ap': ap,
         })
     if scale_ranges is not None:
         # shape (num_classes, num_scales)
@@ -445,18 +445,26 @@ def print_map_summary(mean_ap,
     if not isinstance(mean_ap, list):
         mean_ap = [mean_ap]
 
-    header = ['class', 'gts', 'dets', 'precision', 'recall', 'ap']
+    header = ['class', 'gts', 'dets', 'precision', 'recall', 'ap', 'f1']
+    eps = np.finfo(np.float32).eps
     for i in range(num_scales):
         if scale_ranges is not None:
             print_log(f'Scale range {scale_ranges[i]}', logger=logger)
         table_data = [header]
+        f1s = []
         for j in range(num_classes):
+            f1s.append(2.0 * precision[i, j] * recalls[i, j] / max(precision[i, j] + recalls[i, j], eps))
             row_data = [
                 label_names[j], num_gts[i, j], num_dets[i, j],
-                f'{precision[i, j]:.3f}', f'{recalls[i, j]:.3f}', f'{aps[i, j]:.3f}'
+                f'{precision[i, j]:.3f}', f'{recalls[i, j]:.3f}',
+                f'{aps[i, j]:.3f}', f'{f1s[j]:.3f}'
             ]
             table_data.append(row_data)
-        table_data.append(['mAP', f'{num_gts[i].sum()}', f'{num_dets[i].sum()}', f'{precision[i].mean():.3f}', f'{recalls[i].mean():.3f}', f'{mean_ap[i]:.3f}'])
+        f1s = np.array(f1s)
+        table_data.append(['mAP', f'{num_gts[i].sum()}',
+                           f'{num_dets[i].sum()}', f'{precision[i].mean():.3f}',
+                           f'{recalls[i].mean():.3f}', f'{mean_ap[i]:.3f}',
+                           f'{f1s.mean():.3f}'])
         table = AsciiTable(table_data)
         table.inner_footing_row_border = True
         print_log('\n' + table.table, logger=logger)
