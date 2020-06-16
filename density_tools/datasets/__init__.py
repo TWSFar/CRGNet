@@ -1,4 +1,4 @@
-from datasets import visdrone, tt100k, dota
+from datasets import visdrone, tt100k, dota, uavdt
 
 
 def get_dataset(db_name, db_root):
@@ -10,6 +10,9 @@ def get_dataset(db_name, db_root):
 
     elif db_name.lower() == 'dota':
         return dota.DOTA(db_root)
+
+    elif db_name.lower() == 'uavdt':
+        return uavdt.UAVDT(db_root)
 
     else:
         raise NotImplementedError
