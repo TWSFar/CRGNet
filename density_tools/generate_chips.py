@@ -20,21 +20,22 @@ user_dir = osp.expanduser('~')
 
 def parse_args():
     parser = argparse.ArgumentParser(description="convert to voc dataset")
-    parser.add_argument('--dataset', type=str, default='TT100K',
-                        choices=['DOTA', 'Visdrone', 'TT100K'], help='dataset name')
-    parser.add_argument('--db_root', type=str,
-                        default=user_dir+"/data/TT100K/",
-                        # default="E:\\CV\\data\\visdrone",
-                        help="dataset's root path")
+    parser.add_argument('--dataset', type=str, default='UAVDT',
+                        choices=['DOTA', 'Visdrone', 'TT100K', 'UAVDT'], help='dataset name')
+    # parser.add_argument('--db_root', type=str,
+    #                     default=user_dir+"/data/TT100K/",
+    #                     # default="E:\\CV\\data\\visdrone",
+    #                     help="dataset's root path")
     parser.add_argument('--imgsets', type=str, default=['val', 'train'],
                         nargs='+', help='for train or val')
     parser.add_argument('--aim', type=int, default=100,
                         help='gt aim scale in chip')
     parser.add_argument('--padding', type=str, default=[],
                         nargs='+', help='random padding neglect box')
-    parser.add_argument('--show', type=bool, default=True,
+    parser.add_argument('--show', type=bool, default=False,
                         help="show image and chip box")
     args = parser.parse_args()
+    args.db_root = user_dir + f'/data/{args.dataset}/'
     return args
 
 

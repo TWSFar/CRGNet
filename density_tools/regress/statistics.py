@@ -45,7 +45,7 @@ def parse_args():
 
 args = parse_args()
 print(args)
-result_dir = "density_tools/statistic_results"
+result_dir = "/home/twsf/work/CRGNet/density_tools/statistic_results"
 if not osp.exists(result_dir):
     os.mkdir(result_dir)
 
@@ -55,8 +55,8 @@ class ChipStatistics(object):
         self.dataset = get_dataset(args.dataset, args.db_root)
         self.density_dir = self.dataset.density_voc_dir
         self.segmentation_dir = self.density_dir + '/SegmentationClass'
-        # self.gbm = joblib.load('/home/twsf/work/CRGNet/density_tools/gbm_{}_100.pkl'.format(args.dataset.lower()))
-        self.gbm = None
+        self.gbm = joblib.load('/home/twsf/work/CRGNet/density_tools/weights/gbm_{}_100.pkl'.format(args.dataset.lower()))
+        # self.gbm = None
 
     def __call__(self):
         for imgset in args.imgsets:
@@ -69,7 +69,7 @@ class ChipStatistics(object):
             print("make {} detect dataset...".format(imgset))
             samples = self.dataset._load_samples(imgset)
             for i, sample in enumerate(tqdm(samples)):
-                # if i < 5000 and i % 10 != 0: continue
+                # if i % 2000 != 0: continue
                 split, enlarge = self.make_chip(sample, imgset)
                 splits += split
                 enlarges += enlarge
@@ -113,13 +113,13 @@ class ChipStatistics(object):
                 for i in range(0, 20):
                     f.writelines('scale {} sum: {}'.format(x_axis[i], scale_distribution[i:i+1].sum()) + '\n')
 
-            with open(result_dir+'/{}_{}_2.csv'.format(args.dataset, imgset), 'w') as f:
-                for line in self.info:
-                    for i, v in enumerate(line):
-                        if i > 0:
-                            f.writelines(',')
-                        f.writelines(str(v))
-                    f.writelines('\n')
+            # with open(result_dir+'/{}_{}_2.csv'.format(args.dataset, imgset), 'w') as f:
+            #     for line in self.info:
+            #         for i, v in enumerate(line):
+            #             if i > 0:
+            #                 f.writelines(',')
+            #             f.writelines(str(v))
+            #         f.writelines('\n')
 
         print(splits, enlarges)
 
@@ -217,7 +217,7 @@ class ChipStatistics(object):
             self.box_scale.extend(list(area_ratio))
             self.chip_scale.append([area, 1.0*area/(width*height)])
             self.chip_box_scale.append(np.median(area_ratio))
-            self.info.append(info[i] + [image.shape[0]*image.shape[1], np.mean(area_ratio)])
+            # self.info.append(info[i] + [image.shape[0]*image.shape[1], np.mean(area_ratio)])
 
         return chip_loc
 

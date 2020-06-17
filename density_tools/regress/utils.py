@@ -80,43 +80,43 @@ def generate_crop_region(regions, mask, mask_shape, img_shape, gbm=None):
         obj_area = max(np.where(mask_chip > 0, 1, 0).sum(), 1)
         obj_num = max(mask_chip.sum(), 1.0)
         chip_area = box_w * box_h
-        # weight = gbm.predict([[obj_num, obj_area, chip_area, img_shape[0]*img_shape[1]]])[0]
-        info.append([obj_num, obj_area, chip_area])  # 1
-        final_regions.append(box)  # 2
+        weight = gbm.predict([[obj_num, obj_area, chip_area, img_shape[0]*img_shape[1]]])[0]
+        # info.append([obj_num, obj_area, chip_area])  # 1
+        # final_regions.append(box)  # 2
 
-    #     # resize
-    #     det_w = box_w * img_w / mask_w
-    #     det_h = box_h * img_h / mask_h
-    #     det_area = det_w * det_h
-    #     alpha = mask_w / mask_h
-    #     weight = min(max(weight, 65536 / det_area), 9)  # enlarge minsize: 65536=256*256
-    #     # weight = min(weight, 9)
-    #     if weight <= 0.6 and (box_w > 0.3 * mask_w or box_h > 0.3 * alpha * mask_h):
-    #         split += 1
-    #         # show_image(mask, np.array([box]))
-    #         final_regions.extend(region_split(box, mask_shape, weight))
-    #     elif weight > 1 and (box_w < 0.5 * mask_w and box_h < 0.5 * alpha * mask_h):
-    #         enlarge += 1
-    #         final_regions.append(region_enlarge(box, mask_shape, weight))
-    #     else:
-    #         final_regions.append(box)
+        # resize
+        det_w = box_w * img_w / mask_w
+        det_h = box_h * img_h / mask_h
+        det_area = det_w * det_h
+        alpha = mask_w / mask_h
+        weight = min(max(weight, 65536 / det_area), 9)  # enlarge minsize: 65536=256*256
+        # weight = min(weight, 9)
+        if weight <= 0.6 and (box_w > 0.3 * mask_w or box_h > 0.3 * alpha * mask_h):
+            split += 1
+            # show_image(mask, np.array([box]))
+            final_regions.extend(region_split(box, mask_shape, weight))
+        elif weight > 1 and (box_w < 0.5 * mask_w and box_h < 0.5 * alpha * mask_h):
+            enlarge += 1
+            final_regions.append(region_enlarge(box, mask_shape, weight))
+        else:
+            final_regions.append(box)
 
-    # final_regions = np.array(final_regions)
-    # while(1):
-    #     idx = np.zeros((len(final_regions)))
-    #     for i in range(len(final_regions)):
-    #         for j in range(len(final_regions)):
-    #             if i == j or idx[i] == 1 or idx[j] == 1:
-    #                 continue
-    #             if overlap(final_regions[i], final_regions[j], thresh=0.8):
-    #                 final_regions[i] = bbox_merge(final_regions[i], final_regions[j])
-    #                 idx[j] = 1
-    #     if sum(idx) == 0:
-    #         break
-    #     final_regions = final_regions[idx == 0]
+    final_regions = np.array(final_regions)
+    while(1):
+        idx = np.zeros((len(final_regions)))
+        for i in range(len(final_regions)):
+            for j in range(len(final_regions)):
+                if i == j or idx[i] == 1 or idx[j] == 1:
+                    continue
+                if overlap(final_regions[i], final_regions[j], thresh=0.8):
+                    final_regions[i] = bbox_merge(final_regions[i], final_regions[j])
+                    idx[j] = 1
+        if sum(idx) == 0:
+            break
+        final_regions = final_regions[idx == 0]
 
-    # if len(final_regions) > 0:
-    #     final_regions = delete_inner_region(final_regions.copy(), mask_shape)
+    if len(final_regions) > 0:
+        final_regions = delete_inner_region(final_regions.copy(), mask_shape)
 
     return np.array(final_regions), (info, split, enlarge)
 

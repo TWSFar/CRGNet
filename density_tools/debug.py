@@ -1,63 +1,42 @@
-"""
-TT100K:
-    这个数据集仅仅保留实例个数不小于100的标签
-
-    note:
-        classes = ('i2', 'i4', 'i5', 'il100', 'il60', 'il80', 'io', 'ip', 'p10', 'p11', 'p12', 'p19',
-                'p23', 'p26', 'p27', 'p3', 'p5', 'p6', 'pg', 'ph4', 'ph4.5', 'ph5', 'pl100', 'pl120',
-                'pl20', 'pl30', 'pl40', 'pl5', 'pl50', 'pl60', 'pl70', 'pl80', 'pm20', 'pm30',
-                'pm55', 'pn', 'pne', 'po', 'pr40', 'w13', 'w32', 'w55', 'w57', 'w59', 'wo')
-"""
 import os
-import json
-import os.path as osp
+import shutil
 import numpy as np
 from tqdm import tqdm
+import os.path as osp
 import matplotlib.pyplot as plt
-from xml.etree.ElementTree import Element, SubElement, tostring
 from xml.dom.minidom import parseString
-
-hyp = {
-    'dataset': 'TT100K',
-    'img_type': '.jpg',
-    'mode': 'train',  # for save Set: train.txt choose: train, test
-    'data_dir': '/home/twsf/data/TT100K/',
-}
-
-hyp['xml_dir'] = osp.join(hyp['data_dir'], 'Annotations')
-hyp['img_dir'] = osp.join(hyp['data_dir'], 'JPEGImages')
-hyp['set_dir'] = osp.join(hyp['data_dir'], 'ImageSets')
-hyp['anno_file'] = osp.join(hyp['data_dir'], 'annotations.json')
-
-classes = ('i2', 'i4', 'i5', 'il100', 'il60', 'il80', 'io', 'ip', 'p10', 'p11', 'p12', 'p19',
-           'p23', 'p26', 'p27', 'p3', 'p5', 'p6', 'pg', 'ph4', 'ph4.5', 'ph5', 'pl100', 'pl120',
-           'pl20', 'pl30', 'pl40', 'pl5', 'pl50', 'pl60', 'pl70', 'pl80', 'pm20', 'pm30',
-           'pm55', 'pn', 'pne', 'po', 'pr40', 'w13', 'w32', 'w55', 'w57', 'w59', 'wo')
-cat2label = {cat_id: i for i, cat_id in enumerate(classes)}
+import xml.etree.ElementTree as ET
+from xml.etree.ElementTree import Element, SubElement, tostring
 
 
-def getGTBox(objects):
-
+def getGTBox(anno_path, **kwargs):
     box_all = []
-    gt_cls = []
-    temp = ['xmin', 'ymin', 'xmax', 'ymax']
-    for obj in objects:
-        if obj['category'] not in classes:
-            continue
-        gt_cls.append(obj['category'])
-        box = []
-        for lab in temp:
-            box.append(obj['bbox'][lab])
-        box_all.append(box)
+    xml = ET.parse(anno_path).getroot()
 
-    return box_all, gt_cls
+    size = xml.find('size')
+    width = float(size.find('width').text)
+    height = float(size.find('height').text)
+
+    # y1, x1, y2, x2
+    pts = ['xmin', 'ymin', 'xmax', 'ymax']
+    # bounding boxes
+    for obj in xml.iter('object'):
+        bbox = obj.find('bndbox')
+        bndbox = []
+        for i, pt in enumerate(pts):
+            cur_pt = int(bbox.find(pt).text) - 1
+            bndbox.append(cur_pt)
+        bndbox.append(int(obj.find('name').text))
+        box_all += [bndbox]
+
+    return box_all, (int(height), int(width))
 
 
-def make_xml(box_list, label_list, image_name, tsize):
+def make_xml(box_list, image_name, tsize):
     node_root = Element('annotation')
 
     node_folder = SubElement(node_root, 'folder')
-    node_folder.text = hyp['dataset']
+    node_folder.text = "UAVDT"
 
     node_filename = SubElement(node_root, 'filename')
     node_filename.text = image_name
@@ -76,7 +55,7 @@ def make_xml(box_list, label_list, image_name, tsize):
     for i in range(len(box_list)):
         node_object = SubElement(node_root, 'object')
         node_name = SubElement(node_object, 'name')
-        node_name.text = str(cat2label[label_list[i]])
+        node_name.text = str(box_list[i][4])
         node_difficult = SubElement(node_object, 'difficult')
         node_difficult.text = '0'
 
@@ -98,40 +77,14 @@ def make_xml(box_list, label_list, image_name, tsize):
 
 
 if __name__ == '__main__':
-    with open(hyp['anno_file']) as f:
-        annotations = json.load(f)
 
-    setList = []
-
-    for img_id, sample in tqdm(annotations['imgs'].items()):
-        if hyp['mode'] not in sample['path']:
-            continue
-
-        objects = sample['objects']
-        box_all, gt_cls = getGTBox(objects)
-        if len(gt_cls) == 0:
-            continue
-
-        setList.append(img_id)
-
-        # image info
-        img_name = img_id + hyp['img_type']  # image name
-        img_path = osp.join(hyp['img_dir'], img_name)  # image path
-        tsize = plt.imread(img_path).shape[:2]
-
-        dom = make_xml(box_all, gt_cls, img_name, tsize)
+    xml_list = os.listdir("/home/twsf/data/UAVDT/Annotations")
+    for xml in tqdm(xml_list):
+        xml_file = "/home/twsf/data/UAVDT/Annotations/" + xml
+        img_name = xml[:-4] + '.jpg'
+        bbox, tsize = getGTBox(xml_file)
+        dom = make_xml(bbox, img_name, tsize)
 
         # save
-        anno_xml = os.path.join(hyp['xml_dir'], img_id + '.xml')
-        with open(anno_xml, 'w') as fx:
+        with open(xml_file, 'w') as fx:
             fx.write(dom.toprettyxml(indent='\t', encoding='utf-8').decode('utf-8'))
-
-    # save ImageSet
-    if not osp.exists(hyp['set_dir']):
-        os.makedirs(hyp['set_dir'])
-    setPath = osp.join(hyp['set_dir'], hyp['mode'] + '.txt')
-    with open(setPath, 'w') as f:
-        for line in setList:
-            f.writelines(line + '\n')
-    print('{} samples generated'.format(len(setList)))
-    pass

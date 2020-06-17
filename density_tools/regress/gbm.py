@@ -10,16 +10,20 @@ from sklearn.metrics import (mean_absolute_error as MAE,
                              mean_squared_error as MSE,
                              explained_variance_score as EVS,
                              r2_score as R2)
+
+
+dataset = "UAVDT"
 hyp = {
-    'train_dataset1': 'density_tools/statistic_results/DOTA_train1.csv',
-    'test_dataset1': 'density_tools/statistic_results/DOTA_val1.csv',
-    'train_dataset2': 'density_tools/statistic_results/DOTA_train2.csv',
-    'test_dataset2': 'density_tools/statistic_results/DOTA_train2.csv',
-    'aim': 100}
+    'train_dataset1': '/home/twsf/work/CRGNet/density_tools/statistic_results/{}_train_1.csv'.format(dataset),
+    'test_dataset1': '/home/twsf/work/CRGNet/density_tools/statistic_results/{}_val_1.csv'.format(dataset),
+    'train_dataset2': '/home/twsf/work/CRGNet/density_tools/statistic_results/{}_train_2.csv'.format(dataset),
+    'test_dataset2': '/home/twsf/work/CRGNet/density_tools/statistic_results/{}_val_2.csv'.format(dataset),
+    'aim': 75}
 
 
 def main():
     log = get_log()
+
     # Load datasets
     feature_train1, target_train1 = get_dataset(hyp['train_dataset1'], hyp['aim'], transform=False, scaler=False)
     feature_test1, target_test1 = get_dataset(hyp['test_dataset1'], hyp['aim'], transform=False, scaler=False)
@@ -27,8 +31,6 @@ def main():
     feature_test2, target_test2 = get_dataset(hyp['test_dataset2'], hyp['aim'], transform=False, scaler=False)
     feature_train_val = feature_train1 + feature_test1 + feature_train2 + feature_test2
     target_train_val = target_train1 + target_test1 + target_train2 + target_test2
-    feature_train_val2 = feature_train2 + feature_test2
-    target_train_val2 = target_train2 + target_test2
 
     # Define model
     param_grid = {
@@ -59,7 +61,7 @@ def main():
         log.info(metric.__name__+': '+str(score))
 
     # Save
-    joblib.dump(model, 'gbm_dota_{}.pkl'.format(hyp['aim']))
+    joblib.dump(model, '/home/twsf/work/CRGNet/density_tools/weights/gbm_{}_{}.pkl'.format(dataset.lower(), hyp['aim']))
 
 
 if __name__ == '__main__':

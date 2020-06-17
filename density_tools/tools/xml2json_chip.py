@@ -9,8 +9,8 @@ from collections import OrderedDict
 hyp = {
     'help': 'voc type transform to coco type',
     'mode': 'val',  # save instance_train.json
-    'num_class': 45,  # visdrone: 10, dota: 15, tt100k: 45
-    'data_dir': '/home/twsf/data/TT100K/density_chip',
+    'num_class': 3,  # visdrone: 10, dota: 15, tt100k: 45, uavdt: 3
+    'data_dir': '/home/twsf/data/UAVDT/density_chip',
 }
 hyp['json_dir'] = osp.join(hyp['data_dir'], 'Annotations_json')
 hyp['xml_dir'] = osp.join(hyp['data_dir'], 'Annotations')
@@ -75,7 +75,7 @@ def getGTBox(anno_xml, item, **kwargs):
             cur_pt = int(bbox.find(pt).text) - 1
             bndbox.append(cur_pt)
         box_all += [bndbox]
-        # cls = obj.find('name').text
+        cls = obj.find('name').text
         gt_cls.append(item.cat2label[obj.find('name').text])
 
     return box_all, gt_cls
