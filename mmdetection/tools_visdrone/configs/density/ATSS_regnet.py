@@ -1,33 +1,26 @@
 _base_ = [
-    # '../_base_/datasets/coco_detection.py',
-    '../_base_/datasets/voc0712.py',
-    '../_base_/schedules/schedule_1x.py',
-    '../_base_/default_runtime.py'
+    '../_base_/datasets/coco_detection.py',
+    '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
 model = dict(
     type='ATSS',
-    pretrained='open-mmlab://resnext101_32x4d',
+    pretrained='open-mmlab://regnetx_12gf',
     backbone=dict(
-        type='ResNeXt',
-        depth=101,
-        groups=32,
-        base_width=4,
-        num_stages=4,
+        type='RegNet',
+        arch='regnetx_12gf',
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
         norm_cfg=dict(type='BN', requires_grad=True),
+        norm_eval=True,
         style='pytorch'),
     neck=dict(
         type='FPN',
-        in_channels=[256, 512, 1024, 2048],
+        in_channels=[224, 448, 896, 2240],
         out_channels=256,
-        start_level=1,
-        add_extra_convs=True,
-        extra_convs_on_inputs=False,
         num_outs=5),
     bbox_head=dict(
         type='ATSSHead',
-        num_classes=45,
+        num_classes=10,
         in_channels=256,
         stacked_convs=4,
         feat_channels=256,
@@ -57,10 +50,10 @@ train_cfg = dict(
     pos_weight=-1,
     debug=False)
 test_cfg = dict(
-    nms_pre=500,
+    nms_pre=4000,
     min_bbox_size=0,
     score_thr=0.05,
     nms=dict(type='nms', iou_thr=0.6),
-    max_per_img=50)
+    max_per_img=1000)
 # optimizer
 optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)

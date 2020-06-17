@@ -11,8 +11,8 @@ ANNO_ROOT = "Annotations"
 class TT100K(object):
     def __init__(self, db_root):
         self.set_dir = db_root + '/ImageSets'
-        self.img_dir = db_root + IMG_ROOT
-        self.anno_dir = db_root + ANNO_ROOT
+        self.img_dir = osp.join(db_root, IMG_ROOT)
+        self.anno_dir = osp.join(db_root, ANNO_ROOT)
         self.density_voc_dir = db_root + '/density_mask'
         self.detect_voc_dir = db_root + '/density_chip'
         self.cache_dir = osp.join(db_root, 'cache')
