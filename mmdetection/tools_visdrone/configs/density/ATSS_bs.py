@@ -8,15 +8,6 @@ img_norm_cfg = dict(
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
-    dict(
-        type='Expand',
-        mean=img_norm_cfg['mean'],
-        to_rgb=img_norm_cfg['to_rgb'],
-        ratio_range=(1, 4)),
-    dict(
-        type='MinIoURandomCrop',
-        min_ious=(0.1, 0.3, 0.5, 0.7, 0.9),
-        min_crop_size=0.3),
     dict(type='Resize', img_scale=[(966, 966), (1024, 1024)], keep_ratio=True),
     dict(type='RandomFlip', flip_ratio=0.5),
     dict(type='Normalize', **img_norm_cfg),
@@ -77,8 +68,7 @@ model = dict(
         in_channels=[256, 512, 1024, 2048],
         out_channels=256,
         start_level=1,
-        add_extra_convs=True,
-        extra_convs_on_inputs=False,
+        add_extra_convs='on_output',
         num_outs=5),
     bbox_head=dict(
         type='ATSSHead',
