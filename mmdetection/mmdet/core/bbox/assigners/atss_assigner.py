@@ -108,7 +108,7 @@ class ATSSAssigner(BaseAssigner):
             end_idx = start_idx + bboxes_per_level
             distances_per_level = distances[start_idx:end_idx, :]
             _, topk_idxs_per_level = distances_per_level.topk(
-                topk, dim=0, largest=False)
+                self.topk, dim=0, largest=False)
             candidate_idxs.append(topk_idxs_per_level + start_idx)
             start_idx = end_idx
         candidate_idxs = torch.cat(candidate_idxs, dim=0)

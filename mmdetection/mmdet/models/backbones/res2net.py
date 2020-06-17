@@ -1,4 +1,3 @@
-  
 import math
 
 import torch
@@ -159,6 +158,7 @@ class Bottle2neck(_Bottleneck):
 
 class Res2Layer(nn.Sequential):
     """Res2Layer to build Res2Net style backbone.
+
     Args:
         block (nn.Module): block used to build ResLayer.
         inplanes (int): inplanes of block.
@@ -238,6 +238,7 @@ class Res2Layer(nn.Sequential):
 @BACKBONES.register_module()
 class Res2Net(ResNet):
     """Res2Net backbone.
+
     Args:
         scales (int): Scales used in Res2Net. Default: 4
         base_width (int): Basic width of each scale. Default: 26
@@ -260,6 +261,7 @@ class Res2Net(ResNet):
             freeze running stats (mean and var). Note: Effect on Batch Norm
             and its variants only.
         plugins (list[dict]): List of plugins for stages, each dict contains:
+
             - cfg (dict, required): Cfg dict to build plugin.
             - position (str, required): Position inside block to insert
               plugin, options are 'after_conv1', 'after_conv2', 'after_conv3'.
@@ -269,6 +271,7 @@ class Res2Net(ResNet):
             memory while slowing down the training speed.
         zero_init_residual (bool): Whether to use zero init for last norm layer
             in resblocks to let them behave as identity.
+
     Example:
         >>> from mmdet.models import Res2Net
         >>> import torch

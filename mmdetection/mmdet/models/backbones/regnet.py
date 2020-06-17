@@ -10,7 +10,9 @@ from .resnext import Bottleneck
 @BACKBONES.register_module()
 class RegNet(ResNet):
     """RegNet backbone.
+
     More details can be found in `paper <https://arxiv.org/abs/2003.13678>`_ .
+
     Args:
         arch (dict): The parameter of RegNets.
             - w0 (int): initial width
@@ -37,6 +39,7 @@ class RegNet(ResNet):
             memory while slowing down the training speed.
         zero_init_residual (bool): whether to use zero init for last norm layer
             in resblocks to let them behave as identity.
+
     Example:
         >>> from mmdet.models import RegNet
         >>> import torch
@@ -217,12 +220,14 @@ class RegNet(ResNet):
                         depth,
                         divisor=8):
         """Generates per block width from RegNet parameters.
+
         Args:
             initial_width ([int]): Initial width of the backbone
             width_slope ([float]): Slope of the quantized linear function
             width_parameter ([int]): Parameter used to quantize the width.
             depth ([int]): Depth of the backbone.
             divisor (int, optional): The divisor of channels. Defaults to 8.
+
         Returns:
             list, int: return a list of widths of each stage and the number of
                 stages
@@ -243,9 +248,11 @@ class RegNet(ResNet):
     @staticmethod
     def quantize_float(number, divisor):
         """Converts a float to closest non-zero int divisible by divior.
+
         Args:
             number (int): Original number to be quantized.
             divisor (int): Divisor used to quantize the number.
+
         Returns:
             int: quantized number that is divisible by devisor.
         """
@@ -253,10 +260,12 @@ class RegNet(ResNet):
 
     def adjust_width_group(self, widths, bottleneck_ratio, groups):
         """Adjusts the compatibility of widths and groups.
+
         Args:
             widths (list[int]): Width of each stage.
             bottleneck_ratio (float): Bottleneck ratio.
             groups (int): number of groups in each stage
+
         Returns:
             tuple(list): The adjusted widths and groups of each stage.
         """
@@ -276,8 +285,10 @@ class RegNet(ResNet):
 
     def get_stages_from_blocks(self, widths):
         """Gets widths/stage_blocks of network at each stage
+
         Args:
             widths (list[int]): Width in each stage.
+
         Returns:
             tuple(list): width and depth of each stage
         """
