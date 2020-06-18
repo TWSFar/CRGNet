@@ -10,7 +10,7 @@ from collections import OrderedDict
 hyp = {
     'dataset': 'DOTA',
     'img_type': '.jpg',
-    'mode': 'val_all',  # for save Set: train.txt choose: train, test
+    'mode': 'val',  # for save Set: train.txt choose: train, test
     'data_dir': '/home/twsf/data/DOTA',
 }
 hyp['json_dir'] = osp.join(hyp['data_dir'], 'Annotations_json')
