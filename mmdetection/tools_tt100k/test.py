@@ -16,7 +16,7 @@ def parse_args():
     parser.add_argument('--config', default="/home/twsf/work/CRGNet/mmdetection/tools_tt100k/configs/density/ATSS_x101_fpn_giou.py")
     parser.add_argument('--root-dir', default='/home/twsf/data/TT100K')
     parser.add_argument('--nclass', default=45, type=int)
-    parser.add_argument('--score_thr', default=0.2, type=float)
+    parser.add_argument('--score_thr', default=0.3, type=float)
     parser.add_argument('--inference', action='store_true')
     parser.add_argument('--result-path', default='/home/twsf/work/CRGNet/workshops')
     args = parser.parse_args()
