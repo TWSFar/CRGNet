@@ -18,7 +18,7 @@ hyp = {
     'test_dataset1': '/home/twsf/work/CRGNet/density_tools/statistic_results/{}_val_1.csv'.format(dataset),
     'train_dataset2': '/home/twsf/work/CRGNet/density_tools/statistic_results/{}_train_2.csv'.format(dataset),
     'test_dataset2': '/home/twsf/work/CRGNet/density_tools/statistic_results/{}_val_2.csv'.format(dataset),
-    'aim': 100}
+    'aim': 75}
 
 
 def main():

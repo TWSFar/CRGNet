@@ -1,6 +1,5 @@
 _base_ = [
-    '../_base_/datasets/coco_detection.py',
-    '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
+    '../_base_/datasets/coco_detection.py', '../_base_/default_runtime.py'
 ]
 model = dict(
     type='ATSS',
@@ -61,4 +60,13 @@ test_cfg = dict(
     nms=dict(type='nms', iou_thr=0.6),
     max_per_img=2000)
 # optimizer
-optimizer = dict(type='SGD', lr=0.0002, momentum=0.9, weight_decay=0.0001)
+optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
+optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
+# learning policy
+lr_config = dict(
+    policy='step',
+    warmup='linear',
+    warmup_iters=500,
+    warmup_ratio=0.001,
+    step=[20, 35, 45])
+total_epochs = 50
