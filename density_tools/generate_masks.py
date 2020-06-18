@@ -20,7 +20,7 @@ user_dir = osp.expanduser('~')
 
 def parse_args():
     parser = argparse.ArgumentParser(description="convert to voc dataset")
-    parser.add_argument('--dataset', type=str, default='UAVDT',
+    parser.add_argument('--dataset', type=str, default='DOTA',
                         choices=['Visdrone', 'TT100K', 'DOTA', 'UAVDT'], help='dataset name')
     parser.add_argument('--mode', type=str, default=['train', 'val'],
                         nargs='+', help='for train or val')
@@ -42,7 +42,7 @@ def parse_args():
     elif args.dataset.lower() == "tt100k":
         args.mask_size = [30, 30]
     elif args.dataset.lower() == "dota":
-        args.mask_size = [40, 40]
+        args.mask_size = [50, 50]
     elif args.dataset.lower() == "uavdt":
         args.mask_size = [30, 40]
     else:

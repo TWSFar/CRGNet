@@ -19,12 +19,12 @@ user_dir = os.path.expanduser('~')
 
 def parse_args():
     parser = argparse.ArgumentParser(description="convert to voc dataset")
-    parser.add_argument('--dataset', type=str, default='UAVDT',
+    parser.add_argument('--dataset', type=str, default='DOTA',
                         choices=['Visdrone', 'DOTA', 'TT100K', 'UAVDT'], help='dataset name')
-    parser.add_argument('--db_root', type=str,
-                        # default="G:\\CV\\Dataset\\Detection\\Visdrone",
-                        default="/home/twsf/data/UAVDT",
-                        help="dataset's root path")
+    # parser.add_argument('--db_root', type=str,
+    #                     # default="G:\\CV\\Dataset\\Detection\\Visdrone",
+    #                     default="/home/twsf/data/DOTA",
+    #                     help="dataset's root path")
     parser.add_argument('--imgsets', type=str, default=['train', 'val'],
                         nargs='+', help='for train or val')
     parser.add_argument('--aim', type=int, default=100,
@@ -32,6 +32,7 @@ def parse_args():
     parser.add_argument('--show', type=bool, default=False,
                         help="show image and chip box")
     args = parser.parse_args()
+    args.db_root = user_dir + "/data/" + args.dataset
     if args.dataset.lower() == 'visdrone':
         args.y_axis_max = 100000
     elif args.dataset.lower() == 'tt100k':
@@ -113,13 +114,13 @@ class ChipStatistics(object):
                 for i in range(0, 20):
                     f.writelines('scale {} sum: {}'.format(x_axis[i], scale_distribution[i:i+1].sum()) + '\n')
 
-            # with open(result_dir+'/{}_{}_2.csv'.format(args.dataset, imgset), 'w') as f:
-            #     for line in self.info:
-            #         for i, v in enumerate(line):
-            #             if i > 0:
-            #                 f.writelines(',')
-            #             f.writelines(str(v))
-            #         f.writelines('\n')
+            with open(result_dir+'/{}_{}_1.csv'.format(args.dataset, imgset), 'w') as f:
+                for line in self.info:
+                    for i, v in enumerate(line):
+                        if i > 0:
+                            f.writelines(',')
+                        f.writelines(str(v))
+                    f.writelines('\n')
 
         print(splits, enlarges)
 
@@ -217,7 +218,7 @@ class ChipStatistics(object):
             self.box_scale.extend(list(area_ratio))
             self.chip_scale.append([area, 1.0*area/(width*height)])
             self.chip_box_scale.append(np.median(area_ratio))
-            # self.info.append(info[i] + [image.shape[0]*image.shape[1], np.mean(area_ratio)])
+            self.info.append(info[i] + [image.shape[0]*image.shape[1], np.mean(area_ratio)])
 
         return chip_loc
 

@@ -12,13 +12,13 @@ from sklearn.metrics import (mean_absolute_error as MAE,
                              r2_score as R2)
 
 
-dataset = "UAVDT"
+dataset = "DOTA"
 hyp = {
     'train_dataset1': '/home/twsf/work/CRGNet/density_tools/statistic_results/{}_train_1.csv'.format(dataset),
     'test_dataset1': '/home/twsf/work/CRGNet/density_tools/statistic_results/{}_val_1.csv'.format(dataset),
     'train_dataset2': '/home/twsf/work/CRGNet/density_tools/statistic_results/{}_train_2.csv'.format(dataset),
     'test_dataset2': '/home/twsf/work/CRGNet/density_tools/statistic_results/{}_val_2.csv'.format(dataset),
-    'aim': 75}
+    'aim': 100}
 
 
 def main():
