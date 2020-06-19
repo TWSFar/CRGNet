@@ -1,16 +1,3 @@
-"""
-visdrone:
-    if we use mmdetection train and val,
-    id begin idx 1 is best. becase, in mmdetection, the default
-    classes's number is n+1, we don't know the background's idx.
-    However, in other detector, the idx begin 0 or 1 is need conside.
-
-    note:
-        classes = (plane, ship, storage-tank, baseball-diamond,
-        tennis-court, basketball-court, ground-track-field,
-        harbor, bridge, small-vehicle, large-vehicle, helicopter,
-        roundabout, soccer-ball-field, swimming-pool, container-crane)
-"""
 import os
 
 import mmcv
@@ -25,7 +12,7 @@ import matplotlib.pyplot as plt
 hyp = {
     'dataset': 'DOTA',
     'img_type': '.png',
-    'mode': 'val',  # for save Set: train.txt
+    'mode': 'train',  # for save Set: train.txt
     'resize': False,
     'data_dir': '/home/twsf/data/DOTA/',
     'show': False
@@ -40,6 +27,7 @@ classes = ('plane', 'ship', 'storage-tank', 'baseball-diamond',
             'tennis-court', 'basketball-court', 'ground-track-field',
             'harbor', 'bridge', 'small-vehicle', 'large-vehicle', 'helicopter',
             'roundabout', 'soccer-ball-field', 'swimming-pool')
+cat2label = {cat_id: i for i, cat_id in enumerate(classes)}
 
 
 def show_image(img, labels):
@@ -59,7 +47,7 @@ def getGTBox_DOTA(anno_path, **kwargs):
             data = line.split()
             if len(data) == 10 and data[8].strip() in classes:
                 box_all.append([float(data[0]), float(data[1]), float(data[4]), float(data[5])])
-                gt_cls.append(str(data[8].strip()))
+                gt_cls.append(cat2label[data[8].strip()])
                 difficult.append(int(data[9]))
 
     return box_all, gt_cls, difficult
@@ -124,7 +112,7 @@ if __name__ == '__main__':
 
     # txt_files = os.listdir(hyp['txt_dir'])
     set_list = []
-    with open(hyp['set_dir']+'/{}_all.txt'.format(hyp['mode'])) as f:
+    with open(hyp['set_dir']+'/{}.txt'.format(hyp['mode'])) as f:
         for line in f.readlines():
             set_list.append(line.strip())
 
