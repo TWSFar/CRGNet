@@ -9,9 +9,9 @@ from tqdm import tqdm
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Test chip')
-    parser.add_argument('--checkpoint', default="/home/twsf/work/CRGNet/mmdetection/tools_visdrone/work_dirs/ATSS_x101_fpn_giou/epoch_26.pth", help='model')
-    parser.add_argument('--config', default='/home/twsf/work/CRGNet/mmdetection/tools_visdrone/configs/density/ATSS_x101_fpn_giou.py')
-    parser.add_argument('--test-dir', default='/home/twsf/data/Visdrone/VisDrone2019-DET-val/density_chip')
+    parser.add_argument('--checkpoint', default="/home/twsf/work/CRGNet/mmdetection/tools_visdrone/work_dirs/ATSS_res2net/epoch_29.pth", help='model')
+    parser.add_argument('--config', default='/home/twsf/work/CRGNet/mmdetection/tools_visdrone/configs/density/ATSS_res2net_bs.py')
+    parser.add_argument('--test-dir', default='/home/twsf/data/Visdrone/challenge/density_chip')
     parser.add_argument('--result-path', default='./')
     args = parser.parse_args()
     return args

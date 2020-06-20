@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 hyp = {
     'dataset': 'DOTA',
     'img_type': '.png',
-    'mode': 'train',  # for save Set: train.txt
+    'mode': 'val',  # for save Set: train.txt
     'resize': False,
     'data_dir': '/home/twsf/data/DOTA/',
     'show': False

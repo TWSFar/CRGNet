@@ -17,7 +17,7 @@ def parse_args():
     parser.add_argument('--root-dir', default='/home/twsf/data/DOTA')
     parser.add_argument('--nclass', default=15, type=int)
     parser.add_argument('--score_thr', default=0.05, type=float)
-    parser.add_argument('--inference', action='store_true')
+    parser.add_argument('--inference', default=True, type=bool)
     parser.add_argument('--result-path', default='/home/twsf/work/CRGNet/workshops')
     args = parser.parse_args()
     args.chip_dir = args.root_dir + '/density_chip'
@@ -108,11 +108,11 @@ if __name__ == "__main__":
             # show
             # model.show_result(img_file, result, out_file='chip_result.jpg')
 
-        with open(os.path.join(args.result_path, 'tt100k_results.json'), "w") as f:
+        with open(os.path.join(args.result_path, 'dota_results.json'), "w") as f:
             json.dump(detecions, f, cls=MyEncoder)
             print("results json saved.")
     else:
-        with open(os.path.join(args.result_path, 'tt100k_results.json'), "r") as f:
+        with open(os.path.join(args.result_path, 'dota_results.json'), "r") as f:
             detecions = json.load(f)
             print("load results json.")
 

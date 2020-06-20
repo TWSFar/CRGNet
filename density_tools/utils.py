@@ -310,6 +310,47 @@ def nms(prediction, score_threshold=0.05, iou_threshold=0.5, overlap_threshold=0
     return best_bboxes
 
 
+def soft_nms(prediction, iou_threshold=0.6, sigma=0.5, score_threshold=0.0001, method=2, topN=1000):
+    """
+    :param prediction:
+    (x, y, w, h, conf, cls)
+    :return: best_bboxes
+    """
+    prediction = np.array(prediction)
+    detections = prediction[(-prediction[:,4]).argsort()]
+    detections = detections[:topN]
+    # Iterate through all predicted classes
+    unique_labels = np.unique(detections[:, -1])
+    best_bboxes = []
+    for cls in unique_labels:
+        cls_mask = (detections[:, 5] == cls)
+        cls_bboxes = detections[cls_mask]
+
+        # python code
+        while len(cls_bboxes) > 0:
+            best_bbox = cls_bboxes[0]
+            best_bboxes.append(best_bbox)
+            cls_bboxes = cls_bboxes[1:]
+
+            iou = iou_calc1(best_bbox[np.newaxis, :4], cls_bboxes[:, :4])
+            mask = iou > iou_threshold
+
+            # Three methods: 1.linear 2.gaussian 3.original NMS
+            if method == 1:  # linear
+                cls_bboxes[mask, 4] = (cls_bboxes[mask, 4] - iou[mask]) * cls_bboxes[mask, 4]
+            elif method == 2:  # gaussian
+                cls_bboxes[mask, 4] = np.exp(-(iou[mask] * iou[mask]) / sigma) * cls_bboxes[mask, 4]
+            else:  # original NMS
+                cls_bboxes[mask, 4] = 0
+
+            score_mask = cls_bboxes[:, 4] > score_threshold
+            cls_bboxes = cls_bboxes[score_mask]
+
+    # select the boxes and keep the corresponding indexes
+    best_bboxes = np.array(best_bboxes)
+    return best_bboxes
+
+
 def show_image(img, labels=None, img_name=None):
     import matplotlib.pyplot as plt
     import matplotlib.cm as cm

@@ -8,7 +8,7 @@ img_norm_cfg = dict(
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
-    dict(type='Resize', img_scale=[(960, 960), (1024, 1024)], keep_ratio=True),
+    dict(type='Resize', img_scale=[(800, 800), (1024, 1024)], keep_ratio=True),
     dict(type='RandomFlip', flip_ratio=0.5),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size_divisor=32),
@@ -31,7 +31,7 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    samples_per_gpu=3,
+    samples_per_gpu=2,
     workers_per_gpu=4,
     train=dict(
         type=dataset_type,
@@ -65,11 +65,9 @@ model = dict(
         norm_eval=True,
         style='pytorch'),
     neck=dict(
-        type='FPN',
+        type='PAFPN',
         in_channels=[256, 512, 1024, 2048],
         out_channels=256,
-        start_level=1,
-        add_extra_convs='on_output',
         num_outs=5),
     bbox_head=dict(
         type='ATSSHead',
@@ -109,7 +107,7 @@ test_cfg = dict(
     nms=dict(type='nms', iou_thr=0.6),
     max_per_img=1000)
 # optimizer
-optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
+optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001, paramwise_cfg=dict(norm_decay_mult=0, bypass_duplicate=True))
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
 lr_config = dict(
