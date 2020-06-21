@@ -6,11 +6,12 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
-from utils import nms, show_image, MyEncoder, iou_calc1
+from utils import nms, soft_nms, show_image, MyEncoder, iou_calc1
 hyp = {
     'gt': "/home/twsf/data/Visdrone/VisDrone2019-DET-val/annotations_json/instances_val.json",
-    'result': "/home/twsf/work/CRGNet/chip_results.json",
-    'local': "/home/twsf/data/Visdrone/density_chip/Locations/val_chip.json",
+    'result': "/home/twsf/work/CRGNet/chip_results_{}.json",
+    # 'local': "/home/twsf/data/Visdrone/density_chip/Locations/val_chip.json",
+    'local': "/home/twsf/data/Visdrone/VisDrone2019-DET-val/density_loc/test_chip.json",
     'show': False,
     'srcimg_dir': "/home/twsf/data/Visdrone/VisDrone2019-DET-val/images/",
     'gt_txt': "/home/twsf/data/Visdrone/VisDrone2019-DET-val/annotations"
@@ -26,23 +27,25 @@ class Metric(object):
 
     def __call__(self):
         # get val predict box
-        with open(hyp['result'], 'r') as f:
-            results = json.load(f)
         with open(hyp['local'], 'r') as f:
             chip_loc = json.load(f)
         detecions = dict()
-        for det in tqdm(results):
-            img_id = det['image_id']
-            cls_id = det['category_id']
-            bbox = det['bbox']
-            score = det['score']
-            loc = chip_loc[img_id]
-            bbox = [bbox[0] + loc[0], bbox[1] + loc[1], bbox[2] + loc[0], bbox[3] + loc[1]]
-            img_name = '_'.join(img_id.split('_')[:-1]) + osp.splitext(img_id)[1]
-            if img_name in detecions:
-                detecions[img_name].append(bbox + [score, cls_id])
-            else:
-                detecions[img_name] = [bbox + [score, cls_id]]
+        scales = [1024, 1300, 1500]
+        for scale in scales:
+            with open(hyp['result'].format(scale), 'r') as f:
+                results = json.load(f)
+            for det in tqdm(results):
+                img_id = det['image_id']
+                cls_id = det['category_id']
+                bbox = det['bbox']
+                score = det['score']
+                loc = chip_loc[img_id]
+                bbox = [bbox[0] + loc[0], bbox[1] + loc[1], bbox[2] + loc[0], bbox[3] + loc[1]]
+                img_name = '_'.join(img_id.split('_')[:-1]) + osp.splitext(img_id)[1]
+                if img_name in detecions:
+                    detecions[img_name].append(bbox + [score, cls_id])
+                else:
+                    detecions[img_name] = [bbox + [score, cls_id]]
 
         # metrics
         results = []
@@ -51,7 +54,8 @@ class Metric(object):
             det = detecions[img_info['file_name']]
             gt = self.load_annotations(img_info['file_name'])
             gt, det = self.dropObjectsInIgr(gt, det)
-            det = nms(det, score_threshold=0.05, iou_threshold=0.6, overlap_threshold=1)[:, [0, 1, 2, 3, 5, 4]].astype(np.float32)
+            # det = nms(det, score_threshold=0.05, iou_threshold=0.6, overlap_threshold=1)[:, [0, 1, 2, 3, 5, 4]].astype(np.float32)
+            det = soft_nms(det, method=2)[:, [0, 1, 2, 3, 5, 4]].astype(np.float32)
             # det = nms2(det)
             if hyp['show']:
                 img = cv2.imread(osp.join(self.srcimg_dir, img_info['file_name']))[:, :, ::-1]
@@ -71,8 +75,8 @@ class Metric(object):
         coco_eval.accumulate()
         coco_eval.summarize()
 
-        with open('results.json', 'w') as f:
-            json.dump(results, f, indent=4, cls=MyEncoder)
+        # with open('results.json', 'w') as f:
+        #     json.dump(results, f, indent=4, cls=MyEncoder)
 
     def load_annotations(self, img_id):
         anno_file = osp.join(hyp['gt_txt'], img_id[:-4]+'.txt')

@@ -58,7 +58,7 @@ class Trainer(object):
                 weight = calculate_weigths_labels(
                     self.train_loader, opt.root_dir)
             print(weight)
-            opt.loss_density['weight'] = weight
+            opt.loss_region['weight'] = weight
         self.loss_region = build_loss(opt.loss_region)
         self.loss_density = build_loss(opt.loss_density)
 

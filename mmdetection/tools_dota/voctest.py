@@ -12,12 +12,12 @@ from mmdet.apis import init_detector, inference_detector
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Test chip')
-    parser.add_argument('--checkpoint', default='/home/twsf/work/CRGNet/mmdetection/tools_dota/work_dirs/ATSS_x101/epoch_53.pth')
+    parser.add_argument('--checkpoint', default='/home/twsf/work/CRGNet/mmdetection/tools_dota/work_dirs/ATSS_x101_fpn_giou/epoch_42.pth')
     parser.add_argument('--config', default="/home/twsf/work/CRGNet/mmdetection/tools_dota/configs/density/ATSS_x101_fpn_giou.py")
     parser.add_argument('--root-dir', default='/home/twsf/data/DOTA')
     parser.add_argument('--nclass', default=15, type=int)
     parser.add_argument('--score_thr', default=0.05, type=float)
-    parser.add_argument('--inference', action='store_true')
+    parser.add_argument('--inference', default=True, type=bool)
     parser.add_argument('--result-path', default='/home/twsf/work/CRGNet/workshops')
     args = parser.parse_args()
     args.chip_dir = args.root_dir + '/density_chip'
@@ -90,9 +90,9 @@ if __name__ == "__main__":
         for img_id in tqdm(chip_list):
             # if iter > 5: break
             iter += 1
-            img_name = img_id + '.png'
-            newImg = '_'.join(img_id.split('_')[:-1]) + osp.splitext(img_name)[1]
-            img_file = osp.join(chip_img, img_id+'.png')
+            img_name = img_id + '.jpg'
+            newImg = '_'.join(img_id.split('_')[:-1]) + '.png'
+            img_file = osp.join(chip_img, img_id+'.jpg')
             loc = chip_loc[img_name]
 
             # predict
