@@ -11,7 +11,11 @@ hyp = {
     'result': "/home/twsf/work/CRGNet/chip_results_{}.json",
     'local': "/home/twsf/data/Visdrone/challenge/density_loc/test_chip.json",
     'submit_dir': '/home/twsf/work/CRGNet/results',
+<<<<<<< HEAD
     'show': True,
+=======
+    'show': False,
+>>>>>>> 28c1a5d5c6809ba65aa0216d062b38f8ce56734c
     'srcimg_dir': "/home/twsf/data/Visdrone/challenge/images/"
 }
 
@@ -51,8 +55,13 @@ class Submit(object):
             det = []
             if img_name in detecions:
                 det = detecions[img_name]
-                # det = utils.nms(det, score_threshold=0.05, iou_threshold=0.6, overlap_threshold=1).astype(np.float32)
-                det = utils.soft_nms(det).astype(np.float32)
+                det = utils.nms(det, score_threshold=0.05, iou_threshold=0.6, overlap_threshold=1).astype(np.float32)
+                # det = utils.soft_nms(det).astype(np.float32)
+
+            # show
+            if hyp['show']:
+                img = cv2.imread(osp.join(self.srcimg_dir, img_name))
+                utils.show_image(img, det[det[:, 4] > 0.3])
 
             # save
             with open(osp.join(hyp['submit_dir'], img_name[:-4]+'.txt'), "w") as f:
@@ -62,11 +71,6 @@ class Submit(object):
                     for idx, v in enumerate(list(box[0:5]) + [box[5]+1] + [-1, -1]):
                         line.append(str(int(v)) if idx != 4 else str(v))
                     f.write(','.join(line) + '\n')
-
-            # show
-            if hyp['show']:
-                img = cv2.imread(osp.join(self.srcimg_dir, img_name))
-                utils.show_image(img, det[det[:, 4] > 0.3])
 
         # Zip
         result_files = [osp.join(hyp['submit_dir'], file) for file in os.listdir(hyp['submit_dir'],)]

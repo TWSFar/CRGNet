@@ -108,11 +108,11 @@ if __name__ == "__main__":
             # show
             # model.show_result(img_file, result, out_file='chip_result.jpg')
 
-        with open(os.path.join(args.result_path, 'tt100k_results.json'), "w") as f:
+        with open(os.path.join(args.result_path, 'dota_results.json'), "w") as f:
             json.dump(detecions, f, cls=MyEncoder)
             print("results json saved.")
     else:
-        with open(os.path.join(args.result_path, 'tt100k_results.json'), "r") as f:
+        with open(os.path.join(args.result_path, 'dota_results.json'), "r") as f:
             detecions = json.load(f)
             print("load results json.")
 

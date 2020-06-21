@@ -30,7 +30,7 @@ class DOTA(object):
     def _get_imglist(self, split='train'):
         """ return list of all image paths
         """
-        set_file = osp.join(self.set_dir, split+'_all.txt')
+        set_file = osp.join(self.set_dir, split+'.txt')
         img_list = []
         with open(set_file) as f:
             for line in f.readlines():

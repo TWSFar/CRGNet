@@ -12,13 +12,13 @@ from sklearn.metrics import (mean_absolute_error as MAE,
                              r2_score as R2)
 
 
-dataset = "DOTA"
+dataset = "Visdrone"
 hyp = {
     'train_dataset1': '/home/twsf/work/CRGNet/density_tools/statistic_results/{}_train_1.csv'.format(dataset),
     'test_dataset1': '/home/twsf/work/CRGNet/density_tools/statistic_results/{}_val_1.csv'.format(dataset),
     'train_dataset2': '/home/twsf/work/CRGNet/density_tools/statistic_results/{}_train_2.csv'.format(dataset),
     'test_dataset2': '/home/twsf/work/CRGNet/density_tools/statistic_results/{}_val_2.csv'.format(dataset),
-    'aim': 75}
+    'aim': 100}
 
 
 def main():
@@ -61,7 +61,7 @@ def main():
         log.info(metric.__name__+': '+str(score))
 
     # Save
-    joblib.dump(model, '/home/twsf/work/CRGNet/density_tools/weights/gbm_{}_{}.pkl'.format(dataset.lower(), hyp['aim']))
+    joblib.dump(model, '/home/twsf/work/CRGNet/density_tools/weights/gbm_{}_{}_test.pkl'.format(dataset.lower(), hyp['aim']))
 
 
 if __name__ == '__main__':
