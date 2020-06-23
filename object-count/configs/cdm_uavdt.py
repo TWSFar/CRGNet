@@ -11,7 +11,7 @@ class Config:
     root_dir = user_dir + "/data/UAVDT/density_mask"
     num_classes = 1
     input_size = (640, 480)
-    norm_cfg = dict(mean=[0.368, 0.378, 0.371], std=[0.17, 0.16, 0.17], para=1)
+    norm_cfg = dict(mean=[0.368, 0.378, 0.371], std=[0.17, 0.16, 0.17], para=10)
     resume = False
     pre = ""
 
@@ -21,14 +21,14 @@ class Config:
     sync_bn = False
 
     # train
-    batch_size = 8  # assert bs > 2
-    epochs = 50
+    batch_size = 32  # assert bs > 2
+    epochs = 30
     freeze_bn = False
 
     loss_region = dict(
         type="CrossEntropyLoss",
         ignore_index=-1,
-        weight=None
+        weight=[1, 100]
     )
 
     loss_density = dict(

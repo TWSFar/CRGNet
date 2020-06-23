@@ -9,6 +9,7 @@ from tqdm import tqdm
 from configs.cdm_visdrone import opt
 # from configs.cdm_tt100k import opt
 # from configs.cdm_dota import opt
+from configs.cdm_uavdt import opt
 
 from models import CRG2Net
 from models.losses import build_loss
@@ -108,7 +109,7 @@ class Trainer(object):
         last_time = time.time()
         epoch_loss = []
         for iter_num, sample in enumerate(self.train_loader):
-            if iter_num >= 0: break
+            # if iter_num >= 0: break
             try:
                 imgs = sample["image"].to(opt.device)
                 density_gt = sample["label"].to(opt.device)

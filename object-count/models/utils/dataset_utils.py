@@ -20,7 +20,7 @@ def get_label_box(img_path, dataset):
         y[:, 3] = boxes[:, 1] + boxes[:, 3]
         return y
 
-    elif dataset == 'tt100k':
+    elif dataset in ['tt100k', 'uavdt']:
         box_all = []
         anno_path = anno_path[:-3] + 'xml'
         xml = ET.parse(anno_path).getroot()

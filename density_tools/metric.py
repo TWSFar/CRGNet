@@ -12,7 +12,7 @@ hyp = {
     'result': "/home/twsf/work/CRGNet/chip_results_1300.json",
     # 'local': "/home/twsf/data/Visdrone/density_chip/Locations/val_chip.json",
     'local': "/home/twsf/data/Visdrone/VisDrone2019-DET-val/density_loc/test_chip.json",
-    'show': False,
+    'show': True,
     'srcimg_dir': "/home/twsf/data/Visdrone/VisDrone2019-DET-val/images/",
     'gt_txt': "/home/twsf/data/Visdrone/VisDrone2019-DET-val/annotations"
 }
