@@ -1,11 +1,21 @@
 import numpy as np
-log_file = "/home/twsf/work/CRGNet/mmdetection/tools_uavdt/work_dirs/ATSS_x101_fpn_giou/20200617_194852.log"
+log_file = "/home/twsf/work/CRGNet/mmdetection/tools_visdrone/work_dirs/libra_fast_rcnn/20200623_154048.log"
+x_interval = 0.5
+y_interval = 0.02
 
 
-def show(x, y, i):
+def show(x, y, title):
     from matplotlib import pyplot as plt
+    from matplotlib.pyplot import MultipleLocator
+    x_major_locator = MultipleLocator(x_interval)
+    y_major_locator = MultipleLocator(y_interval)
+    ax = plt.gca()
+    ax.xaxis.set_major_locator(x_major_locator)
+    ax.yaxis.set_major_locator(y_major_locator)
+    plt.title(title)
+    plt.grid()
     plt.plot(x, y)
-    plt.savefig(f"result_analys_{i}.jpg")
+    plt.savefig(f"analys_{title}.jpg")
     plt.show()
     plt.close()
 
@@ -25,6 +35,8 @@ with open(log_file) as f:
             if len(temp) and flag:
                 flag = False
                 losses.append(np.mean(temp))
+                temp = []
+
         if "bbox_mAP" in line:
             idx = line.split().index("bbox_mAP:")
             maps.append(float(line.split()[idx+1].strip()[:-1]))
@@ -32,7 +44,10 @@ with open(log_file) as f:
             idx = line.split().index("bbox_mAP_50:")
             maps50.append(float(line.split()[idx+1].strip()[:-1]))
 
+    if len(temp):
+        losses.append(np.mean(temp))
 
-show(np.arange(len(losses)), losses, 1)
-show(np.arange(len(maps)), maps, 2)
-show(np.arange(len(maps50)), maps50, 3)
+
+show(np.arange(1, len(losses)+1), losses, "loss")
+show(np.arange(1, len(maps)+1), maps, "map")
+show(np.arange(1, len(maps50)+1), maps50, "map_50")
