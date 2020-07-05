@@ -26,7 +26,7 @@ def parse_args():
     #                     default=user_dir+"/data/TT100K/",
     #                     # default="E:\\CV\\data\\visdrone",
     #                     help="dataset's root path")
-    parser.add_argument('--imgsets', type=str, default=['test', 'train', 'val'],
+    parser.add_argument('--imgsets', type=str, default=['val'],
                         nargs='+', help='for train or val')
     parser.add_argument('--aim', type=int, default=100,
                         help='gt aim scale in chip')
@@ -210,7 +210,7 @@ class MakeDataset(object):
 
         region_box = utils.resize_box(region_box, (mask_w, mask_h), (width, height))
 
-        if args.tiling:
+        if args.tiling and imgset != "val":
             tiling = utils.add_tiling((width, height))
             region_box = np.vstack((region_box, tiling))
 
