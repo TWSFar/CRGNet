@@ -3,6 +3,22 @@ import json
 import numpy as np
 
 
+def add_tiling(img_shape, split=(3, 2)):
+    """img_shape: w, h
+    """
+    stride_w = img_shape[0] / split[0]
+    stride_h = img_shape[1] / split[1]
+    shift_x = np.arange(0, split[0]) * stride_w
+    shift_y = np.arange(0, split[1]) * stride_h
+    shift_x, shift_y = np.meshgrid(shift_x, shift_y)
+    shifts = np.vstack((
+        shift_x.ravel(), shift_y.ravel(),
+        shift_x.ravel()+stride_w, shift_y.ravel()+stride_h
+    )).transpose().astype(np.int)
+
+    return shifts
+
+
 def bbox_merge(bbox1, bbox2):
     """ (box1 cup box2) / box2
     Args:

@@ -52,22 +52,18 @@ data = dict(
 evaluation = dict(interval=1, metric='bbox')
 model = dict(
     type='ATSS',
-    pretrained='open-mmlab://res2net101_v1d_26w_4s',
+    pretrained="/home/twsf/.cache/torch/checkpoints/resnest101.pth",
     backbone=dict(
-        type='Res2Net',
+        type='ResNetSt',
         depth=101,
-        base_width=26,
-        num_stages=4,
-        scales=4,
-        out_indices=(0, 1, 2, 3),
-        frozen_stages=1,
-        norm_cfg=dict(type='BN', requires_grad=True),
         norm_eval=True,
-        style='pytorch'),
+        frozen_stages=1),
     neck=dict(
-        type='PAFPN',
+        type='FPN',
         in_channels=[256, 512, 1024, 2048],
         out_channels=256,
+        start_level=1,
+        add_extra_convs='on_output',
         num_outs=5),
     bbox_head=dict(
         type='ATSSHead',
@@ -107,7 +103,7 @@ test_cfg = dict(
     nms=dict(type='nms', iou_thr=0.6),
     max_per_img=1000)
 # optimizer
-optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001, paramwise_cfg=dict(norm_decay_mult=0, bypass_duplicate=True))
+optimizer = dict(type='SGD', lr=0.007, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
 lr_config = dict(
@@ -115,5 +111,5 @@ lr_config = dict(
     warmup='linear',
     warmup_iters=500,
     warmup_ratio=0.001,
-    step=[23, 27])
-total_epochs = 35
+    step=[14, 23])
+total_epochs = 25

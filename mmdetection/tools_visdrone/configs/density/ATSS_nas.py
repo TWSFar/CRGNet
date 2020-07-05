@@ -1,6 +1,6 @@
 _base_ = [
     '../_base_/datasets/coco_detection.py',
-    '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
+    '../_base_/default_runtime.py'
 ]
 norm_cfg = dict(type='BN', requires_grad=True)
 model = dict(
@@ -16,25 +16,17 @@ model = dict(
         frozen_stages=1,
         # norm_cfg=dict(type='SyncBN', requires_grad=True),
         norm_cfg=norm_cfg,
-        norm_eval=False,
-        style='pytorch',
-        plugins=[
-            dict(
-                cfg=dict(type='ContextBlock', ratio=1. / 16),
-                stages=(False, True, True, True),
-                position='after_conv3')
-        ],
-        dcn=dict(type='DCN', deformable_groups=1, fallback_on_stride=False),
-        stage_with_dcn=(False, True, True, True)),
+        norm_eval=True,
+        style='pytorch',),
     neck=dict(
-        type='NASFPN',
+        type='NASFCOS_FPN',
         in_channels=[256, 512, 1024, 2048],
         out_channels=256,
         start_level=1,
-        stack_times=7,
-        norm_cfg=norm_cfg,
         add_extra_convs=True,
-        num_outs=5),
+        num_outs=5,
+        norm_cfg=norm_cfg,
+        conv_cfg=dict(type='DCNv2', deformable_groups=2)),
     bbox_head=dict(
         type='ATSSHead',
         num_classes=10,
@@ -66,15 +58,10 @@ img_norm_cfg = dict(
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
-    dict(
-        type='Resize',
-        img_scale=[(800, 800), (1024, 1024)],
-        ratio_range=(0.8, 1.2),
-        keep_ratio=True),
-    dict(type='RandomCrop', crop_size=(1024, 1024)),
+    dict(type='Resize', img_scale=[(960, 960), (1222, 1222)], keep_ratio=True),
     dict(type='RandomFlip', flip_ratio=0.5),
     dict(type='Normalize', **img_norm_cfg),
-    dict(type='Pad', size=(1024, 1024)),
+    dict(type='Pad', size_divisor=32),
     dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels']),
 ]
@@ -88,7 +75,7 @@ test_pipeline = [
             dict(type='Resize', keep_ratio=True),
             dict(type='RandomFlip'),
             dict(type='Normalize', **img_norm_cfg),
-            dict(type='Pad', size_divisor=128),
+            dict(type='Pad', size_divisor=32),
             dict(type='ImageToTensor', keys=['img']),
             dict(type='Collect', keys=['img']),
         ])
@@ -106,3 +93,12 @@ test_cfg = dict(
     max_per_img=1000)
 # optimizer
 optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
+optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
+# learning policy
+lr_config = dict(
+    policy='step',
+    warmup='linear',
+    warmup_iters=500,
+    warmup_ratio=0.001,
+    step=[14, 23])
+total_epochs = 26
