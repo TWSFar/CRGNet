@@ -370,25 +370,30 @@ class MakeDataset(object):
         #     else:
         #         region_box = np.array([[0, 0, width, height]])
 
-        gt_bboxes, gt_cls = sample['bboxes'], sample['cls']
+        gt_bboxes, gt_cls, ignore = sample['bboxes'], sample['cls'], sample['ignore']
 
         chip_gt_list, chip_label_list, neglect_list = self.generate_region_gt(
             region_box, gt_bboxes, gt_cls)
-
         chip_loc = self.write_chip_and_anno(
-            image, img_id, region_box, chip_gt_list, chip_label_list, neglect_list, imgset)
+            image, img_id, region_box, chip_gt_list, chip_label_list,
+            ignore, neglect_list, imgset)
 
         return chip_loc
 
     def write_chip_and_anno(self, image, img_id,
                             chip_list, chip_gt_list,
-                            chip_label_list, neglect_list, imgset):
+                            chip_label_list, ignore, neglect_list, imgset):
         """write chips of one image to disk and make xml annotations
         """
         chip_loc = dict()
         chip_num = 0
         if args.augment and imgset != 'val':
             self.getRoadMask(img_id)
+
+        for box in ignore:
+            ign_w, ign_h = box[2:] - box[:2]
+            zeros_box = np.zeros(ign_h, ign_w, 3)
+            image[box[1]:box[3], box[0]:box[2]] = zeros_box
 
         for i, chip in enumerate(chip_list):
             if len(chip_gt_list[i]) == 0:
@@ -404,8 +409,8 @@ class MakeDataset(object):
                 for neg_box in neglect_list[i]:
                     neg_w = neg_box[2] - neg_box[0]
                     neg_h = neg_box[3] - neg_box[1]
-                    random_box = np.random.randint(0, 256, (neg_h, neg_w, 3))
-                    chip_img[neg_box[1]:neg_box[3], neg_box[0]:neg_box[2], :] = random_box
+                    zeros_box = np.zeros(neg_h, neg_w, 3)
+                    chip_img[neg_box[1]:neg_box[3], neg_box[0]:neg_box[2], :] = zeros_box
 
             bbox = np.array(chip_gt_list[i], dtype=np.int)
             label = np.array(chip_label_list[i], dtype=np.int)

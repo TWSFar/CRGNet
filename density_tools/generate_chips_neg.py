@@ -26,7 +26,7 @@ def parse_args():
     #                     default=user_dir+"/data/TT100K/",
     #                     # default="E:\\CV\\data\\visdrone",
     #                     help="dataset's root path")
-    parser.add_argument('--imgsets', type=str, default=['val'],
+    parser.add_argument('--imgsets', type=str, default=['train'],
                         nargs='+', help='for train or val')
     parser.add_argument('--aim', type=int, default=100,
                         help='gt aim scale in chip')
@@ -95,10 +95,6 @@ class MakeDataset(object):
 
     def generate_region_gt(self, region_box, gt_bboxes, labels, imgset):
         chip_list = []
-        region_box = (region_box[2]-region_box[0]) * (region_box[3]-region_box[1])
-        neglect_ratio = 0
-        if imgset in args.neglect:
-            neglect_ratio = 0.01
         for box in region_box:
             chip_list.append(np.array(box))
 
@@ -107,20 +103,12 @@ class MakeDataset(object):
         chip_label_list = []
         chip_neglect_list = []
         if gt_bboxes is not None:
-            for i, chip in enumerate(chip_list):
+            for j, chip in enumerate(chip_list):
                 chip_gt = []
                 chip_label = []
                 neglect_gt = []
                 for i, box in enumerate(gt_bboxes):
-                    box_ratio = (box[2]-box[0]) * (box[3]-box[1]) / region_box
-                    # 最后一个是原图, 原图覆盖每个box, 太小的直接忽略
-                    if i == len(chip_list) - 1 and box_ratio < neglect_ratio:
-                        box = [max(box[0], chip[0]), max(box[1], chip[1]),
-                               min(box[2], chip[2]), min(box[3], chip[3])]
-                        new_box = [box[0] - chip[0], box[1] - chip[1],
-                                   box[2] - chip[0], box[3] - chip[1]]
-                        neglect_gt.append(np.array(new_box, dtype=np.int))
-                    elif utils.overlap(chip, box, 0.75):
+                    if utils.overlap(chip, box, 0.75):
                         box = [max(box[0], chip[0]), max(box[1], chip[1]),
                                min(box[2], chip[2]), min(box[3], chip[3])]
                         new_box = [box[0] - chip[0], box[1] - chip[1],
@@ -151,6 +139,20 @@ class MakeDataset(object):
             with open(osp.join(self.list_dir, 'traintest.txt'), op) as f:
                 f.writelines([x + '\n' for x in img_list])
             print('\n%d images in traintest set.' % len(img_list))
+
+    def img_background(self, gt_list, label_list, shape):
+        img_area = shape[0] * shape[1]
+        keep_area = 0.01 * img_area
+        gts, labs = np.array(gt_list), np.array(label_list)
+        boxes_area = np.product(gts[:, 2:] - gts[:, :2], 1)
+        mask = boxes_area > keep_area
+        if mask.sum() == 0:
+            mask[boxes_area.argmax()] = True
+        keep_boxes = [np.array(gt, dtype=np.int) for gt in gts[mask]]
+        keep_labs = [int(lab) for lab in labs[mask]]
+        neglect = [np.array(neg, dtype=np.int) for neg in gts[~mask]]
+
+        return keep_boxes, keep_labs, neglect
 
     def make_xml(self, chip, bboxes, labels, image_name, chip_size):
         node_root = Element('annotation')
@@ -231,15 +233,20 @@ class MakeDataset(object):
 
         gt_bboxes, gt_cls = sample['bboxes'], sample['cls']
 
+        chip_gt_list, chip_label_list, neglect_list = self.generate_region_gt(
+            region_box, gt_bboxes, gt_cls, imgset)
+
         # 添加原图参与训练
         if imgset in ["train", "test"]:
             if len(region_box):
                 region_box = np.vstack((region_box, np.array([0, 0, width, height])))
             else:
                 region_box = np.array([[0, 0, width, height]])
+            simg_gt, simg_label, simg_neg = self.img_background(gt_bboxes, gt_cls, (height, width))
+            chip_gt_list.append(simg_gt)
+            chip_label_list.append(simg_label)
+            neglect_list.append(simg_neg)
 
-        chip_gt_list, chip_label_list, neglect_list = self.generate_region_gt(
-            region_box, gt_bboxes, gt_cls, imgset)
         chip_loc = self.write_chip_and_anno(
             image, img_id, region_box, chip_gt_list, chip_label_list, neglect_list, imgset)
 
