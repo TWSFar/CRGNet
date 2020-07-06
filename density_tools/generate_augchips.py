@@ -26,7 +26,7 @@ def parse_args():
     #                     default=user_dir+"/data/TT100K/",
     #                     # default="E:\\CV\\data\\visdrone",
     #                     help="dataset's root path")
-    parser.add_argument('--imgsets', type=str, default=['train', 'test', 'val'],
+    parser.add_argument('--imgsets', type=str, default=['train'],
                         nargs='+', help='for train or val')
     parser.add_argument('--aim', type=int, default=100,
                         help='gt aim scale in chip')
@@ -44,35 +44,38 @@ def parse_args():
 args = parse_args()
 print(args)
 hpy = {
-    "kernel_size": (5, 5),  # road的腐蚀核大小
+    'ncls': 10,  # 类别的数量
+    "kernel_size": (3, 3),  # road的腐蚀核大小
     "fx": 0.1,  # 候选点之前的road下采样倍数x
     "fy": 0.1,  # 候选点之前的road下采样倍数y
     "pasting_maximum": 5,  # 一个chip最多粘贴数量
-    "adjustLumin": 2,  # 背景差异除以此数
-    "obt": 0.01,  # 粘贴目标允许和其他的目标覆盖阈值
+    "adjustLumin": 0.5,  # 亮度补充系数
+    "obt": 0.0,  # 粘贴目标允许和其他的目标覆盖阈值
     "ort": 0.8,  # 路径覆盖粘贴目标的阈值
+    "scale_rank": {0: 1, 1: 0.9, 2: 1.2, 3: 4, 4: 4, 5: 8, 6: 4, 7: 4, 8: 8, 9: 1.4},  # 尺度榜
+    "aid_cls": {0: [0], 1: [1], 2: [2], 3: [6, 7], 4: [6, 7], 6: [6], 7: [7], 9: [9]}  # 辅助类
 }
-i = 1
 
 
 class MakeDataset(object):
     def __init__(self):
         self.dataset = get_dataset(args.dataset, args.db_root)
-        self.debug = 0
+
         self.density_dir = self.dataset.density_voc_dir
-        self.roadMask_dir = osp.join(args.db_root, "road_mask")
         self.segmentation_dir = self.density_dir + '/SegmentationClass'
+        self.roadMask_dir = osp.join(args.db_root, "road_mask")
 
         self.dest_datadir = self.dataset.detect_voc_dir
         self.image_dir = self.dest_datadir + '/JPEGImages'
         self.anno_dir = self.dest_datadir + '/Annotations'
         self.list_dir = self.dest_datadir + '/ImageSets/Main'
-        self.maskPools_dir = args.db_root + '/paster_pool'
+        self.maskPools_dir = args.db_root + '/paster_pool_chip'
         self.loc_dir = self.dest_datadir + '/Locations'
-        self.gbm = joblib.load(user_dir + '/work/CRGNet/density_tools/weights/gbm_{}_{}.pkl'.format(args.dataset.lower(), args.aim))
+        self.gbm = joblib.load('/home/twsf/work/CRGNet/density_tools/weights/gbm_{}_{}.pkl'.format(args.dataset.lower(), args.aim))
         self.kernel = cv2.getStructuringElement(cv2.MORPH_RECT, hpy["kernel_size"])
         if args.augment:
             self.getMaskPools()
+            self.paster_num = {cat_id: 0 for cat_id in range(hpy['ncls'])}
         self._init_path()
 
     def _init_path(self):
@@ -90,7 +93,7 @@ class MakeDataset(object):
             chip_ids = []
             chip_loc = dict()
             for i, sample in enumerate(samples):
-                # if i < 950: continue
+                # if i % 100 != 0: continue
                 img_id = osp.splitext(osp.basename(sample['image']))[0]
                 sys.stdout.write('\rcomplete: {:d}/{:d} {:s}'
                                  .format(i + 1, len(samples), img_id))
@@ -107,48 +110,57 @@ class MakeDataset(object):
             with open(osp.join(self.loc_dir, imgset+'_chip.json'), 'w') as f:
                 json.dump(chip_loc, f)
                 print('write loc json')
+        print("paster num: {}".format(self.paster_num))
 
     def augmentation(self, chip_img, loc, bbox, labels):
-        acount = 0
-        # height, widht = self.roadMask.shape[:2]
+        # 当前chip中目标尺度和中心点, 寻找hardlabel
+        obj_scales = bbox[:, 2:4] - bbox[:, :2]
+        obj_center = (bbox[:, 2:4] + bbox[:, :2]) / 2
+        hardsIn = [hard for hard in self.hard_cls if hard in labels]
+
+        # 抠出道路掩码并且创建粘贴点候选序列
         road_chip = self.roadMask[loc[1]:loc[3], loc[0]:loc[2]].copy()
         # utils.show_image(road_chip)
         cand_chip = cv2.resize(road_chip, (0, 0), fx=hpy["fx"], fy=hpy["fy"], interpolation=cv2.INTER_NEAREST)
         cand_chip = cv2.erode(cand_chip, self.kernel)
         # utils.show_image(cand_chip)
-        cand_points = np.argwhere(cand_chip[..., 0] == 255) * (road_chip.shape[0] / cand_chip.shape[0])
-
+        cand_points = np.argwhere(cand_chip[..., 0] >= 200) * (road_chip.shape[0] / cand_chip.shape[0])
         np.random.shuffle(cand_points)
-        raresIn = [rare for rare in self.rare_cls if rare in labels]
-        for point in cand_points:
-            obj_scales = bbox[:, 2:4] - bbox[:, :2]
-            obj_center = (bbox[:, 2:4] + bbox[:, :2]) / 2
-            self.debug += 1
-            # if (self.debug >= 1514):
+
+        # 粘贴
+        acount = 0  # 当前粘贴的次数
+        for time, point in enumerate(cand_points):
+            if time > 500:  # 如果找了500次仍然没有找到合适的位置, 放弃
+                break
             adj_obj_idx = np.argmin(np.power(point - obj_center, 2).sum(1))
             adj_scale = obj_scales[adj_obj_idx]
             adj_label = labels[adj_obj_idx]
-
             adj_rank = self.scale_rank[adj_label]
-            if acount < len(raresIn):
-                pasting_cls = raresIn[acount]
-            else:
+            # if acount < len(hardsIn):
+            #     pasting_cls = hardsIn[acount]
+            # elif adj_label in self.aid_cls:
+            if adj_label in self.aid_cls:
                 pasting_cls = np.random.choice(self.aid_cls[adj_label])
+            else:
+                continue
             scale_map = self.scale_rank[pasting_cls] / adj_rank
             scale = np.array(adj_scale * scale_map)
 
             # 寻找粘贴对象
             paster_cls_pool = np.array(self.paster_pool[pasting_cls])
-            paster_shape = np.array(paster_cls_pool[:, -2:], dtype=np.float)
-            idx1 = paster_shape[:, scale.argmax()] > paster_shape[:, scale.argmin()]
-            idx2 = paster_shape[:, scale.argmax()] >= scale.max()
-            idx = idx1 & idx2
-            paster_cls_pool = paster_cls_pool[idx]
+            paster_shape = np.array(paster_cls_pool[:, [4, 5, 6]], dtype=np.float)
+            mask1 = paster_shape[:, scale.argmax()] > paster_shape[:, scale.argmin()]
+            mask2 = paster_shape[:, scale.argmax()] >= scale.max()
+            mask3 = paster_shape[:, scale.argmax()] <= 2 * scale.max()
+            # mask4 = paster_shape[:, 2] >= 0.5 * (scale[0] / scale[1])
+            # mask5 = paster_shape[:, 2] <= 1.5 * (scale[0] / scale[1])
+            mask = mask1 & mask2 & mask3
+            paster_cls_pool = paster_cls_pool[mask]
             if len(paster_cls_pool) == 0:
                 continue
             paster_idx = np.random.choice(np.arange(len(paster_cls_pool)))
             paster_info = paster_cls_pool[paster_idx]
-            paster_path = osp.join(self.maskPools_dir, "_".join([v for v in paster_info[:-2]]))
+            paster_path = osp.join(self.maskPools_dir, "_".join(paster_info))
             paster = cv2.imread(paster_path)
 
             # 获取粘贴位置, 判断位置是否合法
@@ -159,26 +171,39 @@ class MakeDataset(object):
                 continue
 
             # 调整明亮度, 粘贴
-            paster = self.adjustLumin(chip_img, paster)
+            paster = self.adjustLumin(chip_img, paster, float(paster_info[-2]))
             chip_img = self.pasting(chip_img, paster, paster_box)
             # utils.show_image(chip_img, np.array([paster_box]))
-            bbox = np.vstack((bbox, paster_box))
+
+            # 添加尺度和中心信息、加入chip标签
+            obj_center = np.vstack((obj_center, paster_box[2:4]+paster_box[:2]/2))
+            obj_scales = np.vstack((obj_scales, paster_box[2:4]-paster_box[:2]))
             labels = np.hstack((labels, int(pasting_cls)))
+            bbox = np.vstack((bbox, paster_box))
+
+            # 计数
+            self.paster_num[int(pasting_cls)] += 1
             acount += 1
-            if acount > hpy["pasting_maximum"]:
+            if acount >= hpy["pasting_maximum"]:
                 break
 
         return chip_img, bbox, labels
 
-    def adjustLumin(self, chip, paster):
-        # 得到mask中的非黑色索引，黑色的的rgb为0
+    def adjustLumin(self, chip_img, paster, bright_paster):
+        # 计算paster中的非背景索引
         arraySum = np.sum(paster, axis=2)
         index1 = (arraySum > 0).nonzero()
-        # 计算亮度均值
-        avgChip = chip.mean()
-        avgPaste = paster[index1[0], index1[1]].mean()
-        diff = int(avgChip - avgPaste) // hpy["adjustLumin"]
-        paster[index1[0], index1[1]] = np.clip(paster[index1[0], index1[1]]+diff, 0, 255).astype(np.uint8)
+        limit_up = hpy["adjustLumin"] * (255 - paster.max())
+        limit_down = 0 - hpy["adjustLumin"] * paster.min()
+        # 计算亮度
+        mb = chip_img[..., 0].mean()
+        mg = chip_img[..., 1].mean()
+        mr = chip_img[..., 2].mean()
+        bright_chip = 0.3*mr + 0.6*mg + 0.1*mb
+        diff = hpy["adjustLumin"] * (bright_chip - bright_paster)
+        diff = np.clip(diff, limit_down, limit_up)
+        paster[index1[0], index1[1]] = (paster[index1[0], index1[1]]+diff)
+
         return paster
 
     def pasting(self, chip_img, paster, local):
@@ -203,19 +228,18 @@ class MakeDataset(object):
 
     def getMaskPools(self):
         self.paster_pool = {}
-        self.rare_cls = []
+        self.hard_cls = []
         for file in os.listdir(self.maskPools_dir):
-            mask_h, mask_w = cv2.imread(osp.join(self.maskPools_dir, file)).shape[:2]
+            # 0: cls, 1: id, 2: nms, 3: score, 4: w, 5: h, 6: ratio, 7: bright, 8: .png
             info = file.split('_')
             if int(info[0]) in self.paster_pool:
-                self.paster_pool[int(info[0])].append(info + [str(mask_w), str(mask_h)])
+                self.paster_pool[int(info[0])].append(info)
             else:
-                self.paster_pool[int(info[0])] = [info + [str(mask_w), str(mask_h)]]
-        for rare in self.paster_pool:
-            self.rare_cls.append(int(rare))
-        self.scale_rank = {0: 1, 1: 1, 2: 1.5, 3: 4, 4: 4, 5: 8, 6: 4, 7: 4, 8: 8, 9: 1.5}
-        # 辅助类的rank必须小于粘贴类, 否则会出现resize到极小的情况
-        self.aid_cls = {0: [2, 7], 1: [2, 6], 2: [6, 7], 3: [6, 7, 8], 4: [6, 7, 8], 5: [8], 6: [7], 7: [6], 8: [5], 9: [2]}
+                self.paster_pool[int(info[0])] = [info]
+        for hard in self.paster_pool:
+            self.hard_cls.append(int(hard))
+        self.scale_rank = hpy['scale_rank']
+        self.aid_cls = hpy['aid_cls']
 
     def getRoadMask(self, img_id):
         self.roadMask = cv2.imread(osp.join(self.roadMask_dir, img_id+'.jpg'))
