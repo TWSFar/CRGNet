@@ -1,6 +1,6 @@
 import numpy as np
-log_file = "/home/twsf/work/CRGNet/mmdetection/tools_visdrone/work_dirs/ATSS_hrnet_36.1/20200701_214356.log"
-x_interval = 2
+log_file = "/home/twsf/work/CRGNet/mmdetection/tools_visdrone/work_dirs/cascade_dcn/20200708_224018.log"
+x_interval = 1
 y_interval = 0.02
 
 

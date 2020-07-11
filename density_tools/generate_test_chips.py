@@ -40,7 +40,7 @@ class MakeDataset(object):
     def __init__(self):
         self.img_dir = osp.join(args.test_dir, "images")
         self.mask_dir = osp.join(args.test_dir, "density_mask")
-        self.chip_dir = osp.join(args.test_dir, "density_chip")
+        self.chip_dir = osp.join(args.test_dir, "tilling_chip")
         self.loc_dir = osp.join(args.test_dir, "density_loc")
         self.gbm = joblib.load('/home/twsf/work/CRGNet/density_tools/weights/gbm_{}_{}_test.pkl'.format(args.dataset.lower(), args.aim))
         self._init_path()
@@ -85,14 +85,16 @@ class MakeDataset(object):
         mask_h, mask_w = mask.shape[:2]
 
         # make chip
-        region_box, contours = utils.generate_box_from_mask(mask)
-        # utils.show_image(mask, np.array(region_box))
-        region_box = utils.generate_crop_region(region_box, mask, (mask_w, mask_h), (width, height), self.gbm)
-        # utils.show_image(mask, np.array(region_box))
-        region_box = utils.resize_box(region_box, (mask_w, mask_h), (width, height))
+        # region_box, contours = utils.generate_box_from_mask(mask)
+        # # utils.show_image(mask, np.array(region_box))
+        # region_box = utils.generate_crop_region(region_box, mask, (mask_w, mask_h), (width, height), self.gbm)
+        # # utils.show_image(mask, np.array(region_box))
+        # region_box = utils.resize_box(region_box, (mask_w, mask_h), (width, height))
 
         # if len(region_box) == 0:
         #     region_box = np.array([[0, 0, width, height]])
+
+        region_box = utils.add_tiling((width, height))
 
         if args.show:
             utils.show_image(image, region_box)

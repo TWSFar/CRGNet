@@ -8,14 +8,14 @@ from collections import OrderedDict
 
 hyp = {
     'help': 'voc type transform to coco type',
-    'mode': 'val',  # save instance_train.json
+    'mode': ['val', 'traintest'],  # save instance_train.json
     'num_class': 10,  # visdrone: 10, dota: 15, tt100k: 45, uavdt: 3
     'data_dir': '/home/twsf/data/Visdrone/density_chip',
 }
 hyp['json_dir'] = osp.join(hyp['data_dir'], 'Annotations_json')
 hyp['xml_dir'] = osp.join(hyp['data_dir'], 'Annotations')
 hyp['img_dir'] = osp.join(hyp['data_dir'], 'JPEGImages')
-hyp['set_file'] = osp.join(hyp['data_dir'], 'ImageSets', 'Main', hyp['mode'] + '.txt')
+hyp['set_file'] = osp.join(hyp['data_dir'], 'ImageSets', 'Main', '{}.txt')
 
 
 class getItem(object):
@@ -88,19 +88,19 @@ def getImgInfo(anno_xml):
     size = {'height': int(tsize.find('height').text),
             'width': int(tsize.find('width').text)}
 
-    chip = []
-    location = []
-    pts = ['xmin', 'ymin', 'xmax', 'ymax']
-    lct = xml.find('location')
-    for pt in pts:
-        cur_pt = int(lct.find(pt).text) - 1
-        chip.append(cur_pt)
-    location = [chip[0], chip[1], chip[2] - chip[0], chip[3] - chip[1]]
+    # chip = []
+    # location = []
+    # pts = ['xmin', 'ymin', 'xmax', 'ymax']
+    # lct = xml.find('location')
+    # for pt in pts:
+    #     cur_pt = int(lct.find(pt).text) - 1
+    #     chip.append(cur_pt)
+    # location = [chip[0], chip[1], chip[2] - chip[0], chip[3] - chip[1]]
 
-    return img_name, size, location
+    return img_name, size  # , location
 
 
-def make_json():
+def make_json(imgset, set_file):
     item = getItem()
     images = []
     annotations = []
@@ -109,7 +109,7 @@ def make_json():
     # categories
     categories = item.get_cat_item()
 
-    with open(hyp['set_file'], 'r') as f:
+    with open(set_file, 'r') as f:
         xml_list = f.readlines()
     for id, file_name in enumerate(tqdm(xml_list)):
         file_name = file_name.strip()
@@ -124,9 +124,9 @@ def make_json():
             anno_id += 1
 
         # image info
-        img_name, size, location = getImgInfo(anno_xml)
+        img_name, size = getImgInfo(anno_xml)
         image = item.get_img_item(img_name, img_id, size)
-        image['location'] = location
+        # image['location'] = location
         images.append(image)
 
     # all info
@@ -138,7 +138,7 @@ def make_json():
     # saver
     if not osp.exists(hyp['json_dir']):
         os.makedirs(hyp['json_dir'])
-    save_file = osp.join(hyp['json_dir'], 'instances_{}.json'.format(hyp['mode']))
+    save_file = osp.join(hyp['json_dir'], 'instances_{}.json'.format(imgset))
     print('Saving annotations to {}'.format(save_file))
     json.dump(ann, open(save_file, 'w'), indent=4)
     print('done!')
@@ -146,4 +146,6 @@ def make_json():
 
 if __name__ == '__main__':
     print(hyp)
-    make_json()
+    for imgset in hyp['mode']:
+        set_file = hyp['set_file'].format(imgset)
+        make_json(imgset, set_file)

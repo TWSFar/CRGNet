@@ -19,6 +19,24 @@ def add_tiling(img_shape, split=(3, 2)):
     return shifts
 
 
+def adjustLumin(chip_img, paster, bright_paster, alpha=0.5):
+    # 计算paster中的非背景索引
+    arraySum = np.sum(paster, axis=2)
+    index1 = (arraySum > 0).nonzero()
+    limit_up = alpha * (255 - paster.max())
+    limit_down = 0 - alpha * paster.min()
+    # 计算亮度
+    mb = chip_img[..., 0].mean()
+    mg = chip_img[..., 1].mean()
+    mr = chip_img[..., 2].mean()
+    bright_chip = 0.3*mr + 0.6*mg + 0.1*mb
+    diff = alpha * (bright_chip - bright_paster)
+    diff = np.clip(diff, limit_down, limit_up)
+    paster[index1[0], index1[1]] = (paster[index1[0], index1[1]]+diff)
+
+    return paster
+
+
 def bbox_merge(bbox1, bbox2):
     """ (box1 cup box2) / box2
     Args:

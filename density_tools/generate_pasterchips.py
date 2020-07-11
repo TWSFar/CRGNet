@@ -22,17 +22,13 @@ def parse_args():
     parser = argparse.ArgumentParser(description="convert to voc dataset")
     parser.add_argument('--dataset', type=str, default='Visdrone',
                         choices=['DOTA', 'Visdrone', 'TT100K', 'UAVDT'], help='dataset name')
-    # parser.add_argument('--db_root', type=str,
-    #                     default=user_dir+"/data/TT100K/",
-    #                     # default="E:\\CV\\data\\visdrone",
-    #                     help="dataset's root path")
-    parser.add_argument('--imgsets', type=str, default=['val'],
+    parser.add_argument('--imgsets', type=str, default=['train', 'test', 'val'],
                         nargs='+', help='for train or val')
     parser.add_argument('--aim', type=int, default=100,
                         help='gt aim scale in chip')
     parser.add_argument('--augment', type=bool, default=True,
                         help='augmentation dataset by pasting class mask')
-    parser.add_argument('--padding', type=str, default=[],
+    parser.add_argument('--neglect', type=str, default=[],
                         nargs='+', help='random padding neglect box')
     parser.add_argument('--show', type=bool, default=False,
                         help="show image and chip box")
@@ -244,7 +240,7 @@ class MakeDataset(object):
     def getRoadMask(self, img_id):
         self.roadMask = cv2.imread(osp.join(self.roadMask_dir, img_id+'.jpg'))
 
-    def generate_region_gt(self, region_box, gt_bboxes, labels):
+    def generate_region_gt(self, region_box, gt_bboxes, labels, imgset):
         chip_list = []
         for box in region_box:
             chip_list.append(np.array(box))
@@ -272,6 +268,16 @@ class MakeDataset(object):
                         new_box = [box[0] - chip[0], box[1] - chip[1],
                                    box[2] - chip[0], box[3] - chip[1]]
                         neglect_gt.append(np.array(new_box, dtype=np.int))
+
+                chip_gt = np.array(chip_gt)
+                chip_label = np.array(chip_label)
+                if len(neglect_gt) > 0 and imgset in args.neglect:
+                    keep_idx = np.zeros(len(chip_gt)).astype(np.bool)
+                    for i, box in enumerate(chip_gt):
+                        if utils.iou_calc2(neglect_gt, [box]).sum() < 0.5:
+                            keep_idx[i] = True
+                    chip_gt = chip_gt[keep_idx]
+                    chip_label = chip_label[keep_idx]
 
                 chip_gt_list.append(chip_gt)
                 chip_label_list.append(chip_label)
@@ -370,30 +376,46 @@ class MakeDataset(object):
         #     else:
         #         region_box = np.array([[0, 0, width, height]])
 
-        gt_bboxes, gt_cls, ignore = sample['bboxes'], sample['cls'], sample['ignore']
+        src_gt_bboxes, src_gt_cls, ignore = sample['bboxes'], sample['cls'], sample['ignore']
+
+        if ignore.size > 0 and imgset in args.neglect:
+            gt_bboxes, gt_cls = [], []
+            for i, box in enumerate(src_gt_bboxes):
+                if utils.iou_calc2(ignore, [box]).sum() < 0.5:
+                    gt_bboxes.append(box)
+                    gt_cls.append(src_gt_cls[i])
+            gt_bboxes = np.array(gt_bboxes).astype(np.int)
+            gt_cls = np.array(gt_cls).astype(np.int)
+        else:
+            gt_bboxes = src_gt_bboxes
+            gt_cls = src_gt_cls
 
         chip_gt_list, chip_label_list, neglect_list = self.generate_region_gt(
-            region_box, gt_bboxes, gt_cls)
+            region_box, gt_bboxes, gt_cls, imgset)
+
         chip_loc = self.write_chip_and_anno(
-            image, img_id, region_box, chip_gt_list, chip_label_list,
-            ignore, neglect_list, imgset)
+            image, img_id, region_box,
+            chip_gt_list, chip_label_list, neglect_list,
+            ignore, imgset)
 
         return chip_loc
 
     def write_chip_and_anno(self, image, img_id,
                             chip_list, chip_gt_list,
-                            chip_label_list, ignore, neglect_list, imgset):
+                            chip_label_list, neglect_list,
+                            ignore, imgset):
         """write chips of one image to disk and make xml annotations
         """
         chip_loc = dict()
         chip_num = 0
+        if imgset in args.neglect:
+            for box in ignore:
+                ign_w, ign_h = box[2:] - box[:2]
+                zeros_box = np.zeros((ign_h, ign_w, 3))
+                image[box[1]:box[3], box[0]:box[2]] = zeros_box
+
         if args.augment and imgset != 'val':
             self.getRoadMask(img_id)
-
-        for box in ignore:
-            ign_w, ign_h = box[2:] - box[:2]
-            zeros_box = np.zeros(ign_h, ign_w, 3)
-            image[box[1]:box[3], box[0]:box[2]] = zeros_box
 
         for i, chip in enumerate(chip_list):
             if len(chip_gt_list[i]) == 0:
@@ -405,11 +427,11 @@ class MakeDataset(object):
             chip_img = image[chip[1]:chip[3], chip[0]:chip[2], :].copy()
             assert len(chip_img.shape) == 3
 
-            if imgset in args.padding and neglect_list is not None:
+            if imgset in args.neglect and neglect_list is not None:
                 for neg_box in neglect_list[i]:
                     neg_w = neg_box[2] - neg_box[0]
                     neg_h = neg_box[3] - neg_box[1]
-                    zeros_box = np.zeros(neg_h, neg_w, 3)
+                    zeros_box = np.zeros((neg_h, neg_w, 3))
                     chip_img[neg_box[1]:neg_box[3], neg_box[0]:neg_box[2], :] = zeros_box
 
             bbox = np.array(chip_gt_list[i], dtype=np.int)
@@ -421,7 +443,7 @@ class MakeDataset(object):
             dom = self.make_xml(chip, bbox, label, img_name, chip_size)
             with open(osp.join(self.anno_dir, xml_name), 'w') as f:
                 f.write(dom.toprettyxml(indent='\t', encoding='utf-8').decode('utf-8')) 
-
+            # utils.show_image(chip_img, bbox)
             cv2.imwrite(osp.join(self.image_dir, img_name), chip_img)
             chip_num += 1
 
