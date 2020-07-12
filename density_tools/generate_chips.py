@@ -26,7 +26,7 @@ def parse_args():
                         nargs='+', help='for train or val')
     parser.add_argument('--aim', type=int, default=100,
                         help='gt aim scale in chip')
-    parser.add_argument('--tiling', type=bool, default=False,
+    parser.add_argument('--tiling', type=bool, default=True,
                         help='add tiling chip 3*2(just train)')
     parser.add_argument('--paster', type=bool, default=True,
                         help='add paster to balance classes')
@@ -265,7 +265,7 @@ class MakeDataset(object):
         if imgset.lower() != 'val':
             op = 'a'
             if args.imgsets[0] == imgset:
-                op = 'w'
+                op = 'a'                                                                                    ####  改了
             with open(osp.join(self.list_dir, 'traintest.txt'), op) as f:
                 f.writelines([x + '\n' for x in img_list])
             print('\n%d images in traintest set.' % len(img_list))
@@ -341,7 +341,9 @@ class MakeDataset(object):
         # make tiling
         if args.tiling and imgset != "val":
             tiling = utils.add_tiling((width, height))
-            region_box = np.vstack((region_box, tiling))
+            for pattern in tiling:
+                if utils.iou_calc1(pattern, region_box).max() < 0.85:
+                    region_box = np.vstack((region_box, tiling))
 
         if args.show:
             utils.show_image(image, np.array(region_box))

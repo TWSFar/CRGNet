@@ -100,7 +100,9 @@ def parse_args():
 def scaleSpilt(addre, listRange):
     scaleList = [[], [], [], []]
     imgName = os.listdir(addre)
-    for file_name in imgName:
+    for ii, file_name in enumerate(imgName):
+        if ii > 10:
+            break
         img = cv2.imread(addre+file_name)
         if img.shape[0] == listRange[0] and img.shape[1] == listRange[0]:
             scaleList[0].append(file_name)
@@ -172,17 +174,17 @@ def pastImage(scaleList, scaleRange, Imgdir, Annodir, Xmldir, maxNum, show):
         # drawBox
         # if show:
             # utils.show(mosaicImg, boxlist)
-            # MosaicImg = drawBox(img, boxlist)
+        MosaicImg = drawBox(img, boxlist)
         image_name = "mosaic_"+str(j)+".jpg"
 
-        # cv2.imwrite("/home/twsf/work/CRGNet/temp/"+image_name, MosaicImg.astype(np.uint8))
+        cv2.imwrite("/home/twsf/work/CRGNet/temp/"+image_name, MosaicImg.astype(np.uint8))
 
-        cv2.imwrite(args.AugImg+image_name, img.astype(np.uint8))
-        make_xml(img, boxlist, classlist, image_name, Xmldir)
-        img_list.append("mosaic_"+str(j))
-    with open(args.Setdir + '/mosaic.txt', 'w') as f:
-        for line in img_list:
-            f.writelines(line+'\n')
+    #     cv2.imwrite(args.AugImg+image_name, img.astype(np.uint8))
+    #     make_xml(img, boxlist, classlist, image_name, Xmldir)
+    #     img_list.append("mosaic_"+str(j))
+    # with open(args.Setdir + '/mosaic.txt', 'w') as f:
+    #     for line in img_list:
+    #         f.writelines(line+'\n')
 
 
 if __name__ == "__main__":
