@@ -20,15 +20,15 @@ user_dir = osp.expanduser('~')
 
 def parse_args():
     parser = argparse.ArgumentParser(description="convert to voc dataset")
-    parser.add_argument('--dataset', type=str, default='Visdrone',
+    parser.add_argument('--dataset', type=str, default='UAVDT',
                         choices=['DOTA', 'Visdrone', 'TT100K', 'UAVDT'])
-    parser.add_argument('--imgsets', type=str, default=['train', 'test', 'val'],
+    parser.add_argument('--imgsets', type=str, default=['train', 'val'],
                         nargs='+', help='for train or val')
-    parser.add_argument('--aim', type=int, default=100,
-                        help='gt aim scale in chip')
-    parser.add_argument('--tiling', type=bool, default=True,
+    parser.add_argument('--aim', type=int, default=0.032,
+                        help='aim = 100 * 100 / 640 * 480')
+    parser.add_argument('--tiling', type=bool, default=False,
                         help='add tiling chip 3*2(just train)')
-    parser.add_argument('--paster', type=bool, default=True,
+    parser.add_argument('--paster', type=bool, default=False,
                         help='add paster to balance classes')
     parser.add_argument('--neglect', type=str, default=[],
                         nargs='+', help='neglect many boxes')
@@ -68,7 +68,7 @@ class MakeDataset(object):
         self.anno_dir = self.dest_datadir + '/Annotations'
         self.list_dir = self.dest_datadir + '/ImageSets/Main'
         self.loc_dir = self.dest_datadir + '/Locations'
-        self.gbm = joblib.load('/home/twsf/work/CRGNet/density_tools/weights/gbm_{}_{}.pkl'.format(args.dataset.lower(), args.aim))
+        self.gbm = joblib.load('/home/twsf/work/CRGNet/density_tools/weights/gbm_{}.pkl'.format(args.dataset.lower()))
         if args.paster:  # paster information
             self.kernel = cv2.getStructuringElement(cv2.MORPH_RECT, hpy["kernel_size"])
             self.roadMask_dir = osp.join(args.db_root, "road_mask")
@@ -109,7 +109,7 @@ class MakeDataset(object):
             with open(osp.join(self.loc_dir, imgset+'_chip.json'), 'w') as f:
                 json.dump(chip_loc, f)
                 print('write loc json')
-        print("paster nums: {}".format(self.paster_num))
+        # print("paster nums: {}".format(self.paster_num))
 
     def augPaster(self, chip_img, loc, bbox, labels):
         # 当前chip中目标尺度和中心点, 寻找hardlabel
@@ -265,7 +265,7 @@ class MakeDataset(object):
         if imgset.lower() != 'val':
             op = 'a'
             if args.imgsets[0] == imgset:
-                op = 'a'                                                                                    ####  改了
+                op = 'w'
             with open(osp.join(self.list_dir, 'traintest.txt'), op) as f:
                 f.writelines([x + '\n' for x in img_list])
             print('\n%d images in traintest set.' % len(img_list))
@@ -335,7 +335,7 @@ class MakeDataset(object):
 
         # make chip
         region_box, contours = utils.generate_box_from_mask(mask)
-        region_box = utils.generate_crop_region(region_box, mask, (mask_w, mask_h), (width, height), self.gbm)
+        region_box = utils.generate_crop_region(region_box, mask, (mask_w, mask_h), (width, height), self.gbm, args.aim)
         region_box = utils.resize_box(region_box, (mask_w, mask_h), (width, height))
 
         # make tiling

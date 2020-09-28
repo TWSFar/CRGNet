@@ -9,11 +9,13 @@ from tqdm import tqdm
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Test chip')
-    parser.add_argument('--checkpoint', default="/home/twsf/work/CRGNet/mmdetection/tools_visdrone/work_dirs/ATSS_res2net/epoch_29.pth", help='model')
-    parser.add_argument('--config', default='/home/twsf/work/CRGNet/mmdetection/tools_visdrone/configs/density/ATSS_res2net_bs.py')
-    parser.add_argument('--test-dir', default='/home/twsf/data/Visdrone/density_chip')
-    parser.add_argument('--result-path', default='/home/twsf/work/CRGNet/')
+    parser.add_argument('--checkpoint', default="/home/twsf/work/CRGNet/mmdetection/tools_visdrone/work_dirs/faster/epoch_12.pth", help='model')
+    parser.add_argument('--config', default='/home/twsf/work/CRGNet/mmdetection/tools_visdrone/configs/density/faster.py')
+    parser.add_argument('--test_dir', default='/home/twsf/data/Visdrone/density_chip/ImageSets/Main/val.txt')
+    parser.add_argument('--result-path', default='./workspaces_challenge')
     args = parser.parse_args()
+    args.imgType = ".jpg"
+    args.img_dir = "/home/twsf/data/Visdrone/density_chip/JPEGImages"
     return args
 
 
@@ -37,21 +39,21 @@ if __name__ == "__main__":
     # build the model from a config file and a checkpoint file
     model = init_detector(args.config, args.checkpoint, device='cuda:0')
 
-    img_list = []
-    set_file = osp.join(args.test_dir, 'ImageSets/Main/val.txt')
-    with open(set_file, 'r') as f:
-        for line in f.readlines():
-            img_list.append(line.strip())
-
-    # img_list = os.listdir(args.test_dir)
+    if osp.isfile(args.test_dir):
+        img_list = []
+        with open(args.test_dir, 'r') as f:
+            for line in f.readlines():
+                img_list.append(line.strip() + args.imgType)
+    else:
+        img_list = os.listdir(args.test_dir)
 
     results = []
     for img_name in tqdm(img_list):
-        img_path = osp.join(args.test_dir, 'JPEGImages', img_name+'.jpg')
+        img_path = osp.join(args.img_dir, img_name)
         result = inference_detector(model, img_path)
         for i, boxes in enumerate(result):
             for box in boxes:
-                results.append({"image_id": img_name+'.jpg',
+                results.append({"image_id": img_name,
                                 "category_id": i,
                                 "bbox": np.round(box[:4]),
                                 "score": box[4]})

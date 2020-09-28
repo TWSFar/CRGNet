@@ -58,6 +58,7 @@ def generate_box_from_mask(mask):
     for i in range(len(contours)):
         x, y, w, h = cv2.boundingRect(contours[i])
         regions.append([x, y, x+w, y+h])
+    show_image(mask, np.array(regions))
     return regions
 
 
@@ -290,7 +291,7 @@ def show_image(img, labels=None, img_name=None):
     ax = plt.Axes(fig, [0., 0., 1., 1.])
     ax.set_axis_off()
     fig.add_axes(ax)
-    plt.imshow(img[..., ::-1], cmap=cm.jet)
+    plt.imshow(img, cmap=cm.jet)
     if labels is not None:
         if labels.shape[0] > 0:
             plt.plot(labels[:, [0, 2, 2, 0, 0]].T, labels[:, [1, 1, 3, 3, 1]].T, '-', color='green', linewidth=1)
@@ -310,17 +311,16 @@ def get_log():
     return logger
 
 
-def get_dataset(file, aim, transform=True, scaler=True):
+def get_dataset(file, transform=False, scaler=False):
     # load dataset
     feature = []
     target = []
-    aim_ratio = aim*aim/(640*480)
     csv_file = csv.reader(open(file))
     for content in csv_file:
         content = list(map(float, content))
         if len(content) != 0:
             feature.append(content[0:-1])
-            target.append(content[-1]/aim_ratio)
+            target.append(content[-1])
 
     if transform:
         for i in range(len(feature)):

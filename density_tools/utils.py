@@ -82,7 +82,7 @@ def generate_box_from_mask(mask):
     Args:
         mask: 0/1 array
     """
-    # temp = mask.copy()
+    temp = mask.copy()
     regions = []
     mask = (mask > 0).astype(np.uint8)
     mask = region_morphology(mask)
@@ -96,7 +96,7 @@ def generate_box_from_mask(mask):
     return regions, contours
 
 
-def generate_crop_region(regions, mask, mask_shape, img_shape, gbm=None):
+def generate_crop_region(regions, mask, mask_shape, img_shape, gbm=None, aim=100):
     """
     generate final regions
     enlarge regions < 300
@@ -111,9 +111,10 @@ def generate_crop_region(regions, mask, mask_shape, img_shape, gbm=None):
         obj_area = max(np.where(mask_chip > 0, 1, 0).sum(), 1)
         obj_num = max(mask_chip.sum(), 1.0)
         chip_area = box_w * box_h
-        weight = gbm.predict([[obj_num, obj_area, chip_area, img_shape[0]*img_shape[1]]])[0]
+        ratio = max(gbm.predict([[obj_num, obj_area, chip_area, img_shape[0]*img_shape[1]]])[0], 1e-7)
+        weight = np.sqrt(aim / ratio)
         # info.append([obj_num, obj_area, chip_area])
-
+        
         # resize
         det_w = box_w * img_w / mask_w
         det_h = box_h * img_h / mask_h
@@ -395,7 +396,7 @@ def show_image(img, labels=None, img_name=None):
     ax = plt.Axes(fig, [0., 0., 1., 1.])
     ax.set_axis_off()
     fig.add_axes(ax)
-    plt.imshow(img[..., ::-1], cmap=cm.jet)
+    plt.imshow(img, cmap=cm.jet)
     if labels is not None:
         if labels.shape[0] > 0:
             plt.plot(labels[:, [0, 2, 2, 0, 0]].T, labels[:, [1, 1, 3, 3, 1]].T, '-', color='green', linewidth=1)
@@ -455,3 +456,7 @@ class MyEncoder(json.JSONEncoder):
             return obj.tolist()
         else:
             return super(MyEncoder, self).default(obj)
+
+
+if __name__ == "__main__":
+    show_image(np.random.rand(100, 100), np.array([[0, 0, 20, 20]]))

@@ -21,15 +21,17 @@ user_dir = osp.expanduser('~')
 def parse_args():
     parser = argparse.ArgumentParser(description="convert to voc dataset")
     parser.add_argument('--dataset', type=str, default='Visdrone',
-                        choices=['DOTA', 'Visdrone', 'TT100K', 'UAVDT'], help='dataset name')
-    parser.add_argument('--imgsets', type=str, default=['train', 'test', 'val'],
+                        choices=['DOTA', 'Visdrone', 'TT100K', 'UAVDT'])
+    parser.add_argument('--imgsets', type=str, default=['train'],
                         nargs='+', help='for train or val')
     parser.add_argument('--aim', type=int, default=100,
                         help='gt aim scale in chip')
-    parser.add_argument('--augment', type=bool, default=True,
-                        help='augmentation dataset by pasting class mask')
+    parser.add_argument('--tiling', type=bool, default=True,
+                        help='add tiling chip 3*2(just train)')
+    parser.add_argument('--paster', type=bool, default=False,
+                        help='add paster to balance classes')
     parser.add_argument('--neglect', type=str, default=[],
-                        nargs='+', help='random padding neglect box')
+                        nargs='+', help='neglect many boxes')
     parser.add_argument('--show', type=bool, default=False,
                         help="show image and chip box")
     args = parser.parse_args()
@@ -39,13 +41,14 @@ def parse_args():
 
 args = parse_args()
 print(args)
+# paster config
 hpy = {
     'ncls': 10,  # 类别的数量
-    "kernel_size": (3, 3),  # road的腐蚀核大小
+    "kernel_size": (5, 5),  # road的腐蚀核大小
     "fx": 0.1,  # 候选点之前的road下采样倍数x
     "fy": 0.1,  # 候选点之前的road下采样倍数y
     "pasting_maximum": 5,  # 一个chip最多粘贴数量
-    "adjustLumin": 0.5,  # 亮度补充系数
+    "alpha": 0.5,  # 亮度补充系数
     "obt": 0.0,  # 粘贴目标允许和其他的目标覆盖阈值
     "ort": 0.8,  # 路径覆盖粘贴目标的阈值
     "scale_rank": {0: 1, 1: 0.9, 2: 1.2, 3: 4, 4: 4, 5: 8, 6: 4, 7: 4, 8: 8, 9: 1.3},  # 尺度榜
@@ -59,17 +62,17 @@ class MakeDataset(object):
 
         self.density_dir = self.dataset.density_voc_dir
         self.segmentation_dir = self.density_dir + '/SegmentationClass'
-        self.roadMask_dir = osp.join(args.db_root, "road_mask")
 
         self.dest_datadir = self.dataset.detect_voc_dir
         self.image_dir = self.dest_datadir + '/JPEGImages'
         self.anno_dir = self.dest_datadir + '/Annotations'
         self.list_dir = self.dest_datadir + '/ImageSets/Main'
-        self.maskPools_dir = args.db_root + '/paster_pool_chip'
         self.loc_dir = self.dest_datadir + '/Locations'
-        self.gbm = joblib.load('/home/twsf/work/CRGNet/density_tools/weights/gbm_{}_{}.pkl'.format(args.dataset.lower(), args.aim))
-        self.kernel = cv2.getStructuringElement(cv2.MORPH_RECT, hpy["kernel_size"])
-        if args.augment:
+        # self.gbm = joblib.load('/home/twsf/work/CRGNet/density_tools/weights/gbm_{}.pkl'.format(args.dataset.lower()))
+        if args.paster:  # paster information
+            self.kernel = cv2.getStructuringElement(cv2.MORPH_RECT, hpy["kernel_size"])
+            self.roadMask_dir = osp.join(args.db_root, "road_mask")
+            self.maskPools_dir = args.db_root + '/paster_pool_chip'
             self.getMaskPools()
             self.paster_num = {cat_id: 0 for cat_id in range(hpy['ncls'])}
         self._init_path()
@@ -89,7 +92,7 @@ class MakeDataset(object):
             chip_ids = []
             chip_loc = dict()
             for i, sample in enumerate(samples):
-                # if i % 100 != 0: continue
+                # if i > 3: break
                 img_id = osp.splitext(osp.basename(sample['image']))[0]
                 sys.stdout.write('\rcomplete: {:d}/{:d} {:s}'
                                  .format(i + 1, len(samples), img_id))
@@ -106,13 +109,13 @@ class MakeDataset(object):
             with open(osp.join(self.loc_dir, imgset+'_chip.json'), 'w') as f:
                 json.dump(chip_loc, f)
                 print('write loc json')
-        print("paster num: {}".format(self.paster_num))
+        print("paster nums: {}".format(self.paster_num))
 
-    def augmentation(self, chip_img, loc, bbox, labels):
+    def augPaster(self, chip_img, loc, bbox, labels):
         # 当前chip中目标尺度和中心点, 寻找hardlabel
         obj_scales = bbox[:, 2:4] - bbox[:, :2]
         obj_center = (bbox[:, 2:4] + bbox[:, :2]) / 2
-        hardsIn = [hard for hard in self.hard_cls if hard in labels]
+        # hardsIn = [hard for hard in self.hard_cls if hard in labels]
 
         # 抠出道路掩码并且创建粘贴点候选序列
         road_chip = self.roadMask[loc[1]:loc[3], loc[0]:loc[2]].copy()
@@ -167,7 +170,7 @@ class MakeDataset(object):
                 continue
 
             # 调整明亮度, 粘贴
-            paster = self.adjustLumin(chip_img, paster, float(paster_info[-2]))
+            paster = utils.adjustLumin(chip_img, paster, float(paster_info[-2]), hpy['alpha'])
             chip_img = self.pasting(chip_img, paster, paster_box)
             # utils.show_image(chip_img, np.array([paster_box]))
 
@@ -184,23 +187,6 @@ class MakeDataset(object):
                 break
 
         return chip_img, bbox, labels
-
-    def adjustLumin(self, chip_img, paster, bright_paster):
-        # 计算paster中的非背景索引
-        arraySum = np.sum(paster, axis=2)
-        index1 = (arraySum > 0).nonzero()
-        limit_up = hpy["adjustLumin"] * (255 - paster.max())
-        limit_down = 0 - hpy["adjustLumin"] * paster.min()
-        # 计算亮度
-        mb = chip_img[..., 0].mean()
-        mg = chip_img[..., 1].mean()
-        mr = chip_img[..., 2].mean()
-        bright_chip = 0.3*mr + 0.6*mg + 0.1*mb
-        diff = hpy["adjustLumin"] * (bright_chip - bright_paster)
-        diff = np.clip(diff, limit_down, limit_up)
-        paster[index1[0], index1[1]] = (paster[index1[0], index1[1]]+diff)
-
-        return paster
 
     def pasting(self, chip_img, paster, local):
         scale = (local[2]-local[0], local[3]-local[1])
@@ -237,10 +223,7 @@ class MakeDataset(object):
         self.scale_rank = hpy['scale_rank']
         self.aid_cls = hpy['aid_cls']
 
-    def getRoadMask(self, img_id):
-        self.roadMask = cv2.imread(osp.join(self.roadMask_dir, img_id+'.jpg'))
-
-    def generate_region_gt(self, region_box, gt_bboxes, labels, imgset):
+    def generate_region_gt(self, region_box, gt_bboxes, labels):
         chip_list = []
         for box in region_box:
             chip_list.append(np.array(box))
@@ -268,16 +251,6 @@ class MakeDataset(object):
                         new_box = [box[0] - chip[0], box[1] - chip[1],
                                    box[2] - chip[0], box[3] - chip[1]]
                         neglect_gt.append(np.array(new_box, dtype=np.int))
-
-                chip_gt = np.array(chip_gt)
-                chip_label = np.array(chip_label)
-                if len(neglect_gt) > 0 and imgset in args.neglect:
-                    keep_idx = np.zeros(len(chip_gt)).astype(np.bool)
-                    for i, box in enumerate(chip_gt):
-                        if utils.iou_calc2(neglect_gt, [box]).sum() < 0.5:
-                            keep_idx[i] = True
-                    chip_gt = chip_gt[keep_idx]
-                    chip_label = chip_label[keep_idx]
 
                 chip_gt_list.append(chip_gt)
                 chip_label_list.append(chip_label)
@@ -351,71 +324,48 @@ class MakeDataset(object):
         return dom
 
     def make_chip(self, sample, imgset):
+        # get image and mask informations
         image = cv2.imread(sample['image'])
         height, width = sample['height'], sample['width']
         img_id = osp.splitext(osp.basename(sample['image']))[0]
-
         mask_path = osp.join(self.segmentation_dir, '{}.hdf5'.format(img_id))
         with h5py.File(mask_path, 'r') as hf:
             mask = np.array(hf['label'])
         mask_h, mask_w = mask.shape[:2]
 
-        # make chip
-        region_box, contours = utils.generate_box_from_mask(mask)
-
-        region_box = utils.generate_crop_region(region_box, mask, (mask_w, mask_h), (width, height), self.gbm)
-
-        region_box = utils.resize_box(region_box, (mask_w, mask_h), (width, height))
+        # make tiling
+        if args.tiling:
+            tiling = utils.add_tiling((width, height))
+            # for pattern in tiling:
+            #     if utils.iou_calc1(pattern, region_box).max() < 0.85:
+            #         region_box = np.vstack((region_box, tiling))
+            region_box = tiling
+            # region_box = np.vstack((tiling, [0, 0, width, height]))
 
         if args.show:
             utils.show_image(image, np.array(region_box))
 
-        # if imgset == 'train':
-        #     if len(region_box):
-        #         region_box = np.vstack((region_box, np.array([0, 0, width, height])))
-        #     else:
-        #         region_box = np.array([[0, 0, width, height]])
+        # get box and class
+        gt_bboxes, gt_cls = sample['bboxes'], sample['cls']
 
-        src_gt_bboxes, src_gt_cls, ignore = sample['bboxes'], sample['cls'], sample['ignore']
-
-        if ignore.size > 0 and imgset in args.neglect:
-            gt_bboxes, gt_cls = [], []
-            for i, box in enumerate(src_gt_bboxes):
-                if utils.iou_calc2(ignore, [box]).sum() < 0.5:
-                    gt_bboxes.append(box)
-                    gt_cls.append(src_gt_cls[i])
-            gt_bboxes = np.array(gt_bboxes).astype(np.int)
-            gt_cls = np.array(gt_cls).astype(np.int)
-        else:
-            gt_bboxes = src_gt_bboxes
-            gt_cls = src_gt_cls
-
+        # generate chip annotations and writer chip image
         chip_gt_list, chip_label_list, neglect_list = self.generate_region_gt(
-            region_box, gt_bboxes, gt_cls, imgset)
-
+            region_box, gt_bboxes, gt_cls)
         chip_loc = self.write_chip_and_anno(
-            image, img_id, region_box,
-            chip_gt_list, chip_label_list, neglect_list,
-            ignore, imgset)
+            image, img_id, region_box, chip_gt_list, chip_label_list,
+            neglect_list, imgset)
 
         return chip_loc
 
     def write_chip_and_anno(self, image, img_id,
                             chip_list, chip_gt_list,
-                            chip_label_list, neglect_list,
-                            ignore, imgset):
+                            chip_label_list, neglect_list, imgset):
         """write chips of one image to disk and make xml annotations
         """
         chip_loc = dict()
         chip_num = 0
-        if imgset in args.neglect:
-            for box in ignore:
-                ign_w, ign_h = box[2:] - box[:2]
-                zeros_box = np.zeros((ign_h, ign_w, 3))
-                image[box[1]:box[3], box[0]:box[2]] = zeros_box
-
-        if args.augment and imgset != 'val':
-            self.getRoadMask(img_id)
+        if args.paster and imgset != 'val':
+            self.roadMask = cv2.imread(osp.join(self.roadMask_dir, img_id+'.jpg'))
 
         for i, chip in enumerate(chip_list):
             if len(chip_gt_list[i]) == 0:
@@ -435,10 +385,10 @@ class MakeDataset(object):
                     chip_img[neg_box[1]:neg_box[3], neg_box[0]:neg_box[2], :] = zeros_box
 
             bbox = np.array(chip_gt_list[i], dtype=np.int)
-            label = np.array(chip_label_list[i], dtype=np.int)
+            label = np.array(chip_label_list[i])
 
-            if args.augment and imgset != 'val':
-                chip_img, bbox, label = self.augmentation(chip_img, chip, bbox, label)
+            if args.paster and imgset != 'val':
+                chip_img, bbox, label = self.augPaster(chip_img, chip, bbox, label)
 
             dom = self.make_xml(chip, bbox, label, img_name, chip_size)
             with open(osp.join(self.anno_dir, xml_name), 'w') as f:

@@ -20,14 +20,10 @@ user_dir = osp.expanduser('~')
 
 def parse_args():
     parser = argparse.ArgumentParser(description="convert to voc dataset")
-    parser.add_argument('--dataset', type=str, default='DOTA',
+    parser.add_argument('--dataset', type=str, default='UAVDT',
                         choices=['Visdrone', 'TT100K', 'DOTA', 'UAVDT'], help='dataset name')
     parser.add_argument('--mode', type=str, default=['train', 'val'],
                         nargs='+', help='for train or val')
-    # parser.add_argument('--db_root', type=str,
-    #                     default=user_dir+"/data/UAVDT/",
-    #                     # default="G:\\CV\\Dataset\\Detection\\Visdrone",
-    #                     help="dataset's root path")
     parser.add_argument('--method', type=str, default='gauss',
                         choices=['centerness', 'gauss', 'default'])
     parser.add_argument('--maximum', type=int, default=999,

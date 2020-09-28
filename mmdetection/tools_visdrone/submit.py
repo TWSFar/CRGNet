@@ -9,10 +9,11 @@ from tqdm import tqdm
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Test chip')
-    parser.add_argument('--checkpoint', default="/home/twsf/work/CRGNet/mmdetection/tools_visdrone/work_dirs/ATSS_res2net_bs/epoch_19.pth", help='model')
-    parser.add_argument('--config', default='/home/twsf/work/CRGNet/mmdetection/tools_visdrone/configs/density/ATSS_res2net_bs.py')
-    parser.add_argument('--test-dir', default='/home/twsf/data/Visdrone/challenge/density_chip')
-    parser.add_argument('--result-path', default='./')
+    parser.add_argument('--checkpoint', default="/home/twsf/cache/cascade_basseline_epoch_21_38.4.pth", help='model')
+    parser.add_argument('--config', default='')
+    parser.add_argument('--test_dir', default='')
+    parser.add_argument('--scale', default='', type=str)
+    parser.add_argument('--result-path', default='./workspaces_challenge')
     args = parser.parse_args()
     return args
 
@@ -51,6 +52,6 @@ if __name__ == "__main__":
                                 "score": box[4]})
         # model.show_result(img_path, result, out_file='result.jpg')
 
-    with open(os.path.join(args.result_path, 'chip_results.json'), "w") as f:
+    with open(os.path.join(args.result_path, 'chip_results_{}.json'.format(args.scale)), "w") as f:
         json.dump(results, f, cls=MyEncoder)
         print("results json saved.")
