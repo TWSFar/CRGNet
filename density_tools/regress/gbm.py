@@ -12,7 +12,7 @@ from sklearn.metrics import (mean_absolute_error as MAE,
                              r2_score as R2)
 
 
-dataset = "UAVDT"
+dataset = "Visdrone"
 hyp = {
     'train_dataset1': '/home/twsf/work/CRGNet/density_tools/statistic_results/{}_train_1.csv'.format(dataset),
     'test_dataset1': '/home/twsf/work/CRGNet/density_tools/statistic_results/{}_val_1.csv'.format(dataset),
@@ -55,10 +55,10 @@ def main():
     model.fit(ALL_features, ALL_labels)
 
     # Predict
-    predict_results = model.predict(feature_test2)
+    predict_results = model.predict(feature_test1)
     log.info(((predict_results > 0) * (predict_results < 0.6)).sum())
     for metric in [R2, MAE, MSE, EVS]:
-        score = metric(target_test2, predict_results)
+        score = metric(target_test1, predict_results)
         log.info(metric.__name__+': '+str(score))
 
     # Save

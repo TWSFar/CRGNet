@@ -20,7 +20,7 @@ user_dir = osp.expanduser('~')
 
 def parse_args():
     parser = argparse.ArgumentParser(description="convert to voc dataset")
-    parser.add_argument('--dataset', type=str, default='UAVDT',
+    parser.add_argument('--dataset', type=str, default='Visdrone',
                         choices=['DOTA', 'Visdrone', 'TT100K', 'UAVDT'])
     parser.add_argument('--imgsets', type=str, default=['train', 'val'],
                         nargs='+', help='for train or val')
@@ -346,7 +346,7 @@ class MakeDataset(object):
                     region_box = np.vstack((region_box, tiling))
 
         if args.show:
-            utils.show_image(image, np.array(region_box))
+            utils.show_image(image[..., ::-1], np.array(region_box))
 
         # get box and class
         gt_bboxes, gt_cls = sample['bboxes'], sample['cls']

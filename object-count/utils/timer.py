@@ -16,7 +16,7 @@ class Timer(object):
     def eta(self, cur_step, batch_time):
         self.batch_time.append(batch_time)
         if self.val_eta_time == -1:
-            self.val_eta_time = 0.1 * batch_time * self.val_step / self.val_freq
+            self.val_eta_time = 0  # 0.1 * batch_time * self.val_step / self.val_freq
         eta = (self.train_step - cur_step) * np.mean(self.batch_time) + self.val_eta_time
         return self.second2hour(eta)
 

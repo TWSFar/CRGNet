@@ -51,7 +51,7 @@ def bbox_merge(bbox1, bbox2):
     return np.hstack((left_up, right_down))
 
 
-def delete_inner_region(regions, mask_shape, thresh=0.99):
+def delete_inner_region(regions, mask_shape, thresh=0.9):
     """
     Args:
         regions: xmin, ymin, xmax, ymax
@@ -96,7 +96,7 @@ def generate_box_from_mask(mask):
     return regions, contours
 
 
-def generate_crop_region(regions, mask, mask_shape, img_shape, gbm=None, aim=100):
+def generate_crop_region(regions, mask, mask_shape, img_shape, gbm=None, aim=0.032):
     """
     generate final regions
     enlarge regions < 300
@@ -104,6 +104,7 @@ def generate_crop_region(regions, mask, mask_shape, img_shape, gbm=None, aim=100
     mask_w, mask_h = mask_shape
     img_h, img_w = img_shape
     final_regions = []
+    # show_image(mask, np.array(regions))
     for box in regions:
         # get weight
         mask_chip = mask[box[1]:box[3], box[0]:box[2]]
@@ -112,9 +113,9 @@ def generate_crop_region(regions, mask, mask_shape, img_shape, gbm=None, aim=100
         obj_num = max(mask_chip.sum(), 1.0)
         chip_area = box_w * box_h
         ratio = max(gbm.predict([[obj_num, obj_area, chip_area, img_shape[0]*img_shape[1]]])[0], 1e-7)
-        weight = np.sqrt(aim / ratio)
+        weight = ratio / aim
         # info.append([obj_num, obj_area, chip_area])
-        
+
         # resize
         det_w = box_w * img_w / mask_w
         det_h = box_h * img_h / mask_h
@@ -130,6 +131,7 @@ def generate_crop_region(regions, mask, mask_shape, img_shape, gbm=None, aim=100
             final_regions.append(box)
 
     final_regions = np.array(final_regions)
+    # show_image(mask, final_regions)
     while(1):
         idx = np.zeros((len(final_regions)))
         for i in range(len(final_regions)):

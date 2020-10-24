@@ -9,7 +9,7 @@ from tqdm import tqdm
 from configs.cdm_visdrone import opt
 # from configs.cdm_tt100k import opt
 # from configs.cdm_dota import opt
-from configs.cdm_uavdt import opt
+# from configs.cdm_uavdt import opt
 
 from models import CRG2Net
 from models.losses import build_loss

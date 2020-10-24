@@ -28,7 +28,8 @@ class CRG2Net(nn.Module):
                                     SELayer(128),
                                     nn.BatchNorm2d(128),
                                     nn.ReLU(),
-                                    nn.Conv2d(128, 2, kernel_size=1, stride=1))
+                                    nn.Conv2d(128, 2, kernel_size=1, stride=1),
+                                    nn.Softmax())
 
         self.density = nn.Sequential(nn.Conv2d(self.backbone.high_outc, 128, kernel_size=3, stride=1, padding=1, bias=False),
                                      SELayer(128),
