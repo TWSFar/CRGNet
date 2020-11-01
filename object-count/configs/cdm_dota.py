@@ -10,7 +10,7 @@ class Config:
     img_type = 'png'
     root_dir = user_dir + "/data/DOTA/density_mask"
     num_classes = 1
-    input_size = (640, 640)
+    input_size = (800, 800)
     norm_cfg = dict(mean=[0.51, 0.535, 0.556], std=[0.196, 0.208, 0.246], para=1)
     resume = False
     pre = ""
@@ -44,7 +44,7 @@ class Config:
     # decay = 1e-5
     steps = [0.8, 0.9]
     gamma = 0.3
-    workers = 1
+    workers = 16
 
     # visual
     print_freq = 50

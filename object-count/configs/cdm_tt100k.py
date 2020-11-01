@@ -28,7 +28,7 @@ class Config:
     loss_region = dict(
         type="CrossEntropyLoss",
         ignore_index=-1,
-        weight=None
+        weight=[1, 10]
     )
 
     loss_density = dict(
@@ -44,7 +44,7 @@ class Config:
     # decay = 1e-5
     steps = [0.8, 0.9]
     gamma = 0.3
-    workers = 1
+    workers = 16
 
     # visual
     print_freq = 50

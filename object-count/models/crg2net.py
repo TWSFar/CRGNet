@@ -17,25 +17,25 @@ class CRG2Net(nn.Module):
             BatchNorm = nn.BatchNorm2d
 
         self.backbone = build_backbone(opt.backbone, opt.output_stride, BatchNorm)
-        # self.aspp = ASPP(opt.backbone,
-        #                  opt.output_stride,
-        #                  self.backbone.high_outc+128,
-        #                  BatchNorm)
+        self.aspp = ASPP(opt.backbone,
+                         opt.output_stride,
+                         self.backbone.high_outc,
+                         BatchNorm)
         # self.link_conv = nn.Sequential(nn.Conv2d(
         #     self.backbone.low_outc, 64, kernel_size=1, stride=1, padding=0, bias=False))
         # self.rfb = BasicRFB(self.backbone.high_outc, 64)
-        self.region = nn.Sequential(nn.Conv2d(self.backbone.high_outc, 128, kernel_size=3, stride=1, padding=1, bias=False),
-                                    SELayer(128),
-                                    nn.BatchNorm2d(128),
+        self.region = nn.Sequential(nn.Conv2d(self.backbone.high_outc, 64, kernel_size=3, stride=1, padding=1, bias=False),
+                                    SELayer(64),
+                                    nn.BatchNorm2d(64),
                                     nn.ReLU(),
-                                    nn.Conv2d(128, 2, kernel_size=1, stride=1),
+                                    nn.Conv2d(64, 2, kernel_size=1, stride=1),
                                     nn.Softmax())
 
-        self.density = nn.Sequential(nn.Conv2d(self.backbone.high_outc, 128, kernel_size=3, stride=1, padding=1, bias=False),
-                                     SELayer(128),
-                                     nn.BatchNorm2d(128),
+        self.density = nn.Sequential(nn.Conv2d(self.backbone.high_outc, 64, kernel_size=3, stride=1, padding=1, bias=False),
+                                     SELayer(64),
+                                     nn.BatchNorm2d(64),
                                      nn.ReLU(),
-                                     nn.Conv2d(128, 1, kernel_size=1, stride=1))
+                                     nn.Conv2d(64, 1, kernel_size=1, stride=1))
 
         self._init_weight()
         if opt.freeze_bn:

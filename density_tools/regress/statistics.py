@@ -21,9 +21,9 @@ def parse_args():
     parser = argparse.ArgumentParser(description="convert to voc dataset")
     parser.add_argument('--dataset', type=str, default='Visdrone',
                         choices=['Visdrone', 'DOTA', 'TT100K', 'UAVDT'], help='dataset name')
-    parser.add_argument('--imgsets', type=str, default=['train', 'val'],
+    parser.add_argument('--imgsets', type=str, default=['train'],
                         nargs='+', help='for train or val')
-    parser.add_argument('--aim', type=int, default=100,
+    parser.add_argument('--aim', type=int, default=0.032,
                         help='gt aim scale in chip')
     parser.add_argument('--show', type=bool, default=False,
                         help="show image and chip box")
@@ -52,9 +52,7 @@ class ChipStatistics(object):
         self.dataset = get_dataset(args.dataset, args.db_root)
         self.density_dir = self.dataset.density_voc_dir
         self.segmentation_dir = self.density_dir + '/SegmentationClass'
-        # self.segmentation_dir = self.dataset.src_testdir + '/density_mask'
-        # self.gbm = joblib.load('/home/twsf/work/CRGNet/density_tools/weights/gbm_{}_100.pkl'.format(args.dataset.lower()))
-        self.gbm = None
+        self.gbm = joblib.load('/home/twsf/work/CRGNet/density_tools/weights/gbm_{}.pkl'.format(args.dataset.lower()))
 
     def __call__(self):
         for imgset in args.imgsets:
@@ -85,7 +83,7 @@ class ChipStatistics(object):
             plt.ylim((0, args.y_axis_max))
             plt.bar(x_axis, y_axis)
             plt.savefig(osp.join(result_dir, "{}_dist.png".format(args.dataset)))
-            plt.show()
+            # plt.show()
             plt.close()
 
             # results = np.array(results)
@@ -95,6 +93,7 @@ class ChipStatistics(object):
             median_obj = (box_scale_coco <= 96).sum() - small_obj
             large_obj = (box_scale_coco > 96).sum()
             nor_box_scale = (np.array(self.box_scale) - min(self.box_scale)) / (max(self.box_scale) - min(self.box_scale))
+            all_obj = small_obj + median_obj + large_obj
             with open(result_dir+'/{}_stastic.info'.format(args.dataset), 'a') as f:
                 f.writelines('chip num: '+str(len(chip_scale)) + '\n')
                 f.writelines('chip percent: '+str(chip_scale[:, 1].mean()) + '\n')
@@ -105,19 +104,19 @@ class ChipStatistics(object):
                 f.writelines('box_std: '+str(np.std(self.box_scale)) + '\n')
                 f.writelines('box_std_2: '+str(np.std(box_scale_coco)) + '\n')
                 f.writelines('box_nstd: '+str(np.std(nor_box_scale)) + '\n')
-                f.writelines('small_obj: '+str(small_obj) + '\n')
-                f.writelines('median_obj: '+str(median_obj) + '\n')
-                f.writelines('large_obj: '+str(large_obj) + '\n')
+                f.writelines('small_obj: '+str(small_obj) + " " + str(small_obj / all_obj) + '\n')
+                f.writelines('median_obj: '+str(median_obj) + " " + str(median_obj / all_obj) + '\n')
+                f.writelines('large_obj: '+str(large_obj) + " " + str(large_obj / all_obj) + '\n')
                 for i in range(0, 20):
                     f.writelines('scale {} sum: {}'.format(x_axis[i], scale_distribution[i:i+1].sum()) + '\n')
 
-            with open(result_dir+'/{}_{}_2.csv'.format(args.dataset, imgset), 'w') as f:
-                for line in self.info:
-                    for i, v in enumerate(line):
-                        if i > 0:
-                            f.writelines(',')
-                        f.writelines(str(v))
-                    f.writelines('\n')
+            # with open(result_dir+'/{}_{}_1.csv'.format(args.dataset, imgset), 'w') as f:
+            #     for line in self.info:
+            #         for i, v in enumerate(line):
+            #             if i > 0:
+            #                 f.writelines(',')
+            #             f.writelines(str(v))
+            #         f.writelines('\n')
 
         print(splits, enlarges)
 
@@ -170,16 +169,16 @@ class ChipStatistics(object):
         # make chip
         region_box = utils.generate_box_from_mask(mask)
 
-        region_box, info = utils.generate_crop_region(region_box, mask, (mask_w, mask_h), (width, height), self.gbm)
+        region_box, info = utils.generate_crop_region(region_box, mask, (mask_w, mask_h), (width, height), self.gbm, args.aim)
         info, split, enlarge = info
 
         region_box = utils.resize_box(region_box, (mask_w, mask_h), (width, height))
 
-        # info = []
+        info = []
         # region_box = np.array([[0, 0, width, height]])
 
         if args.show:
-            utils.show_image(image, np.array(region_box))
+            utils.show_image(image[..., ::-1], np.array(region_box))
 
         gt_bboxes, gt_cls = sample['bboxes'], sample['cls']
 
@@ -215,7 +214,7 @@ class ChipStatistics(object):
             self.box_scale.extend(list(area_ratio))
             self.chip_scale.append([area, 1.0*area/(width*height)])
             self.chip_box_scale.append(np.median(area_ratio))
-            self.info.append(info[i] + [image.shape[0]*image.shape[1], np.median(area_ratio)])
+            # self.info.append(info[i] + [image.shape[0]*image.shape[1], np.median(area_ratio)])
 
         return chip_loc
 

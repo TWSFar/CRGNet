@@ -4,7 +4,7 @@ from .utils import MyEncoder
 
 
 class FocalLoss(object):
-    def __init__(self, alpha=0.5, gamma=2, ignore_index=255, weight=None):
+    def __init__(self, alpha=0.25, gamma=2, ignore_index=255, weight=None):
         self.alpha = alpha
         self.gamma = gamma
         self.ignore_index = ignore_index

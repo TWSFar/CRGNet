@@ -41,7 +41,7 @@ class Config:
     decay = 5e-4
     steps = [0.8, 0.9]
     gamma = 0.3
-    workers = 12
+    workers = 16
 
     # eval
     # parameters

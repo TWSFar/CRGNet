@@ -20,7 +20,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="convert to voc dataset")
     parser.add_argument('--dataset', type=str, default='Visdrone',
                         choices=['DOTA', 'Visdrone', 'TT100K', 'UAVDT'], help='dataset name')
-    parser.add_argument('--imgsets', type=str, default=['train', 'test'],
+    parser.add_argument('--imgsets', type=str, default=['train'],
                         nargs='+', help='choose image set')
     parser.add_argument('--neglect', type=str, default=[],
                         nargs='+', help='random padding neglect box')
@@ -30,7 +30,7 @@ def parse_args():
     args.mosaic_scales = ((150, 150), (150, 350), (350, 150), (350, 350))
     args.strides = ((100, 100), (100, 200), (200, 100), (200, 200))
     args.limit_num = 2  # 每个图像每个尺度的候选区域的最大数量
-    args.limit_obj = 2
+    args.limit_obj = 2  # 每个窗口的类别最小数量
     args.db_root = user_dir + f'/data/{args.dataset}/'
     return args
 
@@ -48,7 +48,6 @@ class MakeDataset(object):
         self.image_dir = self.dest_datadir + '/JPEGImages'
         self.anno_dir = self.dest_datadir + '/Annotations'
         self.list_dir = self.dest_datadir + '/ImageSets/Main'
-        self.loc_dir = self.dest_datadir + '/Locations'
         self._init_path()
 
     def _init_path(self):
@@ -57,7 +56,6 @@ class MakeDataset(object):
             os.makedirs(self.image_dir)
             os.makedirs(self.anno_dir)
             os.makedirs(self.list_dir)
-            os.makedirs(self.loc_dir)
 
     def __call__(self):
         self.static_chip = {mscale: 0 for mscale in args.mosaic_scales}
@@ -76,14 +74,9 @@ class MakeDataset(object):
                 loc = self.make_chip(sample, imgset)
                 for i in range(len(loc)):
                     chip_ids.append('{}_{}'.format(img_id, i))
-                chip_loc.update(loc)
 
             self.generate_imgset(chip_ids, imgset)
 
-            # wirte chip loc json
-            with open(osp.join(self.loc_dir, imgset+'_chip.json'), 'w') as f:
-                json.dump(chip_loc, f)
-                print('write loc json')
         print("region number of each scale: {}".format(self.static_chip))
 
     def add_mosaic(self, img_shape, scales=(100, 100), strides=None):
@@ -290,7 +283,7 @@ class MakeDataset(object):
             dom = self.make_xml(chip, bbox, label, img_name, chip_size)
             with open(osp.join(self.anno_dir, xml_name), 'w') as f:
                 f.write(dom.toprettyxml(indent='\t', encoding='utf-8').decode('utf-8')) 
-            # utils.show_image(chip_img, bbox)
+            # utils.show_image(chip_img[..., ::-1], bbox)
             cv2.imwrite(osp.join(self.image_dir, img_name), chip_img)
             chip_num += 1
 

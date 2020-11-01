@@ -44,7 +44,7 @@ class Config:
     # decay = 1e-5
     steps = [0.8, 0.9]
     gamma = 0.3
-    workers = 1
+    workers = 16
 
     # visual
     print_freq = 50

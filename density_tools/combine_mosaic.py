@@ -1,5 +1,6 @@
 import os
 import cv2
+import utils
 import random
 import argparse
 import numpy as np
@@ -170,12 +171,10 @@ def pastImage(scaleList, scaleRange, Imgdir, Annodir, Xmldir, maxNum, show):
                 box[3] = int((box[3] + ybegin) * weight)
 
         # drawBox
-        # if show:
-            # utils.show(mosaicImg, boxlist)
+        if show:
+            utils.show_image(img[..., ::-1]/255.0)
             # MosaicImg = drawBox(img, boxlist)
         image_name = "mosaic_"+str(j)+".jpg"
-
-        # cv2.imwrite("/home/twsf/work/CRGNet/temp/"+image_name, MosaicImg.astype(np.uint8))
 
         cv2.imwrite(args.AugImg+image_name, img.astype(np.uint8))
         make_xml(img, boxlist, classlist, image_name, Xmldir)

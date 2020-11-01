@@ -4,7 +4,12 @@ import joblib
 import numpy as np
 import lightgbm as lgb
 from utils import get_log, get_dataset
-from sklearn import tree
+from sklearn.svm import SVR
+from sklearn.linear_model import LinearRegression
+from sklearn.neighbors import KNeighborsRegressor
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import (mean_absolute_error as MAE,
                              mean_squared_error as MSE,
@@ -12,7 +17,7 @@ from sklearn.metrics import (mean_absolute_error as MAE,
                              r2_score as R2)
 
 
-dataset = "Visdrone"
+dataset = "TT100K"
 hyp = {
     'train_dataset1': '/home/twsf/work/CRGNet/density_tools/statistic_results/{}_train_1.csv'.format(dataset),
     'test_dataset1': '/home/twsf/work/CRGNet/density_tools/statistic_results/{}_val_1.csv'.format(dataset),
@@ -48,8 +53,10 @@ def main():
         'metric': 'rmse'}
 
     # Model
+    # model = LinearRegression()
+    # model = DecisionTreeRegressor()
+    # model = RandomForestRegressor()
     model = lgb.LGBMRegressor(**param_grid)
-    # model = tree.ExtraTreeRegressor()
 
     # Train
     model.fit(ALL_features, ALL_labels)

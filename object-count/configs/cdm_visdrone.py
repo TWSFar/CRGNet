@@ -16,7 +16,7 @@ class Config:
     pre = ""
 
     # model
-    backbone = 'mobilenetv2'
+    backbone = 'ghostnet'
     output_stride = 16
     sync_bn = False
 
@@ -28,7 +28,7 @@ class Config:
     loss_region = dict(
         type="CrossEntropyLoss",
         ignore_index=-1,
-        weight=None
+        # weight=[1, 10]
     )
 
     loss_density = dict(

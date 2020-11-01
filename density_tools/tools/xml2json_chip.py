@@ -8,7 +8,7 @@ from collections import OrderedDict
 
 hyp = {
     'help': 'voc type transform to coco type',
-    'mode': ['train', 'val'],  # save instance_train.json
+    'mode': ['train'],  # save instance_train.json
     'num_class': 10,  # visdrone: 10, dota: 15, tt100k: 45, uavdt: 3
     'data_dir': '/home/twsf/data/Visdrone/density_chip',
 }
