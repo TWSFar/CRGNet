@@ -44,8 +44,8 @@ class CRG2Net(nn.Module):
     def forward(self, input):
         x, low_level_feat = self.backbone(input)
         # low_level_feat = self.link_conv(low_level_feat)
-        # x = self.aspp(x)
-        x = self.rfb(x)
+        x = self.aspp(x)
+        # x = self.rfb(x)
         # x = torch.cat((x, low_level_feat), dim=1)
         region = self.region(x)
         density = self.density(x)
