@@ -221,8 +221,9 @@ def train(**kwargs):
     start_time = time.time()
     opt._parse(kwargs)
     trainer = Trainer(mode="train")
-
-    trainer.logger.info('Num training images: {}'.format(len(trainer.train_dataset)))
+    total = sum([param.nelement() for param in trainer.model.parameters()])
+    trainer.logger.info("Number of parameter: %.2fM" % (total/1e6))
+    trainer.logger.info('Number of training images: {}'.format(len(trainer.train_dataset)))
     # pred = trainer.validate(0)
     for epoch in range(trainer.start_epoch, opt.epochs):
         # train
