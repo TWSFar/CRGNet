@@ -51,7 +51,7 @@ class ASPP(nn.Module):
                                              nn.Conv2d(inplanes, 64, 1, stride=1, bias=False),
                                              BatchNorm(64),
                                              nn.ReLU())
-        self.conv1 = nn.Conv2d(192, 64, 1, bias=False)
+        self.conv1 = nn.Conv2d(320, 64, 1, bias=False)
         self.bn1 = BatchNorm(64)
         self.relu = nn.ReLU()
         self.dropout = nn.Dropout(0.5)
