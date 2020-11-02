@@ -49,7 +49,7 @@ class Inception(nn.Module):
         self.conv1 = nn.Conv2d(5*64, 64, 1, bias=False)
         self.bn1 = BatchNorm(64)
         self.relu = nn.ReLU()
-        # self.dropout = nn.Dropout(0.5)
+        self.dropout = nn.Dropout(0.5)
         self._init_weight()
 
     def forward(self, x):
@@ -65,7 +65,7 @@ class Inception(nn.Module):
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
-        # x = self.dropout(x)
+        x = self.dropout(x)
 
         return x
 

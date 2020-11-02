@@ -3,7 +3,7 @@ import torch.nn as nn
 # import sys
 # import os.path as osp
 # sys.path.insert(0, osp.join(osp.dirname(osp.abspath(__file__)), '../'))
-from .necks import ASPP, SELayer, BasicRFB
+from .necks import ASPP, SELayer, BasicRFB, Inception
 from .backbones import build_backbone
 from .sync_batchnorm import SynchronizedBatchNorm2d
 
@@ -21,6 +21,7 @@ class CRG2Net(nn.Module):
                          opt.output_stride,
                          self.backbone.high_outc,
                          BatchNorm)
+        self.inception = Inception(self.backbone.high_outc, 64)
         # self.link_conv = nn.Sequential(nn.Conv2d(
         #     self.backbone.low_outc, 64, kernel_size=1, stride=1, padding=0, bias=False))
         self.rfb = BasicRFB(self.backbone.high_outc, 64)
@@ -44,7 +45,8 @@ class CRG2Net(nn.Module):
     def forward(self, input):
         x, low_level_feat = self.backbone(input)
         # low_level_feat = self.link_conv(low_level_feat)
-        x = self.aspp(x)
+        # x = self.aspp(x)
+        x = self.inception(x)
         # x = self.rfb(x)
         # x = torch.cat((x, low_level_feat), dim=1)
         region = self.region(x)
