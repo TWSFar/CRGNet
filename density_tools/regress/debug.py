@@ -19,7 +19,7 @@ user_dir = os.path.expanduser('~')
 
 def parse_args():
     parser = argparse.ArgumentParser(description="convert to voc dataset")
-    parser.add_argument('--dataset', type=str, default='TT100K',
+    parser.add_argument('--dataset', type=str, default='DOTA',
                         choices=['Visdrone', 'DOTA', 'TT100K', 'UAVDT'], help='dataset name')
     parser.add_argument('--imgsets', type=str, default=['train'],
                         nargs='+', help='for train or val')
@@ -167,15 +167,15 @@ class ChipStatistics(object):
         mask_h, mask_w = mask.shape[:2]
 
         # make chip
-        region_box = utils.generate_box_from_mask(mask)
+        # region_box = utils.generate_box_from_mask(mask)
 
-        region_box, info = utils.generate_crop_region(region_box, mask, (mask_w, mask_h), (width, height), self.gbm, args.aim)
-        info, split, enlarge = info
+        # region_box, info = utils.generate_crop_region(region_box, mask, (mask_w, mask_h), (width, height), self.gbm, args.aim)
+        # info, split, enlarge = info
 
-        region_box = utils.resize_box(region_box, (mask_w, mask_h), (width, height))
+        # region_box = utils.resize_box(region_box, (mask_w, mask_h), (width, height))
 
         info = []
-        # region_box = np.array([[0, 0, width, height]])
+        region_box = np.array([[0, 0, width, height]])
 
         if args.show:
             utils.show_image(image[..., ::-1], np.array(region_box))
@@ -187,8 +187,8 @@ class ChipStatistics(object):
         chip_loc = self.write_chip_and_anno(info,
             image, img_id, region_box, chip_gt_list, chip_label_list, neglect_list, imgset)
 
-        return split, enlarge
-        # return 0, 0
+        # return split, enlarge
+        return 0, 0
 
     def write_chip_and_anno(self, info, image, img_id,
                             chip_list, chip_gt_list,

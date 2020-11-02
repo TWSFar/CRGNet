@@ -83,7 +83,7 @@ def make_xml(img, boxList, labelList, image_name, xmldir):
 
 def parse_args():
     parser = argparse.ArgumentParser(description="convert to voc dataset")
-    parser.add_argument('--dataset', type=str, default='Visdrone',
+    parser.add_argument('--dataset', type=str, default='TT100K',
                         choices=['DOTA', 'Visdrone', 'TT100K', 'UAVDT'])
     parser.add_argument('--scaleRange', type=int, default=[150, 350])
     parser.add_argument('--mosaicNum', type=int, default=10000)

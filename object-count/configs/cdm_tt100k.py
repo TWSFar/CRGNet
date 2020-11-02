@@ -21,14 +21,14 @@ class Config:
     sync_bn = False
 
     # train
-    batch_size = 32  # assert bs > 2
+    batch_size = 16  # assert bs > 2
     epochs = 50
     freeze_bn = False
 
     loss_region = dict(
         type="CrossEntropyLoss",
         ignore_index=-1,
-        weight=[1, 10]
+        weight=[1, 100]
     )
 
     loss_density = dict(

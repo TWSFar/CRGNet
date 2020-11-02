@@ -60,7 +60,7 @@ test_cfg = dict(
     nms=dict(type='nms', iou_thr=0.6),
     max_per_img=2000)
 # optimizer
-optimizer = dict(type='SGD', lr=0.005, momentum=0.9, weight_decay=0.0001)
+optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
 lr_config = dict(
@@ -68,5 +68,5 @@ lr_config = dict(
     warmup='linear',
     warmup_iters=500,
     warmup_ratio=0.001,
-    step=[30, 45, 50])
-total_epochs = 55
+    step=[20, 25])
+total_epochs = 30

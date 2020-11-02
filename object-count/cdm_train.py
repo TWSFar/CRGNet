@@ -223,7 +223,7 @@ def train(**kwargs):
     trainer = Trainer(mode="train")
 
     trainer.logger.info('Num training images: {}'.format(len(trainer.train_dataset)))
-
+    # pred = trainer.validate(0)
     for epoch in range(trainer.start_epoch, opt.epochs):
         # train
         trainer.train(epoch)
