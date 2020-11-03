@@ -6,11 +6,11 @@ from models.necks import SELayer
 
 
 class _InceptionModule(nn.Module):
-    def __init__(self, inplanes, planes, kernel_size, padding, BatchNorm):
+    def __init__(self, inplanes, planes, kernel_size, padding):
         super(_InceptionModule, self).__init__()
         self.atrous_conv = nn.Conv2d(inplanes, planes, kernel_size=kernel_size,
                                      stride=1, padding=padding, bias=False)
-        self.bn = BatchNorm(planes)
+        self.bn = nn.BatchNorm2d(planes)
         self.relu = nn.ReLU()
 
         self._init_weight()
@@ -34,20 +34,20 @@ class _InceptionModule(nn.Module):
 
 
 class Inception(nn.Module):
-    def __init__(self, backbone, output_stride, inplanes=None, BatchNorm=None):
+    def __init__(self, inplanes):
         super(Inception, self).__init__()
-        self.ince1 = _InceptionModule(inplanes, 64, 1, padding=0, BatchNorm=BatchNorm)
-        self.ince2 = _InceptionModule(inplanes, 64, 3, padding=1, BatchNorm=BatchNorm)
-        self.ince3 = _InceptionModule(inplanes, 64, 5, padding=2, BatchNorm=BatchNorm)
-        self.ince4 = _InceptionModule(inplanes, 64, 7, padding=3, BatchNorm=BatchNorm)
+        self.ince1 = _InceptionModule(inplanes, 64, 1, padding=0)
+        self.ince2 = _InceptionModule(inplanes, 64, 3, padding=1)
+        self.ince3 = _InceptionModule(inplanes, 64, 5, padding=2)
+        self.ince4 = _InceptionModule(inplanes, 64, 7, padding=3)
 
         self.global_avg_pool = nn.Sequential(nn.AdaptiveAvgPool2d((1, 1)),
                                              nn.Conv2d(inplanes, 64, 1, stride=1, bias=False),
-                                             BatchNorm(64),
+                                             nn.BatchNorm2d(64),
                                              nn.ReLU())
         self.selayer = SELayer(5*64)
         self.conv1 = nn.Conv2d(5*64, 64, 1, bias=False)
-        self.bn1 = BatchNorm(64)
+        self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU()
         self.dropout = nn.Dropout(0.5)
         self._init_weight()

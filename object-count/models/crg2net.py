@@ -21,7 +21,7 @@ class CRG2Net(nn.Module):
                          opt.output_stride,
                          self.backbone.high_outc,
                          BatchNorm)
-        self.inception = Inception(self.backbone.high_outc, 64)
+        self.inception = Inception(self.backbone.high_outc)
         # self.link_conv = nn.Sequential(nn.Conv2d(
         #     self.backbone.low_outc, 64, kernel_size=1, stride=1, padding=0, bias=False))
         self.rfb = BasicRFB(self.backbone.high_outc, 64)
