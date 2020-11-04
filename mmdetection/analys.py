@@ -1,5 +1,5 @@
 import numpy as np
-log_file = "/home/twsf/work/CRGNet/mmdetection/tools_uavdt/work_dirs/ATSS_r50_fpn_giou/20200928_232713.log"
+log_file = "/home/twsf/work/CRGNet/mmdetection/tools_tt100k/work_dirs/ATSS_x101_fpn_giou/20201103_193413.log"
 x_interval = 1
 y_interval = 0.02
 

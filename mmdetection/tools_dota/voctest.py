@@ -12,12 +12,12 @@ from mmdet.apis import init_detector, inference_detector
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Test chip')
-    parser.add_argument('--checkpoint', default='/home/twsf/work/CRGNet/mmdetection/tools_tt100k/work_dirs/ATSS_x101_fpn_giou/epoch_50.pth')
-    parser.add_argument('--config', default="/home/twsf/work/CRGNet/mmdetection/tools_tt100k/configs/density/ATSS_x101_fpn_giou.py")
-    parser.add_argument('--root-dir', default='/home/twsf/data/TT100K')
-    parser.add_argument('--nclass', default=45, type=int)
-    parser.add_argument('--score_thr', default=0.3, type=float)
-    parser.add_argument('--inference', action='store_true')
+    parser.add_argument('--checkpoint', default='/home/twsf/work/CRGNet/mmdetection/tools_dota/work_dirs/ATSS_x101_fpn_giou/epoch_25.pth')
+    parser.add_argument('--config', default="/home/twsf/work/CRGNet/mmdetection/tools_dota/configs/density/ATSS_x101_fpn_giou.py")
+    parser.add_argument('--root-dir', default='/home/twsf/data/DOTA')
+    parser.add_argument('--nclass', default=15, type=int)
+    parser.add_argument('--score_thr', default=0.05, type=float)
+    parser.add_argument('--inference', default=True, type=bool)
     parser.add_argument('--result-path', default='/home/twsf/work/CRGNet/workshops')
     args = parser.parse_args()
     args.chip_dir = args.root_dir + '/density_chip'
@@ -91,7 +91,7 @@ if __name__ == "__main__":
             # if iter > 5: break
             iter += 1
             img_name = img_id + '.jpg'
-            newImg = '_'.join(img_id.split('_')[:-1]) + osp.splitext(img_name)[1]
+            newImg = '_'.join(img_id.split('_')[:-1]) + '.png'
             img_file = osp.join(chip_img, img_id+'.jpg')
             loc = chip_loc[img_name]
 
@@ -108,11 +108,11 @@ if __name__ == "__main__":
             # show
             # model.show_result(img_file, result, out_file='chip_result.jpg')
 
-        with open(os.path.join(args.result_path, 'tt100k_results.json'), "w") as f:
+        with open(os.path.join(args.result_path, 'dota_results.json'), "w") as f:
             json.dump(detecions, f, cls=MyEncoder)
             print("results json saved.")
     else:
-        with open(os.path.join(args.result_path, 'tt100k_results.json'), "r") as f:
+        with open(os.path.join(args.result_path, 'dota_results.json'), "r") as f:
             detecions = json.load(f)
             print("load results json.")
 
@@ -121,7 +121,7 @@ if __name__ == "__main__":
     iter = 1
     for img_id in tqdm(img_list):
         iter += 1
-        img_name = img_id + '.jpg'
+        img_name = img_id + '.png'
         det_nms = []
         if img_name in detecions:
             det = np.array(detecions[img_name])
@@ -138,7 +138,7 @@ if __name__ == "__main__":
         annotations.append({"bboxes": bboxes, "labels": labels})
 
         # show
-        img_file = osp.join(source_img, img_name)
+        # img_file = osp.join(source_img, img_name)
         # model.show_result(img_file, det_nms, out_file='source_result.jpg')
 
     # voc metric
