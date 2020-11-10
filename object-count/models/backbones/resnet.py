@@ -4,7 +4,7 @@ import torch.utils.model_zoo as model_zoo
 # import sys
 # import os.path as osp
 # sys.path.insert(0, osp.join(osp.dirname(osp.abspath(__file__)), '../'))
-from models.sync_batchnorm.batchnorm import SynchronizedBatchNorm2d
+# from models.sync_batchnorm.batchnorm import SynchronizedBatchNorm2d
 model_urls = {
     'resnet18': 'https://download.pytorch.org/models/resnet18-5c106cde.pth',
     'resnet34': 'https://download.pytorch.org/models/resnet34-333f7ec4.pth',
@@ -81,8 +81,8 @@ class ResNet(nn.Module):
         self.layer4 = self._make_MG_unit(block, 512, blocks=blocks, stride=strides[3], dilation=dilations[3], BatchNorm=BatchNorm)
         # self.layer4 = self._make_layer(block, 512, layers[3], stride=strides[3], dilation=dilations[3], BatchNorm=BatchNorm)
 
-        self.low_outc = 64
-        self.high_outc = 512
+        self.low_outc = 256
+        self.high_outc = 2048
 
         self._init_weight()
 
@@ -140,20 +140,17 @@ class ResNet(nn.Module):
             if isinstance(m, nn.Conv2d):
                 n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
                 m.weight.data.normal_(0, math.sqrt(2. / n))
-            elif isinstance(m, SynchronizedBatchNorm2d):
-                m.weight.data.fill_(1)
-                m.bias.data.zero_()
             elif isinstance(m, nn.BatchNorm2d):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
 
 
-def resnet101(output_stride, BatchNorm, pretrained=True):
+def resnet101(output_stride, pretrained=True):
     """Constructs a ResNet-101 model.
     Args:
         pretrained (bool): If True, returns a model pre-trained on ImageNet
     """
-    model = ResNet(Bottleneck, [3, 4, 23, 3], output_stride, BatchNorm)
+    model = ResNet(Bottleneck, [3, 4, 23, 3], output_stride, nn.BatchNorm2d)
     if pretrained:
         pretrain_dict = model_zoo.load_url('https://download.pytorch.org/models/resnet101-5d3b4d8f.pth')
         model_dict = {}
@@ -166,8 +163,8 @@ def resnet101(output_stride, BatchNorm, pretrained=True):
     return model
 
 
-def resnet50(output_stride, BatchNorm, pretrained=True):
-    model = ResNet(Bottleneck, [3, 4, 6, 3], output_stride, BatchNorm)
+def resnet50(output_stride, pretrained=True):
+    model = ResNet(Bottleneck, [3, 4, 6, 3], output_stride, nn.BatchNorm2d)
     if pretrained:
         pretrain_dict = model_zoo.load_url(".cache/torch/checkpoints/resnet50-19c8e357.pth")
         model_dict = {}
@@ -182,7 +179,7 @@ def resnet50(output_stride, BatchNorm, pretrained=True):
 
 if __name__ == "__main__":
     import torch
-    model = resnet50(pretrained=True, output_stride=16, BatchNorm=SynchronizedBatchNorm2d)
+    model = resnet50(pretrained=True, output_stride=16)
     input = torch.rand(1, 3, 512, 512)
     output, low_level_feat = model(input)
     print(output.size())

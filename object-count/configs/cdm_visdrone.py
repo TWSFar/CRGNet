@@ -16,7 +16,8 @@ class Config:
     pre = ""
 
     # model
-    backbone = 'resnet50'
+    introduction = "low_level"
+    backbone = 'mobilenetv2'
     output_stride = 16
     sync_bn = False
 

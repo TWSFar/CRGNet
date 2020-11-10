@@ -17,6 +17,11 @@ import utils
 from datasets import get_dataset
 user_dir = osp.expanduser('~')
 
+# classes = ('plane', 'ship', 'storage-tank', 'baseball-diamond',
+#             'tennis-court', 'basketball-court', 'ground-track-field',
+#             'harbor', 'bridge', 'small-vehicle', 'large-vehicle', 'helicopter',
+#             'roundabout', 'soccer-ball-field', 'swimming-pool')
+chip_clsId = [0, 1, 9, 10, 11]
 
 def parse_args():
     parser = argparse.ArgumentParser(description="convert to voc dataset")
@@ -233,11 +238,16 @@ class MakeDataset(object):
         chip_label_list = []
         chip_neglect_list = []
         if gt_bboxes is not None:
-            for chip in chip_list:
+            for item, chip in enumerate(chip_list):
                 chip_gt = []
                 chip_label = []
                 neglect_gt = []
                 for i, box in enumerate(gt_bboxes):
+                    if item == len(chip_list) - 1 and labels[i] in chip_clsId:
+                        continue
+                    elif item < len(chip_list) - 1 and labels[i] not in chip_clsId:
+                        continue
+
                     if utils.overlap(chip, box, 0.75):
                         box = [max(box[0], chip[0]), max(box[1], chip[1]),
                                min(box[2], chip[2]), min(box[3], chip[3])]
@@ -337,6 +347,11 @@ class MakeDataset(object):
         region_box, contours = utils.generate_box_from_mask(mask)
         region_box = utils.generate_crop_region(region_box, mask, (mask_w, mask_h), (width, height), self.gbm, args.aim)
         region_box = utils.resize_box(region_box, (mask_w, mask_h), (width, height))
+
+        if len(region_box) == 0:
+            region_box = np.array([[0, 0, width, height]])
+        else:
+            region_box = np.vstack((region_box, [0, 0, width, height]))
 
         # make tiling
         if args.tiling and imgset != "val":

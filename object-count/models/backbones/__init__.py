@@ -10,10 +10,10 @@ from .res2net import (res2net101, res2net152, res2next50_32x4d,
 
 def build_backbone(backbone, output_stride, BatchNorm):
     if backbone == 'resnet50':
-        return resnet50(output_stride, BatchNorm)
+        return resnet50(output_stride)
 
     elif backbone == 'resnet101':
-        return resnet101(output_stride, BatchNorm)
+        return resnet101(output_stride)
 
     elif backbone == 'res2net101':
         return res2net101()
@@ -40,10 +40,10 @@ def build_backbone(backbone, output_stride, BatchNorm):
         return vovnet57(pretrained=True)
 
     elif backbone == 'xception':
-        return AlignedXception(output_stride, BatchNorm)
+        return AlignedXception(output_stride)
 
     elif backbone == 'mobilenetv2':
-        return MobileNetV2(output_stride, BatchNorm)
+        return MobileNetV2(output_stride)
 
     elif backbone == 'mobilenetv3_s':
         return MobileNetV3_Small()

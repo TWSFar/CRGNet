@@ -13,6 +13,8 @@ class DOTA(object):
                'harbor', 'bridge', 'small-vehicle', 'large-vehicle', 'helicopter',
                'roundabout', 'soccer-ball-field', 'swimming-pool')
 
+    # classes = ('plane', 'ship', 'small-vehicle', 'large-vehicle', 'helicopter')
+
     def __init__(self, db_root):
         self.set_dir = db_root + '/ImageSets'
         self.img_dir = osp.join(db_root, IMG_ROOT)
@@ -54,6 +56,8 @@ class DOTA(object):
         with open(anno_txt, 'r') as f:
             for line in f.readlines():
                 data = line.split()
+                if str(data[8].strip()) not in self.classes:
+                    continue
                 # First, data is a grountruth info
                 if len(data) == 10:
                     box = [float(data[0]), float(data[1]), float(data[4]), float(data[5])]
@@ -74,11 +78,11 @@ class DOTA(object):
         cache_file = osp.join(self.cache_dir, split + '_samples.pkl')
 
         # load bbox and save to cache
-        if osp.exists(cache_file):
-            with open(cache_file, 'rb') as fid:
-                samples = pickle.load(fid)
-            print('gt samples loaded from {}'.format(cache_file))
-            return samples
+        # if osp.exists(cache_file):
+        #     with open(cache_file, 'rb') as fid:
+        #         samples = pickle.load(fid)
+        #     print('gt samples loaded from {}'.format(cache_file))
+        #     return samples
 
         # load information of image and save to cache
         img_list = self._get_imglist(split)
