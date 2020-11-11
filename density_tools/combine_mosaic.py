@@ -83,10 +83,10 @@ def make_xml(img, boxList, labelList, image_name, xmldir):
 
 def parse_args():
     parser = argparse.ArgumentParser(description="convert to voc dataset")
-    parser.add_argument('--dataset', type=str, default='UAVDT',
+    parser.add_argument('--dataset', type=str, default='DOTA',
                         choices=['DOTA', 'Visdrone', 'TT100K', 'UAVDT'])
     parser.add_argument('--scaleRange', type=int, default=[150, 350])
-    parser.add_argument('--mosaicNum', type=int, default=10000)
+    parser.add_argument('--mosaicNum', type=int, default=5000)
     parser.add_argument('--show', type=bool, default=False)
     args = parser.parse_args()
     args.db_root = user_dir + f'/data/{args.dataset}/'
@@ -172,8 +172,8 @@ def pastImage(scaleList, scaleRange, Imgdir, Annodir, Xmldir, maxNum, show):
 
         # drawBox
         if show:
-            utils.show_image(img[..., ::-1]/255.0)
-            # MosaicImg = drawBox(img, boxlist)
+            MosaicImg = drawBox(img, boxlist)
+            utils.show_image(MosaicImg/255.0)
         image_name = "mosaic_"+str(j)+".jpg"
 
         cv2.imwrite(args.AugImg+image_name, img.astype(np.uint8))

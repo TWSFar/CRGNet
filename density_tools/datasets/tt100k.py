@@ -68,11 +68,11 @@ class TT100K(object):
         cache_file = osp.join(self.cache_dir, split + '_samples.pkl')
 
         # load bbox and save to cache
-        if osp.exists(cache_file):
-            with open(cache_file, 'rb') as fid:
-                samples = pickle.load(fid)
-            print('gt samples loaded from {}'.format(cache_file))
-            return samples
+        # if osp.exists(cache_file):
+        #     with open(cache_file, 'rb') as fid:
+        #         samples = pickle.load(fid)
+        #     print('gt samples loaded from {}'.format(cache_file))
+        #     return samples
 
         # load information of image and save to cache
         img_list = self._get_imglist(split)

@@ -64,11 +64,11 @@ class VisDrone(object):
     def _load_samples(self, split):
         cache_file = osp.join(self.cache_dir, split + '_samples.pkl')
         # load bbox and save to cache
-        if osp.exists(cache_file):
-            with open(cache_file, 'rb') as fid:
-                samples = pickle.load(fid)
-            print('gt samples loaded from {}'.format(cache_file))
-            return samples
+        # if osp.exists(cache_file):
+        #     with open(cache_file, 'rb') as fid:
+        #         samples = pickle.load(fid)
+        #     print('gt samples loaded from {}'.format(cache_file))
+        #     return samples
 
         img_list = self._get_imglist(split)
         sizes = [Image.open(img).size for img in img_list]

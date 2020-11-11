@@ -13,7 +13,7 @@ class CocoDataset(object):
     """Coco dataset."""
     CLASSES = ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9')
     def __init__(self):
-        self.coco = COCO("/home/twsf/data/Visdrone/test/annotations_json/instances_test.json")
+        self.coco = COCO("/home/twsf/data/DOTA/density_chip/Annotations_json/instances_val.json")
         self.image_ids = self.coco.getImgIds()
         self.cat_ids = self.coco.getCatIds(catNms=self.CLASSES)
 
@@ -26,7 +26,7 @@ class CocoDataset(object):
 
     def load_image(self, image_index):
         image_info = self.coco.loadImgs(self.image_ids[image_index])[0]
-        path = os.path.join("/home/twsf/data/Visdrone/test/images/", image_info['file_name'])
+        path = os.path.join("/home/twsf/data/DOTA/density_chip/JPEGImages/", image_info['file_name'])
 
         # path = "/home/twsf/data/Visdrone/test/images/" + "0000074_09738_d_0000019.jpg"
         # read img and BGR to RGB before normalize

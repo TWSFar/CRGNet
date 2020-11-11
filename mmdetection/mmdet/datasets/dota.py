@@ -22,7 +22,8 @@ class DOTADataset(CustomDataset):
     #            'tennis-court', 'basketball-court', 'ground-track-field',
     #            'harbor', 'bridge', 'small-vehicle', 'large-vehicle', 'helicopter',
     #            'roundabout', 'soccer-ball-field', 'swimming-pool')
-    CLASSES = ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14')
+    # CLASSES = ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14')
+    CLASSES = ('0', '1', '2', '3', '4')
 
     def load_annotations(self, ann_file):
         self.coco = COCO(ann_file)

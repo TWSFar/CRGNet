@@ -8,12 +8,12 @@ ANNO_ROOT = "Annotations_txt"
 
 
 class DOTA(object):
-    classes = ('plane', 'ship', 'storage-tank', 'baseball-diamond',
-               'tennis-court', 'basketball-court', 'ground-track-field',
-               'harbor', 'bridge', 'small-vehicle', 'large-vehicle', 'helicopter',
-               'roundabout', 'soccer-ball-field', 'swimming-pool')
+    # classes = ('plane', 'ship', 'storage-tank', 'baseball-diamond',
+    #            'tennis-court', 'basketball-court', 'ground-track-field',
+    #            'harbor', 'bridge', 'small-vehicle', 'large-vehicle', 'helicopter',
+    #            'roundabout', 'soccer-ball-field', 'swimming-pool')
 
-    # classes = ('plane', 'ship', 'small-vehicle', 'large-vehicle', 'helicopter')
+    classes = ('plane', 'ship', 'small-vehicle', 'large-vehicle', 'helicopter')
 
     def __init__(self, db_root):
         self.set_dir = db_root + '/ImageSets'
