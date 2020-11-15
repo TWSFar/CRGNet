@@ -10,7 +10,7 @@ class Config:
     img_type = 'png'
     root_dir = user_dir + "/data/DOTA/density_mask"
     num_classes = 1
-    input_size = (800, 800)
+    input_size = (1024, 1024)
     norm_cfg = dict(mean=[0.51, 0.535, 0.556], std=[0.196, 0.208, 0.246], para=1)
     resume = False
     pre = ""
@@ -37,7 +37,7 @@ class Config:
     )
 
     # optimizer
-    use_balanced_weights = False
+    use_balanced_weights = True
     lr = 0.01
     momentum = 0.9
     decay = 5e-4

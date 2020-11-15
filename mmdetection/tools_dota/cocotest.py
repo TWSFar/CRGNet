@@ -9,13 +9,13 @@ from tqdm import tqdm
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Test chip')
-    parser.add_argument('--checkpoint', default="/home/twsf/work/CRGNet/mmdetection/tools_visdrone/work_dirs/ATSS_x101_fpn_giou/20201026_140504.log_e16_mosaic", help='model')
-    parser.add_argument('--config', default='/home/twsf/work/CRGNet/mmdetection/tools_visdrone/configs/density/ATSS_x101_fpn_giou.py')
-    parser.add_argument('--test_dir', default='/home/twsf/data/Visdrone/VisDrone2019-DET-val/density_chip/')
+    parser.add_argument('--checkpoint', default="/home/twsf/work/CRGNet/mmdetection/tools_dota/work_dirs/nomosaic_64/epoch_24.pth", help='model')
+    parser.add_argument('--config', default='/home/twsf/work/CRGNet/mmdetection/tools_dota/configs/density/ATSS_x101_fpn_giou.py')
+    parser.add_argument('--test_dir', default="/home/twsf/data/DOTA/predict_chip/")
     parser.add_argument('--result-path', default='/home/twsf/work/CRGNet/workshops')
     args = parser.parse_args()
-    args.imgType = ".jpg"
-    args.img_dir = "/home/twsf/data/Visdrone/VisDrone2019-DET-val/density_chip/"
+    args.imgType = ".png"
+    args.img_dir = "/home/twsf/data/DOTA/predict_chip/"
     return args
 
 
@@ -57,8 +57,8 @@ if __name__ == "__main__":
                                 "category_id": i,
                                 "bbox": np.round(box[:4]),
                                 "score": box[4]})
-        # model.show_result(img_path, result, out_file='result.jpg')
+        model.show_result(img_path, result, out_file='result.jpg')
 
-    with open(os.path.join(args.result_path, 'visdrone_mosaic_results.json'), "w") as f:
+    with open(os.path.join(args.result_path, 'dota_nomosaic_results.json'), "w") as f:
         json.dump(results, f, cls=MyEncoder)
         print("results json saved.")

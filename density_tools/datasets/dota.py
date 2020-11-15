@@ -77,28 +77,18 @@ class DOTA(object):
     def _load_samples(self, split):
         cache_file = osp.join(self.cache_dir, split + '_samples.pkl')
 
-        # load bbox and save to cache
-        # if osp.exists(cache_file):
-        #     with open(cache_file, 'rb') as fid:
-        #         samples = pickle.load(fid)
-        #     print('gt samples loaded from {}'.format(cache_file))
-        #     return samples
-
         # load information of image and save to cache
         img_list = self._get_imglist(split)
         sizes = [Image.open(img).size for img in img_list]
         anno_path = [img_path.replace(IMG_ROOT, ANNO_ROOT).replace('png', 'txt')
                      for img_path in img_list]
+
         samples = [self._get_gtbox(ann, sizes[i]) for i, ann in enumerate(anno_path)]
 
         for i, img_path in enumerate(img_list):
             samples[i]['image'] = img_path  # image path
             samples[i]['width'] = sizes[i][0]
             samples[i]['height'] = sizes[i][1]
-
-        with open(cache_file, 'wb') as fid:
-            pickle.dump(samples, fid, pickle.HIGHEST_PROTOCOL)
-        print('wrote gt samples to {}'.format(cache_file))
 
         return samples
 

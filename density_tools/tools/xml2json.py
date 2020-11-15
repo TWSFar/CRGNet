@@ -8,13 +8,13 @@ import xml.etree.ElementTree as ET
 from collections import OrderedDict
 
 hyp = {
-    'dataset': 'DOTA',
+    'dataset': 'UAVDT',
     'img_type': '.jpg',
     'mode': 'val',  # for save Set: train.txt choose: train, test
-    'data_dir': '/home/twsf/data/DOTA',
+    'data_dir': '/home/twsf/data/UAVDT',
 }
 hyp['json_dir'] = osp.join(hyp['data_dir'], 'Annotations_json')
-hyp['xml_dir'] = osp.join(hyp['data_dir'], 'Annotations_all')
+hyp['xml_dir'] = osp.join(hyp['data_dir'], 'Annotations')
 hyp['img_dir'] = osp.join(hyp['data_dir'], 'JPEGImages')
 hyp['set_file'] = osp.join(hyp['data_dir'], 'ImageSets', hyp['mode'] + '.txt')
 
@@ -22,10 +22,11 @@ hyp['set_file'] = osp.join(hyp['data_dir'], 'ImageSets', hyp['mode'] + '.txt')
 class getItem(object):
     def __init__(self):
         # self.classes = ('plane', 'ship', 'small-vehicle', 'large-vehicle', 'helicopter')
-        self.classes = ('plane', 'ship', 'storage-tank', 'baseball-diamond',
-               'tennis-court', 'basketball-court', 'ground-track-field',
-               'harbor', 'bridge', 'small-vehicle', 'large-vehicle', 'helicopter',
-               'roundabout', 'soccer-ball-field', 'swimming-pool')
+        # self.classes = ('plane', 'ship', 'storage-tank', 'baseball-diamond',
+        #        'tennis-court', 'basketball-court', 'ground-track-field',
+        #        'harbor', 'bridge', 'small-vehicle', 'large-vehicle', 'helicopter',
+        #        'roundabout', 'soccer-ball-field', 'swimming-pool')
+        self.classes = {"0", "1", "2"}
         self.cat2label = {cat_id: i for i, cat_id in enumerate(self.classes)}
 
     def get_img_item(self, file_name, image_id, size):

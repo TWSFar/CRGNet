@@ -80,9 +80,9 @@ class UAVDT(object):
                      for img_path in img_list]
         samples = [self._get_gtbox(ann) for ann in anno_path]
 
-        with open(cache_file, 'wb') as fid:
-            pickle.dump(samples, fid, pickle.HIGHEST_PROTOCOL)
-        print('wrote gt samples to {}'.format(cache_file))
+        # with open(cache_file, 'wb') as fid:
+        #     pickle.dump(samples, fid, pickle.HIGHEST_PROTOCOL)
+        # print('wrote gt samples to {}'.format(cache_file))
 
         return samples
 

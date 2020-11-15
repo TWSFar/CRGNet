@@ -7,25 +7,36 @@ import os.path as osp
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
-from configs.cdm_visdrone import opt
 from models import CRG2Net as Model
 from dataloaders import deeplab_transforms as dtf
 
 import torch
 from torchvision import transforms
 import multiprocessing
+
+# from configs.cdm_visdrone import opt
+# from configs.cdm_uavdt import opt
+# from configs.cdm_dota import opt
+from configs.cdm_tt100k import opt
+
 multiprocessing.set_start_method('spawn', True)
+user_dir = osp.expanduser('~')
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description="convert to voc dataset")
-    parser.add_argument('--dataset', type=str, default='Visdrone',
-                        choices=['Visdrone', 'TT100K', 'DOTA'], help='dataset name')
-    parser.add_argument('--chekpoint', type=str, default="/home/twsf/cache/90.9.tar")
-    parser.add_argument('--img_dir', type=str, default="/home/twsf/data/Visdrone/VisDrone2019-DET-val/images/")
-    parser.add_argument('--results_dir', type=str, default="/home/twsf/data/Visdrone/VisDrone2019-DET-val/density_mask")
+    parser.add_argument('--dataset', type=str, default='DOTA',
+                        choices=['Visdrone', 'TT100K', 'DOTA', 'UAVDT'], help='dataset name')
+    parser.add_argument('--chekpoint', type=str, default="/home/twsf/work/CRGNet/object-count/run/DOTA/20201115_15_train/model_best.pth.tar")
+    # parser.add_argument('--set_dir', type=str, default="/home/twsf/data/TT100K/ImageSets/val.txt")
+    # parser.add_argument('--img_dir', type=str, default="/home/twsf/data/TT100K/JPEGImages/")
+    # parser.add_argument('--results_dir', type=str, default="/home/twsf/data/TT100K/predict_mask")
     parser.add_argument('--show', type=bool, default=False)
     args = parser.parse_args()
+    args.set_dir = user_dir + f"/data/{args.dataset}/ImageSets/val.txt"
+    args.img_dir = user_dir + f"/data/{args.dataset}/JPEGImages/"
+    args.results_dir = user_dir + f"/data/{args.dataset}/predict_mask"
+    args.imgType = '.png'
     return args
 
 
@@ -40,7 +51,11 @@ def test():
         os.makedirs(args.results_dir)
 
     # data
-    imgs_name = os.listdir(args.img_dir)
+    imgs_name = []
+    with open(args.set_dir, 'r') as f:
+        for line in f.readlines():
+            imgs_name.append(line.strip() + args.imgType)
+
     transform = transforms.Compose([
         dtf.FixedNoMaskResize(size=opt.input_size),  # 513
         dtf.Normalize(**opt.norm_cfg),

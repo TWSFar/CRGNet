@@ -19,10 +19,10 @@ from sklearn.metrics import (mean_absolute_error as MAE,
 
 dataset = "TT100K"
 hyp = {
-    'train_dataset1': '/home/twsf/work/CRGNet/density_tools/statistic_results/{}_train_1.csv'.format(dataset),
-    'test_dataset1': '/home/twsf/work/CRGNet/density_tools/statistic_results/{}_val_1.csv'.format(dataset),
-    'train_dataset2': '/home/twsf/work/CRGNet/density_tools/statistic_results/{}_train_2.csv'.format(dataset),
-    'test_dataset2': '/home/twsf/work/CRGNet/density_tools/statistic_results/{}_val_2.csv'.format(dataset)}
+    'train_dataset1': '/home/twsf/work/CRGNet/density_tools/statistic_results/{}_train_40_1.csv'.format(dataset),
+    'test_dataset1': '/home/twsf/work/CRGNet/density_tools/statistic_results/{}_val_40_1.csv'.format(dataset),
+    'train_dataset2': '/home/twsf/work/CRGNet/density_tools/statistic_results/{}_train_40_2.csv'.format(dataset),
+    'test_dataset2': '/home/twsf/work/CRGNet/density_tools/statistic_results/{}_val_40_2.csv'.format(dataset)}
 
 
 def main():
@@ -69,7 +69,7 @@ def main():
         log.info(metric.__name__+': '+str(score))
 
     # Save
-    joblib.dump(model, '/home/twsf/work/CRGNet/density_tools/weights/gbm_{}.pkl'.format(dataset.lower()))
+    joblib.dump(model, '/home/twsf/work/CRGNet/density_tools/weights/gbm_{}_40.pkl'.format(dataset.lower()))
 
 
 if __name__ == '__main__':

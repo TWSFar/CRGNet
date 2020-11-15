@@ -38,7 +38,7 @@ def parse_args():
     elif args.dataset.lower() == "tt100k":
         args.mask_size = [30, 30]
     elif args.dataset.lower() == "dota":
-        args.mask_size = [50, 50]
+        args.mask_size = [64, 64]
     elif args.dataset.lower() == "uavdt":
         args.mask_size = [30, 40]
     else:
@@ -54,7 +54,7 @@ def show_image(img, labels, mask):
     plt.plot(labels[:, [0, 0, 2, 2, 0]].T, labels[:, [1, 3, 3,  1, 1]].T, '-')
     plt.subplot(2, 1, 2).imshow(mask)
     plt.savefig('mask.jpg')
-    # plt.show()
+    plt.show()
 
 
 # copy train and test images

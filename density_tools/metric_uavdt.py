@@ -5,15 +5,16 @@ import os.path as osp
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 from pycocotools.coco import COCO
+import xml.etree.ElementTree as ET
 from pycocotools.cocoeval import COCOeval
 from utils import nms, soft_nms, show_image, MyEncoder, iou_calc1
 hyp = {
-    'gt': "/home/twsf/data/DOTA/Annotations_json/instances_val.json",
-    'result': "/home/twsf/work/CRGNet/workshops/dota_nomosaic_results.json",
-    'local': "/home/twsf/data/DOTA/predict_loc/test_chip.json",
+    'gt': "/home/twsf/data/UAVDT/Annotations_json/instances_val.json",
+    'result': "/home/twsf/work/CRGNet/workshops/uavdt_nomosaic_results.json",
+    'local': "/home/twsf/data/UAVDT/predict_loc/test_chip.json",
     'show': False,
-    'srcimg_dir': "/home/twsf/data/DOTA/JPEGImages/",
-    'gt_txt': "/home/twsf/data/DOTA/Annotations_txt/"
+    'srcimg_dir': "/home/twsf/data/UAVDT/JPEGImages/",
+    'ign_xml': "/home/twsf/data/UAVDT/Annotations_ign/"
 }
 
 
@@ -51,8 +52,9 @@ class Metric(object):
             if img_info['file_name'] not in detecions:
                 continue
             det = detecions[img_info['file_name']]
-            # gt = self.load_annotations(img_info['file_name'])
-            # gt, det = self.dropObjectsInIgr(gt, det)
+            ignore = self.load_annotations(img_info['file_name'])
+            if len(ignore) != 0:
+                det = self.dropObjectsInIgr(ignore, det)
             det = nms(det, score_threshold=0.05, iou_threshold=0.6, overlap_threshold=1)[:, [0, 1, 2, 3, 5, 4]].astype(np.float32)
             # det = soft_nms(det)[:, [0, 1, 2, 3, 5, 4]].astype(np.float32)
             # det = nms2(det)
@@ -78,25 +80,33 @@ class Metric(object):
         #     json.dump(results, f, indent=4, cls=MyEncoder)
 
     def load_annotations(self, img_id):
-        anno_file = osp.join(hyp['gt_txt'], img_id[:-4]+'.txt')
-        with open(anno_file, 'r') as f:
-            bboxes = np.array([x.strip().split(',')[:6] for x in f.readlines()], dtype=np.float64)
-        bboxes[:, 2:4] += bboxes[:, :2]
+        anno_file = osp.join(hyp['ign_xml'], img_id[:-4]+'.xml')
+        if not osp.isfile(anno_file):
+            return []
+        box_all = []
+        xml = ET.parse(anno_file).getroot()
+        pts = ['xmin', 'ymin', 'xmax', 'ymax']
+        # bounding boxes
+        for obj in xml.iter('object'):
+            bbox = obj.find('bndbox')
+            bndbox = []
+            for i, pt in enumerate(pts):
+                cur_pt = int(bbox.find(pt).text) - 1
+                bndbox.append(cur_pt)
+            box_all += [bndbox]
+        return box_all
+           
 
-        return bboxes
-
-    def dropObjectsInIgr(self, gt, det):
+    def dropObjectsInIgr(self, igrRegion, det):
         det = np.array(det)
-        idxFr = gt[:, 4] != 0
-        idxIgr = gt[:, 4] == 0
-        igrRegion = gt[idxIgr, 0:4]
+        igrRegion = np.array(igrRegion)
 
         igrDet = np.ones(len(det), dtype=np.bool)
         for i in range(len(igrRegion)):
             iou = iou_calc1(igrRegion[i], det[:, :4])
             igrDet[iou > 0.5] = False
 
-        return gt[idxFr][:, [0, 1, 2, 3, 5]], det[igrDet]
+        return det[igrDet]
 
 
 if __name__ == '__main__':

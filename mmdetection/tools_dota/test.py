@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Test chip')
-    parser.add_argument('--checkpoint', default="/home/twsf/work/CRGNet/mmdetection/tools_dota/work_dirs/ATSS_x101_fpn_giou/epoch_20.pth", help='model')
+    parser.add_argument('--checkpoint', default="/home/twsf/work/CRGNet/mmdetection/tools_dota/work_dirs/ATSS_x101_fpn_giou_5_mosaic/epoch_17.pth", help='model')
     parser.add_argument('--config', default='/home/twsf/work/CRGNet/mmdetection/tools_dota/configs/density/ATSS_x101_fpn_giou.py')
     parser.add_argument('--test-dir', default='/home/twsf/data/DOTA/test')
     parser.add_argument('--result-path', default='./results')

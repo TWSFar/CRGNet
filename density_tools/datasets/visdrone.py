@@ -82,9 +82,9 @@ class VisDrone(object):
             samples[i]['width'] = sizes[i][0]
             samples[i]['height'] = sizes[i][1]
 
-        with open(cache_file, 'wb') as fid:
-            pickle.dump(samples, fid, pickle.HIGHEST_PROTOCOL)
-        print('wrote gt samples to {}'.format(cache_file))
+        # with open(cache_file, 'wb') as fid:
+        #     pickle.dump(samples, fid, pickle.HIGHEST_PROTOCOL)
+        # print('wrote gt samples to {}'.format(cache_file))
 
         return samples
 

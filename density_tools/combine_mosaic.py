@@ -86,7 +86,7 @@ def parse_args():
     parser.add_argument('--dataset', type=str, default='DOTA',
                         choices=['DOTA', 'Visdrone', 'TT100K', 'UAVDT'])
     parser.add_argument('--scaleRange', type=int, default=[150, 350])
-    parser.add_argument('--mosaicNum', type=int, default=5000)
+    parser.add_argument('--mosaicNum', type=int, default=10000)
     parser.add_argument('--show', type=bool, default=False)
     args = parser.parse_args()
     args.db_root = user_dir + f'/data/{args.dataset}/'

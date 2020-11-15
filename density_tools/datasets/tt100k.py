@@ -57,7 +57,7 @@ class TT100K(object):
                 cur_pt = int(bbox.find(pt).text) - 1
                 bndbox.append(cur_pt)
             box_all += [bndbox]
-            gt_cls.append(obj.find('name').text)
+            gt_cls.append(str(obj.find('name').text))
         return {'bboxes': np.array(box_all, dtype=np.float64),
                 'cls': gt_cls,
                 'width': width,
@@ -80,9 +80,9 @@ class TT100K(object):
                      for img_path in img_list]
         samples = [self._get_gtbox(ann) for ann in anno_path]
 
-        with open(cache_file, 'wb') as fid:
-            pickle.dump(samples, fid, pickle.HIGHEST_PROTOCOL)
-        print('wrote gt samples to {}'.format(cache_file))
+        # with open(cache_file, 'wb') as fid:
+        #     pickle.dump(samples, fid, pickle.HIGHEST_PROTOCOL)
+        # print('wrote gt samples to {}'.format(cache_file))
 
         return samples
 

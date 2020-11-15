@@ -1,8 +1,40 @@
-import csv
-import logging
-import numpy as np
-from sklearn.preprocessing import StandardScaler
 import cv2
+import json
+import numpy as np
+
+
+def add_tiling(img_shape, split=(3, 2)):
+    """img_shape: w, h
+    """
+    stride_w = img_shape[0] / split[0]
+    stride_h = img_shape[1] / split[1]
+    shift_x = np.arange(0, split[0]) * stride_w
+    shift_y = np.arange(0, split[1]) * stride_h
+    shift_x, shift_y = np.meshgrid(shift_x, shift_y)
+    shifts = np.vstack((
+        shift_x.ravel(), shift_y.ravel(),
+        shift_x.ravel()+stride_w, shift_y.ravel()+stride_h
+    )).transpose().astype(np.int)
+
+    return shifts
+
+
+def adjustLumin(chip_img, paster, bright_paster, alpha=0.5):
+    # 计算paster中的非背景索引
+    arraySum = np.sum(paster, axis=2)
+    index1 = (arraySum > 0).nonzero()
+    limit_up = alpha * (255 - paster.max())
+    limit_down = 0 - alpha * paster.min()
+    # 计算亮度
+    mb = chip_img[..., 0].mean()
+    mg = chip_img[..., 1].mean()
+    mr = chip_img[..., 2].mean()
+    bright_chip = 0.3*mr + 0.6*mg + 0.1*mb
+    diff = alpha * (bright_chip - bright_paster)
+    diff = np.clip(diff, limit_down, limit_up)
+    paster[index1[0], index1[1]] = (paster[index1[0], index1[1]]+diff)
+
+    return paster
 
 
 def bbox_merge(bbox1, bbox2):
@@ -19,7 +51,7 @@ def bbox_merge(bbox1, bbox2):
     return np.hstack((left_up, right_down))
 
 
-def delete_inner_region(regions, mask_shape, thresh=0.99):
+def delete_inner_region(regions, mask_shape, thresh=0.95):
     """
     Args:
         regions: xmin, ymin, xmax, ymax
@@ -50,7 +82,7 @@ def generate_box_from_mask(mask):
     Args:
         mask: 0/1 array
     """
-    # temp = mask.copy()
+    temp = mask.copy()
     regions = []
     mask = (mask > 0).astype(np.uint8)
     # mask = region_morphology(mask)
@@ -58,8 +90,10 @@ def generate_box_from_mask(mask):
     for i in range(len(contours)):
         x, y, w, h = cv2.boundingRect(contours[i])
         regions.append([x, y, x+w, y+h])
-    # show_image(mask, np.array(regions))
-    return regions
+        # temp = np.array(regions[-1])
+    # show_image(temp, np.array(regions))
+    # v = mask[temp[1]:temp[3], temp[0]:temp[2]].sum()
+    return regions, contours
 
 
 def generate_crop_region(regions, mask, mask_shape, img_shape, gbm=None, aim=0.032):
@@ -70,10 +104,7 @@ def generate_crop_region(regions, mask, mask_shape, img_shape, gbm=None, aim=0.0
     mask_w, mask_h = mask_shape
     img_h, img_w = img_shape
     final_regions = []
-    info = []
-    # info = False
-    split = 0
-    enlarge = 0
+    # show_image(mask, np.array(regions))
     for box in regions:
         # get weight
         mask_chip = mask[box[1]:box[3], box[0]:box[2]]
@@ -82,42 +113,42 @@ def generate_crop_region(regions, mask, mask_shape, img_shape, gbm=None, aim=0.0
         obj_num = max(mask_chip.sum(), 1.0)
         chip_area = box_w * box_h
         ratio = max(gbm.predict([[obj_num, obj_area, chip_area, img_shape[0]*img_shape[1]]])[0], 1e-7)
-        info.append([obj_num, obj_area, chip_area])
+        weight = ratio / aim
+        # info.append([obj_num, obj_area, chip_area])
 
-    #     # resize
-    #     det_w = box_w * img_w / mask_w
-    #     det_h = box_h * img_h / mask_h
-    #     det_area = det_w * det_h
-    #     alpha = mask_w / mask_h
-    #     weight = min(max(ratio / aim, 65536 / det_area), 9)  # enlarge minsize: 65536=256*256
-    #     # weight = min(weight, 9)
-    #     if weight <= 0.6 and (box_w > 0.25 * mask_w or box_h > 0.25 * alpha * mask_h):
-    #         final_regions.extend(region_split(box, mask_shape, weight))
-    #         split += 1;
-    #     elif weight > 1 and (box_w < 0.5 * mask_w and box_h < 0.5 * alpha * mask_h):
-    #         final_regions.append(region_enlarge(box, mask_shape, weight))
-    #         enlarge += 1
-    #     else:
-    #         final_regions.append(box)
+        # resize
+        det_w = box_w * img_w / mask_w
+        det_h = box_h * img_h / mask_h
+        det_area = det_w * det_h
+        alpha = mask_w / mask_h
+        weight = min(max(weight, 65536 / det_area), 9)  # enlarge minsize: 65536=256*256
+        # weight = min(weight, 9)
+        if weight <= 0.6 and (box_w > 0.25 * mask_w or box_h > 0.25 * alpha * mask_h):
+            final_regions.extend(region_split(box, mask_shape, weight))
+        elif weight > 1 and (box_w < 0.5 * mask_w and box_h < 0.5 * alpha * mask_h):
+            final_regions.append(region_enlarge(box, mask_shape, weight))
+        else:
+            final_regions.append(box)
 
-    # final_regions = np.array(final_regions)
-    # while(1):
-    #     idx = np.zeros((len(final_regions)))
-    #     for i in range(len(final_regions)):
-    #         for j in range(len(final_regions)):
-    #             if i == j or idx[i] == 1 or idx[j] == 1:
-    #                 continue
-    #             if overlap(final_regions[i], final_regions[j], thresh=0.8):
-    #                 final_regions[i] = bbox_merge(final_regions[i], final_regions[j])
-    #                 idx[j] = 1
-    #     if sum(idx) == 0:
-    #         break
-    #     final_regions = final_regions[idx == 0]
+    final_regions = np.array(final_regions)
+    # show_image(mask, final_regions)
+    while(1):
+        idx = np.zeros((len(final_regions)))
+        for i in range(len(final_regions)):
+            for j in range(len(final_regions)):
+                if i == j or idx[i] == 1 or idx[j] == 1:
+                    continue
+                if overlap(final_regions[i], final_regions[j], thresh=0.8):
+                    final_regions[i] = bbox_merge(final_regions[i], final_regions[j])
+                    idx[j] = 1
+        if sum(idx) == 0:
+            break
+        final_regions = final_regions[idx == 0]
 
-    # if len(final_regions) > 0:
-    #     final_regions = delete_inner_region(final_regions.copy(), mask_shape)
+    if len(final_regions) > 0:
+        final_regions = delete_inner_region(final_regions.copy(), mask_shape)
 
-    return np.array(regions), (info, split, enlarge)
+    return np.array(final_regions)
 
 
 def region_morphology(mask):
@@ -205,7 +236,7 @@ def region_split(region, mask_shape, weight):
     return new_region
 
 
-def overlap(box1, box2, thresh=0.9):
+def overlap(box1, box2, thresh=0.75):
     """ (box1 cup box2) / box2
     Args:
         box1: [xmin, ymin, xmax, ymax]
@@ -279,6 +310,84 @@ def iou_calc2(boxes1, boxes2):
     return IOU
 
 
+def nms(prediction, score_threshold=0.05, iou_threshold=0.5, overlap_threshold=0.95, topN=1000):
+    """
+    :param prediction:
+    (x, y, w, h, conf, cls)
+    :return: best_bboxes
+    """
+    prediction = np.array(prediction)
+    detections = prediction[(-prediction[:,4]).argsort()]
+    detections = detections[:topN]
+    # Iterate through all predicted classes
+    unique_labels = np.unique(detections[:, -1])
+
+    best_bboxes = []
+    for cls in unique_labels:
+        cls_mask = (detections[:, 5] == cls)
+        cls_bboxes = detections[cls_mask]
+
+        # python code
+        while len(cls_bboxes) > 0:
+            best_bbox = cls_bboxes[0]
+            best_bboxes.append(best_bbox)
+            cls_bboxes = cls_bboxes[1:]
+            # iou
+            iou = iou_calc1(best_bbox[np.newaxis, :4], cls_bboxes[:, :4])
+            iou_mask = iou > iou_threshold
+            # overlap
+            overlap = iou_calc2(best_bbox[np.newaxis, :4], cls_bboxes[:, :4])
+            overlap_mask = overlap > overlap_threshold
+
+            mask = iou_mask | overlap_mask
+            cls_bboxes[mask, 4] = 0
+            score_mask = cls_bboxes[:, 4] > score_threshold
+            cls_bboxes = cls_bboxes[score_mask]
+    best_bboxes = np.array(best_bboxes)
+    return best_bboxes
+
+
+def soft_nms(prediction, iou_threshold=0.6, sigma=0.5, score_threshold=0.0001, method=2, topN=1000):
+    """
+    :param prediction:
+    (x, y, w, h, conf, cls)
+    :return: best_bboxes
+    """
+    prediction = np.array(prediction)
+    detections = prediction[(-prediction[:,4]).argsort()]
+    detections = detections[:topN]
+    # Iterate through all predicted classes
+    unique_labels = np.unique(detections[:, -1])
+    best_bboxes = []
+    for cls in unique_labels:
+        cls_mask = (detections[:, 5] == cls)
+        cls_bboxes = detections[cls_mask]
+
+        # python code
+        while len(cls_bboxes) > 0:
+            best_bbox = cls_bboxes[0]
+            best_bboxes.append(best_bbox)
+            cls_bboxes = cls_bboxes[1:]
+
+            iou = iou_calc1(best_bbox[np.newaxis, :4], cls_bboxes[:, :4])
+            mask = iou > iou_threshold
+
+            # Three methods: 1.linear 2.gaussian 3.original NMS
+            if method == 1:  # linear
+                cls_bboxes[mask, 4] = (cls_bboxes[mask, 4] - iou[mask]) * cls_bboxes[mask, 4]
+            elif method == 2:  # gaussian
+                cls_bboxes[mask, 4] = np.exp(-(iou[mask] * iou[mask]) / sigma) * cls_bboxes[mask, 4]
+            else:  # original NMS
+                cls_bboxes[mask, 4] = 0
+
+            score_mask = cls_bboxes[:, 4] > score_threshold
+            cls_bboxes = cls_bboxes[score_mask]
+
+    # select the boxes and keep the corresponding indexes
+    best_bboxes = np.array(best_bboxes)
+    return best_bboxes
+
+
 def show_image(img, labels=None, img_name=None):
     import matplotlib.pyplot as plt
     import matplotlib.cm as cm
@@ -299,35 +408,57 @@ def show_image(img, labels=None, img_name=None):
     pass
 
 
-def get_log():
-    logging.basicConfig(
-        level=logging.DEBUG,
-        format='%(message)s')
-    logger = logging.getLogger(__name__)
-    # f_handler = logging.FileHandler('', mode='a')
-    # logger.addHandler(f_handler)
-    return logger
+def plot_img(img, bboxes, id2name):
+    box_colors = ((0, 0, 1), (0, 1, 0), (0, 1, 1), (1, 0, 0), (1, 0, 1),
+                  (0.541, 0.149, 0.341), (0.541, 0.169, 0.886),
+                  (0.753, 0.753, 0.753), (0.502, 0.165, 0.165),
+                  (0.031, 0.180, 0.329), (0.439, 0.502, 0.412),
+                  (0, 0, 0)) # others
+    img = img.astype(np.float64) / 255.0 if img.max() > 1.0 else img
+    for bbox in bboxes:
+        try:
+            if -1 in bbox:
+                continue
+            x1 = int(bbox[0])
+            y1 = int(bbox[1])
+            x2 = int(bbox[2])
+            y2 = int(bbox[3])
+            id = int(bbox[4])
+            label = id2name[id]
+
+            if len(bbox) >= 6:
+                # if bbox[5] < 0.5:
+                #     continue
+                label = label + '|{:.2}'.format(bbox[5])
+
+            # plot
+            box_color = box_colors[min(id, len(box_colors)-1)]
+            text_color = (1, 1, 1)
+            t_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_COMPLEX, 0.4, 1)[0]
+            c1 = (x1, y1 - t_size[1] - 4)
+            c2 = (x1 + t_size[0], y1)
+            cv2.rectangle(img, c1, c2, color=box_color, thickness=-1)
+            cv2.putText(img, label, (x1, y1-4), cv2.FONT_HERSHEY_COMPLEX, 0.4, text_color, 1)
+            cv2.rectangle(img, (x1, y1), (x2, y2), color=box_color, thickness=3)
+
+        except Exception as e:
+            print(e)
+            continue
+
+    return img
 
 
-def get_dataset(file, transform=False, scaler=False):
-    # load dataset
-    feature = []
-    target = []
-    csv_file = csv.reader(open(file))
-    for content in csv_file:
-        content = list(map(float, content))
-        if len(content) != 0:
-            feature.append(content[0:-1])
-            target.append(content[-1])
+class MyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        else:
+            return super(MyEncoder, self).default(obj)
 
-    if transform:
-        for i in range(len(feature)):
-            feature[i][0] = 1 / feature[i][0]
-            feature[i][3] = 1 / feature[i][3]
 
-    # dataset transform
-    if scaler:
-        scaler = StandardScaler().fit(feature)
-        feature = scaler.transform(feature)
-
-    return feature, target
+if __name__ == "__main__":
+    show_image(np.random.rand(100, 100), np.array([[0, 0, 20, 20]]))

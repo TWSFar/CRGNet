@@ -11,7 +11,7 @@ from tqdm import tqdm
 import os.path as osp
 import sys
 sys.path.insert(0, osp.join(osp.dirname(osp.abspath(__file__)), '../'))
-from regress import utils
+from regress import utils2 as utils
 from datasets import get_dataset
 import matplotlib.pyplot as plt
 user_dir = os.path.expanduser('~')
@@ -110,7 +110,7 @@ class ChipStatistics(object):
                 for i in range(0, 20):
                     f.writelines('scale {} sum: {}'.format(x_axis[i], scale_distribution[i:i+1].sum()) + '\n')
 
-            with open(result_dir+'/{}_{}_40_1.csv'.format(args.dataset, imgset), 'w') as f:
+            with open(result_dir+'/{}_{}_40_2.csv'.format(args.dataset, imgset), 'w') as f:
                 for line in self.info:
                     for i, v in enumerate(line):
                         if i > 0:
