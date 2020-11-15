@@ -132,21 +132,21 @@ def generate_crop_region(regions, mask, mask_shape, img_shape, gbm=None, aim=0.0
 
     final_regions = np.array(final_regions)
     # show_image(mask, final_regions)
-    while(1):
-        idx = np.zeros((len(final_regions)))
-        for i in range(len(final_regions)):
-            for j in range(len(final_regions)):
-                if i == j or idx[i] == 1 or idx[j] == 1:
-                    continue
-                if overlap(final_regions[i], final_regions[j], thresh=0.8):
-                    final_regions[i] = bbox_merge(final_regions[i], final_regions[j])
-                    idx[j] = 1
-        if sum(idx) == 0:
-            break
-        final_regions = final_regions[idx == 0]
+    # while(1):
+    #     idx = np.zeros((len(final_regions)))
+    #     for i in range(len(final_regions)):
+    #         for j in range(len(final_regions)):
+    #             if i == j or idx[i] == 1 or idx[j] == 1:
+    #                 continue
+    #             if overlap(final_regions[i], final_regions[j], thresh=0.8):
+    #                 final_regions[i] = bbox_merge(final_regions[i], final_regions[j])
+    #                 idx[j] = 1
+    #     if sum(idx) == 0:
+    #         break
+    #     final_regions = final_regions[idx == 0]
 
-    if len(final_regions) > 0:
-        final_regions = delete_inner_region(final_regions.copy(), mask_shape)
+    # if len(final_regions) > 0:
+    #     final_regions = delete_inner_region(final_regions.copy(), mask_shape)
 
     return np.array(final_regions)
 

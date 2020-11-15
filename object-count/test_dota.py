@@ -27,7 +27,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="convert to voc dataset")
     parser.add_argument('--dataset', type=str, default='DOTA',
                         choices=['Visdrone', 'TT100K', 'DOTA', 'UAVDT'], help='dataset name')
-    parser.add_argument('--chekpoint', type=str, default="/home/twsf/work/CRGNet/object-count/run/DOTA/20201115_15_train/model_best.pth.tar")
+    parser.add_argument('--checkpoint', type=str, default="/home/twsf/work/CRGNet/object-count/run/DOTA/20201115_15_train/model_best.pth.tar")
     # parser.add_argument('--set_dir', type=str, default="/home/twsf/data/TT100K/ImageSets/val.txt")
     # parser.add_argument('--img_dir', type=str, default="/home/twsf/data/TT100K/JPEGImages/")
     # parser.add_argument('--results_dir', type=str, default="/home/twsf/data/TT100K/predict_mask")
@@ -65,12 +65,12 @@ def test():
     model = Model(opt).to(opt.device)
 
     # resume
-    if osp.isfile(args.chekpoint):
-        print("=> loading checkpoint '{}'".format(args.chekpoint))
-        checkpoint = torch.load(args.chekpoint)
+    if osp.isfile(args.checkpoint):
+        print("=> loading checkpoint '{}'".format(args.checkpoint))
+        checkpoint = torch.load(args.checkpoint)
         model.load_state_dict(checkpoint['state_dict'])
         print("=> loaded checkpoint '{}' (epoch {})"
-              .format(args.chekpoint, checkpoint['epoch']))
+              .format(args.checkpoint, checkpoint['epoch']))
     else:
         raise FileNotFoundError
 

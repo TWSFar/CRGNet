@@ -12,23 +12,23 @@ import argparse
 import numpy as np
 import os.path as osp
 
-import utils
+import utils as utils
 user_dir = osp.expanduser('~')
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description="convert to chip dataset")
-    parser.add_argument('--dataset', type=str, default='DOTA',
+    parser.add_argument('--dataset', type=str, default='Visdrone',
                         choices=['DOTA', 'Visdrone', 'UAVDT', 'TT100K'], help='dataset name')
     parser.add_argument('--test_dir', type=str,
-                        default=user_dir+"/data/DOTA/")
+                        default=user_dir+"/data/Visdrone/")
                         # default="E:\\CV\\data\\Underwater\\test")
     parser.add_argument('--aim', type=int, default=0.032,
                         help='gt aim scale in chip')
     parser.add_argument('--show', type=bool, default=False,
                         help="show image and chip box")
     args = parser.parse_args()
-    args.img_type = '.png'
+    args.img_type = '.jpg'
     return args
 
 
@@ -42,7 +42,7 @@ class MakeDataset(object):
         self.mask_dir = osp.join(args.test_dir, "predict_mask")
         self.chip_dir = osp.join(args.test_dir, "predict_chip")
         self.loc_dir = osp.join(args.test_dir, "predict_loc")
-        self.gbm = joblib.load('{}/work/CRGNet/density_tools/weights/gbm_{}_64.pkl'.format(user_dir, args.dataset.lower()))
+        self.gbm = joblib.load('{}/work/CRGNet/density_tools/weights/gbm_{}.pkl'.format(user_dir, args.dataset.lower()))
         self._init_path()
 
     def _init_path(self):

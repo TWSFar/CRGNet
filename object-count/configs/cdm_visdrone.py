@@ -16,13 +16,12 @@ class Config:
     pre = ""
 
     # model
-    introduction = "low_level"
     backbone = 'mobilenetv2'
     output_stride = 16
     sync_bn = False
 
     # train
-    batch_size = 16  # assert bs > 2
+    batch_size = 32  # assert bs > 2
     epochs = 50
     freeze_bn = False
 
@@ -38,7 +37,7 @@ class Config:
     )
 
     # optimizer
-    use_balanced_weights = False
+    use_balanced_weights = True
     lr = 0.01
     momentum = 0.9
     decay = 5e-4

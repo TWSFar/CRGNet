@@ -8,12 +8,12 @@ from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 from utils import nms, soft_nms, show_image, MyEncoder, iou_calc1
 hyp = {
-    'gt': "/home/twsf/data/DOTA/Annotations_json/instances_val.json",
-    'result': "/home/twsf/work/CRGNet/workshops/dota_nomosaic_results.json",
-    'local': "/home/twsf/data/DOTA/predict_loc/test_chip.json",
+    'gt': "/home/twsf/data/Visdrone/VisDrone2019-DET-val/annotations_json/instances_val.json",
+    'result': "/home/twsf/work/CRGNet/workshops/visdrone_faster_results.json",
+    'local': "/home/twsf/data/Visdrone/VisDrone2019-DET-val/density_loc/test_chip.json",
     'show': False,
-    'srcimg_dir': "/home/twsf/data/DOTA/JPEGImages/",
-    'gt_txt': "/home/twsf/data/DOTA/Annotations_txt/"
+    'srcimg_dir': "/home/twsf/data/Visdrone/VisDrone2019-DET-val/images/",
+    'gt_txt': "/home/twsf/data/Visdrone/VisDrone2019-DET-val/annotations/"
 }
 
 
@@ -51,8 +51,8 @@ class Metric(object):
             if img_info['file_name'] not in detecions:
                 continue
             det = detecions[img_info['file_name']]
-            # gt = self.load_annotations(img_info['file_name'])
-            # gt, det = self.dropObjectsInIgr(gt, det)
+            gt = self.load_annotations(img_info['file_name'])
+            gt, det = self.dropObjectsInIgr(gt, det)
             det = nms(det, score_threshold=0.05, iou_threshold=0.6, overlap_threshold=1)[:, [0, 1, 2, 3, 5, 4]].astype(np.float32)
             # det = soft_nms(det)[:, [0, 1, 2, 3, 5, 4]].astype(np.float32)
             # det = nms2(det)
