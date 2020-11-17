@@ -14,10 +14,10 @@ import torch
 from torchvision import transforms
 import multiprocessing
 
-# from configs.cdm_visdrone import opt
+from configs.cdm_visdrone import opt
 # from configs.cdm_uavdt import opt
 # from configs.cdm_dota import opt
-from configs.cdm_tt100k import opt
+# from configs.cdm_tt100k import opt
 
 multiprocessing.set_start_method('spawn', True)
 user_dir = osp.expanduser('~')
@@ -25,18 +25,18 @@ user_dir = osp.expanduser('~')
 
 def parse_args():
     parser = argparse.ArgumentParser(description="convert to voc dataset")
-    parser.add_argument('--dataset', type=str, default='DOTA',
+    parser.add_argument('--dataset', type=str, default='Visdrone',
                         choices=['Visdrone', 'TT100K', 'DOTA', 'UAVDT'], help='dataset name')
-    parser.add_argument('--checkpoint', type=str, default="/home/twsf/work/CRGNet/object-count/run/DOTA/20201115_15_train/model_best.pth.tar")
+    parser.add_argument('--checkpoint', type=str, default="/home/twsf/work/CRGNet/object-count/run/Visdrone/use_balanced_weights/model_best.pth.tar")
     # parser.add_argument('--set_dir', type=str, default="/home/twsf/data/TT100K/ImageSets/val.txt")
     # parser.add_argument('--img_dir', type=str, default="/home/twsf/data/TT100K/JPEGImages/")
     # parser.add_argument('--results_dir', type=str, default="/home/twsf/data/TT100K/predict_mask")
     parser.add_argument('--show', type=bool, default=False)
     args = parser.parse_args()
-    args.set_dir = user_dir + f"/data/{args.dataset}/ImageSets/val.txt"
-    args.img_dir = user_dir + f"/data/{args.dataset}/JPEGImages/"
-    args.results_dir = user_dir + f"/data/{args.dataset}/predict_mask"
-    args.imgType = '.png'
+    args.set_dir = user_dir + f"/data/{args.dataset}/VisDrone2019-DET-val/ImageSets/Main/val.txt"
+    args.img_dir = user_dir + f"/data/{args.dataset}/VisDrone2019-DET-val/images/"
+    args.results_dir = user_dir + f"/data/{args.dataset}/VisDrone2019-DET-val/density_mask/"
+    args.imgType = '.jpg'
     return args
 
 

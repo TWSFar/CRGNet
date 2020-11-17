@@ -17,17 +17,16 @@ from sklearn.metrics import (mean_absolute_error as MAE,
                              r2_score as R2)
 
 
-dataset = "TT100K"
+dataset = "Visdrone"
 hyp = {
-    'train_dataset1': '/home/twsf/work/CRGNet/density_tools/statistic_results/{}_train_40_1.csv'.format(dataset),
-    'test_dataset1': '/home/twsf/work/CRGNet/density_tools/statistic_results/{}_val_40_1.csv'.format(dataset),
-    'train_dataset2': '/home/twsf/work/CRGNet/density_tools/statistic_results/{}_train_40_2.csv'.format(dataset),
-    'test_dataset2': '/home/twsf/work/CRGNet/density_tools/statistic_results/{}_val_40_2.csv'.format(dataset)}
+    'train_dataset1': '/home/twsf/work/CRGNet/density_tools/statistic_results/{}_train_4564_1.csv'.format(dataset),
+    'test_dataset1': '/home/twsf/work/CRGNet/density_tools/statistic_results/{}_val_4564_1.csv'.format(dataset),
+    'train_dataset2': '/home/twsf/work/CRGNet/density_tools/statistic_results/{}_train_4564_2.csv'.format(dataset),
+    'test_dataset2': '/home/twsf/work/CRGNet/density_tools/statistic_results/{}_val_4564_2.csv'.format(dataset)}
 
 
 def main():
     log = get_log()
-
     # Load datasets
     feature_train1, target_train1 = get_dataset(hyp['train_dataset1'], transform=False, scaler=False)
     feature_test1, target_test1 = get_dataset(hyp['test_dataset1'], transform=False, scaler=False)
@@ -69,7 +68,7 @@ def main():
         log.info(metric.__name__+': '+str(score))
 
     # Save
-    joblib.dump(model, '/home/twsf/work/CRGNet/density_tools/weights/gbm_{}_40.pkl'.format(dataset.lower()))
+    joblib.dump(model, '/home/twsf/work/CRGNet/density_tools/weights/gbm_{}_4564.pkl'.format(dataset.lower()))
 
 
 if __name__ == '__main__':

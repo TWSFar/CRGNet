@@ -9,7 +9,7 @@ from pycocotools.cocoeval import COCOeval
 from utils import nms, soft_nms, show_image, MyEncoder, iou_calc1
 hyp = {
     'gt': "/home/twsf/data/Visdrone/VisDrone2019-DET-val/annotations_json/instances_val.json",
-    'result': "/home/twsf/work/CRGNet/workshops/visdrone_faster_results.json",
+    'result': "/home/twsf/work/CRGNet/ablation_study/r101.json",
     'local': "/home/twsf/data/Visdrone/VisDrone2019-DET-val/density_loc/test_chip.json",
     'show': False,
     'srcimg_dir': "/home/twsf/data/Visdrone/VisDrone2019-DET-val/images/",

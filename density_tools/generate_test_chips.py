@@ -21,7 +21,7 @@ def parse_args():
     parser.add_argument('--dataset', type=str, default='Visdrone',
                         choices=['DOTA', 'Visdrone', 'UAVDT', 'TT100K'], help='dataset name')
     parser.add_argument('--test_dir', type=str,
-                        default=user_dir+"/data/Visdrone/")
+                        default=user_dir+"/data/Visdrone/VisDrone2019-DET-val/")
                         # default="E:\\CV\\data\\Underwater\\test")
     parser.add_argument('--aim', type=int, default=0.032,
                         help='gt aim scale in chip')
@@ -38,10 +38,10 @@ print(args)
 
 class MakeDataset(object):
     def __init__(self):
-        self.img_dir = osp.join(args.test_dir, "JPEGImages")
-        self.mask_dir = osp.join(args.test_dir, "predict_mask")
-        self.chip_dir = osp.join(args.test_dir, "predict_chip")
-        self.loc_dir = osp.join(args.test_dir, "predict_loc")
+        self.img_dir = osp.join(args.test_dir, "images")
+        self.mask_dir = osp.join(args.test_dir, "density_mask")
+        self.chip_dir = osp.join(args.test_dir, "density_chip")
+        self.loc_dir = osp.join(args.test_dir, "density_loc")
         self.gbm = joblib.load('{}/work/CRGNet/density_tools/weights/gbm_{}.pkl'.format(user_dir, args.dataset.lower()))
         self._init_path()
 
@@ -87,13 +87,15 @@ class MakeDataset(object):
 
         # make chip
         region_box, contours = utils.generate_box_from_mask(mask)
-        # utils.show_image(mask, np.array(region_box))
+        # # utils.show_image(mask, np.array(region_box))
         region_box = utils.generate_crop_region(region_box, mask, (mask_w, mask_h), (width, height), self.gbm, args.aim)
-        # utils.show_image(mask, np.array(region_box))
+        # # utils.show_image(mask, np.array(region_box))
         region_box = utils.resize_box(region_box, (mask_w, mask_h), (width, height))
 
         # if len(region_box) == 0:
         #     region_box = np.array([[0, 0, width, height]])
+        # else:
+        #     region_box = np.vstack((region_box, [0, 0, width, height]))
 
         if args.show:
             utils.show_image(image[..., ::-1], np.array(region_box))

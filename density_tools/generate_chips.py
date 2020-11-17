@@ -13,14 +13,14 @@ import os.path as osp
 from xml.etree.ElementTree import Element, SubElement, tostring
 from xml.dom.minidom import parseString
 
-import utils_dota as utils
+import utils
 from datasets import get_dataset
 user_dir = osp.expanduser('~')
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description="convert to voc dataset")
-    parser.add_argument('--dataset', type=str, default='DOTA',
+    parser.add_argument('--dataset', type=str, default='Visdrone',
                         choices=['DOTA', 'Visdrone', 'TT100K', 'UAVDT'])
     parser.add_argument('--imgsets', type=str, default=[ 'val', 'train'],
                         nargs='+', help='for train or val')
@@ -68,7 +68,7 @@ class MakeDataset(object):
         self.anno_dir = self.dest_datadir + '/Annotations'
         self.list_dir = self.dest_datadir + '/ImageSets/Main'
         self.loc_dir = self.dest_datadir + '/Locations'
-        self.gbm = joblib.load('/home/twsf/work/CRGNet/density_tools/weights/gbm_{}_64.pkl'.format(args.dataset.lower()))
+        self.gbm = joblib.load('/home/twsf/work/CRGNet/density_tools/weights/gbm_{}.pkl'.format(args.dataset.lower()))
         if args.paster:  # paster information
             self.kernel = cv2.getStructuringElement(cv2.MORPH_RECT, hpy["kernel_size"])
             self.roadMask_dir = osp.join(args.db_root, "road_mask")

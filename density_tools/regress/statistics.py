@@ -19,7 +19,7 @@ user_dir = os.path.expanduser('~')
 
 def parse_args():
     parser = argparse.ArgumentParser(description="convert to voc dataset")
-    parser.add_argument('--dataset', type=str, default='TT100K',
+    parser.add_argument('--dataset', type=str, default='Visdrone',
                         choices=['Visdrone', 'DOTA', 'TT100K', 'UAVDT'], help='dataset name')
     parser.add_argument('--imgsets', type=str, default=['train', 'val'],
                         nargs='+', help='for train or val')
@@ -110,7 +110,7 @@ class ChipStatistics(object):
                 for i in range(0, 20):
                     f.writelines('scale {} sum: {}'.format(x_axis[i], scale_distribution[i:i+1].sum()) + '\n')
 
-            with open(result_dir+'/{}_{}_40_1.csv'.format(args.dataset, imgset), 'w') as f:
+            with open(result_dir+'/{}_{}_4564_1.csv'.format(args.dataset, imgset), 'w') as f:
                 for line in self.info:
                     for i, v in enumerate(line):
                         if i > 0:

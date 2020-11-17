@@ -1,5 +1,5 @@
 import numpy as np
-log_file = "/home/twsf/work/CRGNet/mmdetection/tools_dota/work_dirs/ATSS_x101_fpn_giou_5_nom/20201112_213455.log"
+log_file = "/home/twsf/work/CRGNet/mmdetection/tools_uavdt/work_dirs/ATSS_r50_fpn_giou_mosaic /20201113_022632.log"
 x_interval = 1
 y_interval = 0.02
 
@@ -51,3 +51,5 @@ with open(log_file) as f:
 show(np.arange(1, len(losses)+1), losses, "loss")
 show(np.arange(1, len(maps)+1), maps, "map")
 show(np.arange(1, len(maps50)+1), maps50, "map_50")
+for v in maps:
+    print(v*100 - 3.9)
