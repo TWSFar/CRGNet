@@ -11,11 +11,7 @@ hyp = {
     'result': "/home/twsf/work/CRGNet/chip_results_{}.json",
     'local': "/home/twsf/data/Visdrone/challenge/density_loc/test_chip.json",
     'submit_dir': '/home/twsf/work/CRGNet/results',
-<<<<<<< HEAD
     'show': True,
-=======
-    'show': False,
->>>>>>> 28c1a5d5c6809ba65aa0216d062b38f8ce56734c
     'srcimg_dir': "/home/twsf/data/Visdrone/challenge/images/"
 }
 

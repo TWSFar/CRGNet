@@ -28,9 +28,6 @@ def parse_args():
     parser.add_argument('--dataset', type=str, default='Visdrone',
                         choices=['Visdrone', 'TT100K', 'DOTA', 'UAVDT'], help='dataset name')
     parser.add_argument('--checkpoint', type=str, default="/home/twsf/work/CRGNet/object-count/run/Visdrone/use_balanced_weights/model_best.pth.tar")
-    # parser.add_argument('--set_dir', type=str, default="/home/twsf/data/TT100K/ImageSets/val.txt")
-    # parser.add_argument('--img_dir', type=str, default="/home/twsf/data/TT100K/JPEGImages/")
-    # parser.add_argument('--results_dir', type=str, default="/home/twsf/data/TT100K/predict_mask")
     parser.add_argument('--show', type=bool, default=False)
     args = parser.parse_args()
     args.set_dir = user_dir + f"/data/{args.dataset}/VisDrone2019-DET-val/ImageSets/Main/val.txt"

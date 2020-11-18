@@ -9,8 +9,8 @@ from collections import OrderedDict
 hyp = {
     'help': 'voc type transform to coco type',
     'mode': ['train', 'val'],  # save instance_train.json
-    'num_class': 10,  # Visdrone: 10, DOTA: 15, TT100K: 45, UAVDT: 3
-    'data_dir': '/home/twsf/data/Visdrone/density_chip',
+    'num_class': 15,  # Visdrone: 10, DOTA: 15, TT100K: 45, UAVDT: 3
+    'data_dir': '/home/twsf/data/DOTA/density_chip',
 }
 hyp['json_dir'] = osp.join(hyp['data_dir'], 'Annotations_json')
 hyp['xml_dir'] = osp.join(hyp['data_dir'], 'Annotations')

@@ -18,7 +18,7 @@ user_dir = osp.expanduser('~')
 
 def parse_args():
     parser = argparse.ArgumentParser(description="convert to voc dataset")
-    parser.add_argument('--dataset', type=str, default='UAVDT',
+    parser.add_argument('--dataset', type=str, default='DOTA',
                         choices=['DOTA', 'Visdrone', 'TT100K', 'UAVDT'], help='dataset name')
     parser.add_argument('--imgsets', type=str, default=['train'],
                         nargs='+', help='choose image set')

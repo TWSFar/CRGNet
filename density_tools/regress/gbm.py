@@ -17,12 +17,12 @@ from sklearn.metrics import (mean_absolute_error as MAE,
                              r2_score as R2)
 
 
-dataset = "Visdrone"
+dataset = "DOTA"
 hyp = {
-    'train_dataset1': '/home/twsf/work/CRGNet/density_tools/statistic_results/{}_train_4564_1.csv'.format(dataset),
-    'test_dataset1': '/home/twsf/work/CRGNet/density_tools/statistic_results/{}_val_4564_1.csv'.format(dataset),
-    'train_dataset2': '/home/twsf/work/CRGNet/density_tools/statistic_results/{}_train_4564_2.csv'.format(dataset),
-    'test_dataset2': '/home/twsf/work/CRGNet/density_tools/statistic_results/{}_val_4564_2.csv'.format(dataset)}
+    'train_dataset1': '/home/twsf/work/CRGNet/density_tools/statistic_results/{}_train_15c_1.csv'.format(dataset),
+    'test_dataset1': '/home/twsf/work/CRGNet/density_tools/statistic_results/{}_val_15c_1.csv'.format(dataset),
+    'train_dataset2': '/home/twsf/work/CRGNet/density_tools/statistic_results/{}_train_15c_2.csv'.format(dataset),
+    'test_dataset2': '/home/twsf/work/CRGNet/density_tools/statistic_results/{}_val_15c_2.csv'.format(dataset)}
 
 
 def main():
@@ -68,7 +68,7 @@ def main():
         log.info(metric.__name__+': '+str(score))
 
     # Save
-    joblib.dump(model, '/home/twsf/work/CRGNet/density_tools/weights/gbm_{}_4564.pkl'.format(dataset.lower()))
+    joblib.dump(model, '/home/twsf/work/CRGNet/density_tools/weights/gbm_{}.pkl'.format(dataset.lower()))
 
 
 if __name__ == '__main__':

@@ -12,19 +12,19 @@ from mmdet.apis import init_detector, inference_detector
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Test chip')
-    parser.add_argument('--checkpoint', default='/home/twsf/work/CRGNet/mmdetection/tools_dota/work_dirs/ATSS_x101_fpn_giou_5_mosaic/epoch_17.pth')
+    parser.add_argument('--checkpoint', default='/home/twsf/work/CRGNet/mmdetection/tools_dota/work_dirs/ATSS_x101_fpn_giou/epoch_34.pth')
     parser.add_argument('--config', default="/home/twsf/work/CRGNet/mmdetection/tools_dota/configs/density/ATSS_x101_fpn_giou.py")
     parser.add_argument('--root-dir', default='/home/twsf/data/DOTA')
-    parser.add_argument('--nclass', default=5, type=int)
-    parser.add_argument('--score_thr', default=0.05, type=float)
+    parser.add_argument('--nclass', default=15, type=int)
+    parser.add_argument('--score_thr', default=0.3, type=float)
     parser.add_argument('--inference', default=True, type=bool)
     parser.add_argument('--result-path', default='/home/twsf/work/CRGNet/workshops')
     args = parser.parse_args()
     args.chip_dir = args.root_dir + '/density_chip'
     return args
 
-cat2label = {0: 0, 1: 1, 9: 2, 10: 3, 11: 4, 
-             2: 5, 3: 5, 4: 5, 5: 5, 6: 5, 7: 5, 8: 5, 12: 5, 13: 5, 14: 5}
+# cat2label = {0: 0, 1: 1, 9: 2, 10: 3, 11: 4, 
+#              2: 5, 3: 5, 4: 5, 5: 5, 6: 5, 7: 5, 8: 5, 12: 5, 13: 5, 14: 5}
 
 def getGtFromXml(xml_file):
     box_all = []
@@ -41,7 +41,7 @@ def getGtFromXml(xml_file):
             cur_pt = int(bbox.find(pt).text) - 1
             bndbox.append(cur_pt)
         box_all += [bndbox]
-        gt_cls.append(cat2label[int(obj.find('name').text)])
+        gt_cls.append(int(obj.find('name').text))
 
     return np.array(box_all), np.array(gt_cls)
 

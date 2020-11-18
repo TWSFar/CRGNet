@@ -8,7 +8,7 @@ import xml.etree.ElementTree as ET
 from collections import OrderedDict
 
 hyp = {
-    'dataset': 'UAVDT',
+    'dataset': 'DOTA',
     'img_type': '.jpg',
     'mode': 'val',  # for save Set: train.txt choose: train, test
     'data_dir': '/home/twsf/data/UAVDT',
@@ -22,11 +22,11 @@ hyp['set_file'] = osp.join(hyp['data_dir'], 'ImageSets', hyp['mode'] + '.txt')
 class getItem(object):
     def __init__(self):
         # self.classes = ('plane', 'ship', 'small-vehicle', 'large-vehicle', 'helicopter')
-        # self.classes = ('plane', 'ship', 'storage-tank', 'baseball-diamond',
-        #        'tennis-court', 'basketball-court', 'ground-track-field',
-        #        'harbor', 'bridge', 'small-vehicle', 'large-vehicle', 'helicopter',
-        #        'roundabout', 'soccer-ball-field', 'swimming-pool')
-        self.classes = {"0", "1", "2"}
+        self.classes = ('plane', 'ship', 'storage-tank', 'baseball-diamond',
+               'tennis-court', 'basketball-court', 'ground-track-field',
+               'harbor', 'bridge', 'small-vehicle', 'large-vehicle', 'helicopter',
+               'roundabout', 'soccer-ball-field', 'swimming-pool')
+        # self.classes = {"0", "1", "2"}
         self.cat2label = {cat_id: i for i, cat_id in enumerate(self.classes)}
 
     def get_img_item(self, file_name, image_id, size):
