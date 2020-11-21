@@ -68,7 +68,7 @@ class MakeDataset(object):
         self.anno_dir = self.dest_datadir + '/Annotations'
         self.list_dir = self.dest_datadir + '/ImageSets/Main'
         self.loc_dir = self.dest_datadir + '/Locations'
-        self.gbm = joblib.load('/home/twsf/work/CRGNet/density_tools/weights/gbm_{}.pkl'.format(args.dataset.lower()))
+        self.gbm = joblib.load('/home/twsf/work/CRGNet/density_tools/weights/gbm_{}_64.pkl'.format(args.dataset.lower()))
         if args.paster:  # paster information
             self.kernel = cv2.getStructuringElement(cv2.MORPH_RECT, hpy["kernel_size"])
             self.roadMask_dir = osp.join(args.db_root, "road_mask")

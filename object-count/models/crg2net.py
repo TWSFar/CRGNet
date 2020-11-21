@@ -15,20 +15,20 @@ class CRG2Net(nn.Module):
         self.backbone = build_backbone(opt.backbone, opt.output_stride, BatchNorm)
         # self.aspp = ASPP(opt.backbone,
         #                  opt.output_stride,
-        #                  self.backbone.high_outc,
+        #                  self.backbone.low_outc,
         #                  BatchNorm)
-        # self.inception = Inception(self.backbone.high_outc)
+        self.inception = Inception(self.backbone.low_outc)
         # self.link_conv = nn.Sequential(nn.Conv2d(
         #     64, 64, kernel_size=1, stride=1, padding=0, bias=False))
         # self.rfb = BasicRFB(self.backbone.low_outc, 64)
-        self.region = nn.Sequential(nn.Conv2d(self.backbone.low_outc, 64, kernel_size=3, stride=1, padding=1, bias=False),
+        self.region = nn.Sequential(nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1, bias=False),
                                     SELayer(64),
                                     nn.BatchNorm2d(64),
                                     nn.ReLU(),
                                     nn.Conv2d(64, 2, kernel_size=1, stride=1),
                                     nn.Softmax())
 
-        self.density = nn.Sequential(nn.Conv2d(self.backbone.low_outc, 64, kernel_size=3, stride=1, padding=1, bias=False),
+        self.density = nn.Sequential(nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1, bias=False),
                                      SELayer(64),
                                      nn.BatchNorm2d(64),
                                      nn.ReLU(),
@@ -42,8 +42,8 @@ class CRG2Net(nn.Module):
         x, low_level_feat = self.backbone(input)
         # low_level_feat = self.rfb(low_level_feat)
         # low_level_feat = self.link_conv(low_level_feat)
-        # x = self.aspp(x)
-        # x = self.inception(x)
+        # low_level_feat = self.aspp(low_level_feat)
+        low_level_feat = self.inception(low_level_feat)
         # x = torch.cat((x, low_level_feat), dim=1)
         region = self.region(low_level_feat)
         density = self.density(low_level_feat)

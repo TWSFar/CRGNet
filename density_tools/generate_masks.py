@@ -38,7 +38,7 @@ def parse_args():
     elif args.dataset.lower() == "tt100k":
         args.mask_size = [30, 30]
     elif args.dataset.lower() == "dota":
-        args.mask_size = [50, 50]
+        args.mask_size = [64, 64]
     elif args.dataset.lower() == "uavdt":
         args.mask_size = [30, 40]
     else:
